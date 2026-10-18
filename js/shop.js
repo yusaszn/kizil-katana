@@ -26,6 +26,33 @@ const SIDEARM_IDS = ['pistol', 'glock', 'usps', 'deagle'];
 const eco = { cr: ECON.start, primary: null, sidearm: null, armor: 0, armorKind: null, smoke: 0, flash: 0, bought: [], streak: 0, keep: false, roundKills: 0, ready: false, taken: {}, deathInfo: '' };
 const shopItem = id => SHOP.find(s => s.id === id);
 const buy = { open: false, x: 0, y: 0, hov: null };
+const teamUI = { open: false };
+const anyMenu = () => buy.open || teamUI.open;
+// M: maç sırasında takım değiştir
+function openTeamPick() {
+  if (!isVS() || vs.over) return;
+  if (buy.open) closeBuy();
+  teamUI.open = true; $('teamPick').hidden = false; renderTeamPick();
+  buy.x = innerWidth / 2; buy.y = innerHeight * .5; moveCursor(0, 0);
+}
+function closeTeamPick() { teamUI.open = false; $('teamPick').hidden = true; if (!buy.open) $('vcursor').hidden = true; }
+function toggleTeamPick() { if (teamUI.open) closeTeamPick(); else openTeamPick(); }
+function renderTeamPick() {
+  const mt = myTeam();
+  for (const t of ['red', 'blue']) {
+    const names = Object.values(net.players).filter(p => p.team === t).map(p => escapeHtml(p.name));
+    const el = $('tp_' + t);
+    el.classList.toggle('on', mt === t);
+    el.querySelector('small').innerHTML = names.length ? names.join(' · ') : 'boş';
+    el.querySelector('em').textContent = names.length + ' OYUNCU' + (mt === t ? ' · SENİN TAKIMIN' : '');
+  }
+  setBuyText('tpInfo', vs.phase === 'live' ? 'Raunt sürerken değiştirirsen bu raunttan çekilirsin, sonraki raunda yeni takımında başlarsın.' : 'Hemen yeni takımının üssüne geçersin. Paran korunur.');
+}
+function requestTeam(t) {
+  if (!TEAMS[t] || t === myTeam()) { closeTeamPick(); return; }
+  if (net.mode === 'host') hostSetTeam('h', t); else toHost({ t: 'teamSet', team: t });
+  sfx.swap(); closeTeamPick();
+}
 
 function resetEco() {
   Object.assign(eco, { cr: ECON.start, primary: null, sidearm: null, armor: 0, armorKind: null, smoke: 0, flash: 0, bought: [], streak: 0, keep: false, roundKills: 0, ready: false, taken: {}, deathInfo: '' });
@@ -123,21 +150,24 @@ function buyClickTarget(el, right) {
   const card = el.closest('[data-id]'), knife = el.closest('[data-knife]');
   if (card) { right ? sellItem(card.dataset.id) : buyItem(card.dataset.id); return; }
   if (knife && !right) { selectLoadout('knife', knife.dataset.knife); renderBuy(); return; }
+  const tp = el.closest('[data-team]'); if (tp && !right) { requestTeam(tp.dataset.team); return; }
+  if (el.closest('#tpClose') && !right) { closeTeamPick(); return; }
   if (el.closest('#buyReady') && !right) { eco.ready = !eco.ready; sfx.swap(); renderBuy(); return; }
   if (el.closest('#buyClose') && !right) closeBuy();
 }
 $('buy').addEventListener('click', e => buyClickTarget(e.target, false));
+$('teamPick').addEventListener('click', e => buyClickTarget(e.target, false));
 $('buy').addEventListener('contextmenu', e => { e.preventDefault(); buyClickTarget(e.target, true); });
 // fare kilitliyken gerçek imleç görünmez: menüde kendi imlecimizi fareyle sürüyoruz
 function moveCursor(dx, dy) {
   buy.x = clamp(buy.x + dx, 0, innerWidth - 2); buy.y = clamp(buy.y + dy, 0, innerHeight - 2);
   const c = $('vcursor'); c.hidden = !document.pointerLockElement; c.style.transform = `translate(${buy.x}px,${buy.y}px)`;
-  const el = document.elementFromPoint(buy.x, buy.y), card = el && el.closest('#buy button');
+  const el = document.elementFromPoint(buy.x, buy.y), card = el && el.closest('#buy button, #teamPick button');
   if (card !== buy.hov) { if (buy.hov) buy.hov.classList.remove('hov'); buy.hov = card; if (card) card.classList.add('hov'); }
 }
-function buyMouseMove(e) { if (!buy.open) return false; if (document.pointerLockElement) moveCursor(e.movementX, e.movementY); return true; }
+function buyMouseMove(e) { if (!anyMenu()) return false; if (document.pointerLockElement) moveCursor(e.movementX, e.movementY); return true; }
 function buyMouseDown(e) {
-  if (!buy.open || !document.pointerLockElement) return false;
+  if (!anyMenu() || !document.pointerLockElement) return false;
   if (e.button === 0 || e.button === 2) buyClickTarget(document.elementFromPoint(buy.x, buy.y), e.button === 2);
   return true;
 }

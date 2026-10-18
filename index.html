@@ -26,6 +26,15 @@
     <div class="buybtns"><button type="button" class="lo" id="buyReady">HAZIRIM</button><button type="button" class="lo" id="buyClose">KAPAT</button></div>
   </div>
 </div>
+<div id="teamPick" hidden>
+  <strong>TAKIM SEÇ</strong>
+  <div class="tprow">
+    <button type="button" class="tp red" id="tp_red" data-team="red"><b>KIRMIZI</b><em></em><small></small></button>
+    <button type="button" class="tp blue" id="tp_blue" data-team="blue"><b>MAVİ</b><em></em><small></small></button>
+  </div>
+  <p id="tpInfo"></p>
+  <button type="button" class="lo" id="tpClose">KAPAT (M)</button>
+</div>
 <div id="vcursor" hidden></div>
 <div id="flashfx"></div>
 <div id="hud" hidden>
@@ -39,6 +48,7 @@
   <div id="bombHud" hidden><span id="bombTxt"></span></div>
   <div id="bombBar" hidden><span id="bombBarTxt"></span><div><i id="bombBarFill"></i></div></div>
   <div id="perks"></div>
+  <canvas id="minimap" width="180" height="180" hidden></canvas>
   <div id="killfeed"></div>
   <div id="respawnHint"></div>
   <div id="cross"></div>
@@ -100,6 +110,7 @@
       <div><kbd>B</kbd><span>VS: satın alma menüsü (fareyle)</span></div>
       <div><kbd>Z / X</kbd><span>VS: sis bombası / flaş</span></div>
       <div><kbd>4 (BASILI)</kbd><span>Bomba modu: kur / imha et</span></div>
+      <div><kbd>M</kbd><span>VS: takım değiştir</span></div>
     </div>
     <div class="btns">
       <button class="btn" id="startBtn" type="button">TEK KİŞİ OYNA</button>
@@ -214,4 +225,5 @@
 <script src="js/guns.js"></script>
 <script src="js/shop.js"></script>
 <script src="js/bomb.js"></script>
+<script src="js/minimap.js"></script>
 <script src="js/game.js"></script>

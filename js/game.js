@@ -436,6 +436,9 @@ window.addEventListener('keydown', e => {
     return;
   }
   if (e.code === 'Space' || e.code === 'Tab' || (e.ctrlKey && state === 'play')) e.preventDefault();   // Ctrl = eğilme: Ctrl+S/D vb. tarayıcıya gitmesin
+  // M: takım seç (ölüyken de)
+  if (isVS() && e.code === 'KeyM' && !e.repeat && (state === 'play' || state === 'dead')) { toggleTeamPick(); return; }
+  if (isVS() && teamUI.open && e.code === 'Escape') { closeTeamPick(); return; }
   if (state !== 'play') return;
   if (e.repeat) return;
   // VS: satın alma menüsü fareyle kullanılır (B), raunt içinde 1 / 2 / 3 yuvalar, Z sis, X flaş
@@ -471,7 +474,7 @@ window.addEventListener('keyup', e => {
 });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouse.left = mouse.right = false; shiftDown = 0; });
 document.addEventListener('mousemove', e => {
-  if (state === 'play' && buyMouseMove(e)) return;
+  if ((state === 'play' || state === 'dead') && buyMouseMove(e)) return;
   if (state !== 'play' || !player.alive) return;
   if (document.pointerLockElement !== canvas && !fallbackLook) return;
   const s = .0022 * SETTINGS.sens * (camera.fov / SETTINGS.fov);   // dürbünde fare yavaşlar
@@ -481,8 +484,8 @@ document.addEventListener('mousemove', e => {
 canvas.addEventListener('mousedown', e => {
   if (state !== 'play' && state !== 'dead') return;
   if (document.pointerLockElement !== canvas && !fallbackLook) { lock(); return; }
-  if (state !== 'play') return;
   if (buyMouseDown(e)) return;
+  if (state !== 'play') return;
   if (e.button === 0) { mouse.left = true; sgClick = true; rifClick = true; attackInput('L'); }
   if (e.button === 1) { e.preventDefault(); attackInput('H'); }
   if (e.button === 2) { mouse.right = true; sgClickR = true; rifClickR = true; if (isKnife(wpn.cur)) knifeAttack(true); }
@@ -525,7 +528,7 @@ $('againBtn').addEventListener('click', () => { if (net.mode === 'host') startMa
 function toMainMenu() {
   leaveRoom(true); resetGame(); state = 'menu';
   for (const id of ['dead', 'pause', 'upgrade', 'settings', 'hud']) $(id).hidden = true;
-  closeBuy(); clearUtils();
+  closeBuy(); closeTeamPick(); $('minimap').hidden = true; clearUtils();
   $('scope').hidden = true;
   $('start').hidden = false;
   if (document.pointerLockElement) document.exitPointerLock();
@@ -665,6 +668,7 @@ function frame(now) {
     updateTracers(rdt);
     updateShop(dt, rdt);
     updateBomb(rdt);
+    updateMinimap(rdt);
     if (isVS()) updateVS(dt, rdt);
     else if (net.mode !== 'guest' && !matchOver && (state === 'play' || mp)) updateWaves(dt);
     if (autoPickT > 0) { autoPickT -= rdt; if (autoPickT <= 0) openPick(); }

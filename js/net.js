@@ -3,7 +3,7 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 14;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 15;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 // çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
@@ -239,6 +239,7 @@ function onHostData(conn, d) {
       break;
     }
     case 'team': if (!net.inMatch) switchTeam(conn.pid); break;
+    case 'teamSet': if (net.inMatch && isVS()) hostSetTeam(conn.pid, d.team); break;
     case 'phit': d.by = conn.pid; deliverPhit(d); break;
     case 'pdied': if (isVS()) hostKill(conn.pid, d.by, d.w); break;
     case 'boom': bcast(d, conn); explodeAt(v3(d.p), false, d.r || 5); break;

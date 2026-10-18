@@ -223,12 +223,33 @@ function showVsEnd(win) {
   showEnd(win === 'draw' ? 'Berabere' : TEAMS[win].name + ' TAKIM KAZANDI', win);
 }
 function resetVS() {
+  vs.lastTeam = null;
   Object.assign(vs, { rr: 0, rb: 0, round: 0, phase: 'buy', t: BUY_T, spawnProt: 0, deaths: 0, feed: [], over: false, tick: 0, lastHit: null });
   resetEco(); clearUtils();
 }
 
 /* ================= HER KARE ================= */
+// takımım değiştiyse: hazırlıkta yeni üsse geç, raunt sürerken bu rauntdan çekil
+function checkTeamChange() {
+  const mt = myTeam();
+  if (vs.lastTeam && mt !== vs.lastTeam && !vs.over) {
+    banner('TAKIM DEĞİŞTİ', TEAMS[mt].name + (vs.phase === 'live' ? ' · sonraki rauntta oyundasın' : ''));
+    if (vs.phase === 'buy') pvpRespawn();
+    else if (player.alive) {
+      player.alive = false; player.hp = 0; player.deathT = 0; state = 'dead'; eco.keep = false;
+      if (net.mode === 'host' && net.players.h) net.players.h.alive = false;
+    }
+  }
+  vs.lastTeam = mt;
+}
+function hostSetTeam(id, t) {
+  const p = net.players[id]; if (!p || !TEAMS[t] || p.team === t) return;
+  p.team = t; sendRoster();
+  if (vs.phase === 'live' && id !== 'h') p.alive = false;
+  toast(p.name.toLocaleUpperCase('tr-TR') + ' → ' + TEAMS[t].name);
+}
 function updateVS(dt, rdt) {
+  checkTeamChange();
   vs.t -= rdt;
   for (const f of vs.feed) f.t -= rdt;
   vs.feed = vs.feed.filter(f => f.t > 0);

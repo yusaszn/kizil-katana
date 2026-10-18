@@ -248,3 +248,21 @@ body.vsmode .bar.armor,body.vsmode #ecoHud{display:block}
 #bombBar{position:absolute;left:50%;top:calc(50% + 70px);transform:translateX(-50%);width:min(320px,70vw);text-align:center;font-weight:700;font-size:13px;letter-spacing:.2em;color:var(--gold)}
 #bombBar div{margin-top:6px;height:8px;background:rgba(0,0,0,.6);border:1px solid rgba(255,190,60,.6)}
 #bombBar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#b07010,var(--gold))}
+
+/* ===== mini harita ===== */
+#minimap{position:absolute;left:16px;top:calc(16px + env(safe-area-inset-top,0px));width:180px;height:180px;border:1px solid rgba(239,225,205,.35);box-shadow:0 4px 18px rgba(0,0,0,.5);image-rendering:auto}
+#perks{top:calc(208px + env(safe-area-inset-top,0px))}
+@media (max-width:700px){#minimap{width:120px;height:120px}#perks{top:calc(146px + env(safe-area-inset-top,0px))}}
+/* ===== takım seçimi ===== */
+#teamPick{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(620px,calc(100vw - 32px));box-sizing:border-box;padding:18px;background:rgba(10,4,3,.93);border:1px solid rgba(239,225,205,.3);font-family:var(--hud);color:var(--bone);z-index:5;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center}
+#teamPick strong{font-size:20px;letter-spacing:.3em}
+#teamPick p{margin:0;font-size:12px;color:var(--ash)}
+.tprow{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.tp{font-family:var(--hud);color:var(--bone);cursor:pointer;padding:16px 12px;display:flex;flex-direction:column;gap:6px;align-items:center;border:2px solid transparent;transition:transform .1s}
+.tp b{font-size:22px;letter-spacing:.2em}
+.tp em{font-style:normal;font-size:11px;letter-spacing:.2em;opacity:.85}
+.tp small{font-size:12px;opacity:.8;min-height:1.2em}
+.tp.red{background:rgba(160,30,20,.55)}.tp.blue{background:rgba(40,90,180,.55)}
+.tp:hover,.tp.hov{transform:translateY(-2px);border-color:var(--bone)}
+.tp.on{border-color:var(--gold)}
+#teamPick .lo.hov{border-color:var(--blood-hi)}
