@@ -5,7 +5,8 @@
 const NET_PREFIX = 'kizilkatana-v1-';
 const GAME_VERSION = 14;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
-const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+// çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
+const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
 const net = { mode: 'solo', peer: null, hostConn: null, myId: 'solo', code: '', players: {}, sendT: 0, snapT: 0, guestSeq: 0, inMatch: false, gameMode: 'coop', vsMap: 'arena', money: 'normal' };
 const netFx = { sw: 0, sh: 0 };
 const PLAYER_COLORS = [0x2f6f8f, 0xc9a227, 0x6f3f9f, 0x3f8f4f];
