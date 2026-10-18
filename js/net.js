@@ -3,7 +3,7 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 13;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 14;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const net = { mode: 'solo', peer: null, hostConn: null, myId: 'solo', code: '', players: {}, sendT: 0, snapT: 0, guestSeq: 0, inMatch: false, gameMode: 'coop', vsMap: 'arena', money: 'normal' };

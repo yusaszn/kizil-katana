@@ -1,7 +1,8 @@
 'use strict';
 /* Arena: harita, ışıklar, kan parçacıkları, kan lekeleri, ekran kanı, atmosfer */
 
-const H = 22, WALLH = 7;
+let H = 22;   // arenanın yarı genişliği; haritaya göre değişir (Dust 2 daha büyük)
+const WALLH = 7;
 const statics = [];
 const floorMat = new THREE.MeshStandardMaterial({ map: floorTex, roughness: .82, metalness: .15 });
 const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: .7, metalness: .3 });
@@ -34,18 +35,29 @@ function addBlock(w, h, d, x, y, z, mat, solidForRays = true, forMap = false) {
 }
 function mapMesh(m) { scene.add(m); mapStuff.meshes.push(m); return m; }
 const lavaMat = new THREE.MeshBasicMaterial({ color: 0xff4a12 });
-{ // her haritada ortak: zemin, dış duvarlar, kenardaki ışıklı oluk
-  const fl = new THREE.Mesh(new THREE.PlaneGeometry(H * 2, H * 2), floorMat); fl.rotation.x = -Math.PI / 2; scene.add(fl);
-  addBlock(H * 2 + 4, 1, H * 2 + 4, 0, -0.5, 0, null, false);
-  addBlock(H * 2 + 2, WALLH, 1, 0, WALLH / 2, -H - .5, wallMat);
-  addBlock(H * 2 + 2, WALLH, 1, 0, WALLH / 2, H + .5, wallMat);
-  addBlock(1, WALLH, H * 2, -H - .5, WALLH / 2, 0, wallMat);
-  addBlock(1, WALLH, H * 2, H + .5, WALLH / 2, 0, wallMat);
+// her haritada ortak: zemin, dış duvarlar, kenardaki ışıklı oluk. Harita boyutu değişince yeniden kurulur.
+const shell = { meshes: [], bodies: [] };
+function buildShell(h) {
+  for (const m of shell.meshes) scene.remove(m);
+  for (const b of shell.bodies) world.remove(b);
+  shell.meshes = []; shell.bodies = []; statics.length = 0; H = h;
+  const add = (w, hh, d, x, y, z, mat, ray = true) => {
+    addBlock(w, hh, d, x, y, z, null, ray);
+    shell.bodies.push(world.bodies[world.bodies.length - 1]);
+    if (mat) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, hh, d), mat); m.position.set(x, y, z); scene.add(m); shell.meshes.push(m); }
+  };
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(H * 2, H * 2), floorMat); fl.rotation.x = -Math.PI / 2; scene.add(fl); shell.meshes.push(fl);
+  add(H * 2 + 4, 1, H * 2 + 4, 0, -0.5, 0, null, false);
+  add(H * 2 + 2, WALLH, 1, 0, WALLH / 2, -H - .5, wallMat);
+  add(H * 2 + 2, WALLH, 1, 0, WALLH / 2, H + .5, wallMat);
+  add(1, WALLH, H * 2, -H - .5, WALLH / 2, 0, wallMat);
+  add(1, WALLH, H * 2, H + .5, WALLH / 2, 0, wallMat);
   for (const [w, d, x, z] of [[H * 2, .5, 0, -H + .25], [H * 2, .5, 0, H - .25], [.5, H * 2, -H + .25, 0], [.5, H * 2, H - .25, 0]]) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), lavaMat); m.rotation.x = -Math.PI / 2; m.position.set(x, .006, z); scene.add(m);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), lavaMat); m.rotation.x = -Math.PI / 2; m.position.set(x, .006, z); scene.add(m); shell.meshes.push(m);
   }
   baseStatics = statics.length;
 }
+buildShell(22);
 const runeMat = new THREE.MeshBasicMaterial({ map: runeTex, color: 0xff2410, transparent: true, opacity: .45, blending: THREE.AdditiveBlending, depthWrite: false });
 
 const hemi = new THREE.HemisphereLight(0x7a4236, 0x140404, 0.6); scene.add(hemi);
@@ -108,91 +120,108 @@ const MAPS = {
     },
   },
   col: {
-    // Dust 2 yerleşimi (1 m'lik ızgara, kuzey = -z). Güney: saldıranların üssü. Doğu: dış uzun yol → mavi Uzun A kapıları → Uzun A → yüksek A platformu.
-    // Orta: orta koridor, xbox, kısa geçit (catwalk) → A; kuzeyde orta kapılar → savunma ortası. Batı: alt tüneller → üstü kapalı B tünelleri → B.
-    // Savunma üssü kuzeyde ortada: doğuda A rampası, batıda mavi B kapıları ve B penceresi.
-    name: 'ÇÖL GEÇİDİ',
-    fog: 0xd9c7a2, sky: 0x8cb8e6, fogD: .011, hemi: [0xd6e6ff, 0x8a6a3a], moon: 0xfff1d6, lava: 0xc8a060, flame: 0xffb050, light: 0xfff0d0, ember: 0xfff4e0, floor: 0xffffff, wall: 0xffffff,
+    // Dust 2 (yaklaşık 80 x 80 m, kuzey = -z). Güney ortada saldıran üssü; doğuda dış uzun yol → mavi Uzun A kapıları → geniş Uzun A → köşede çukur (pit),
+    // merdivenle yüksek A bölgesine. Ortada uzun orta koridor; xbox'tan merdivenle yüksek kısa geçide (catwalk) çıkıp A'ya. Kuzeyde orta kapılar → savunma ortası.
+    // Savunma üssü kuzeyde: doğuda A rampası (merdiven), batıda mavi B kapıları ve B penceresi. Batıda alt tüneller → üstü kapalı B tünelleri → B (arkada B platformu).
+    name: 'ÇÖL GEÇİDİ', half: 40,
+    fog: 0xd9c7a2, sky: 0x8cb8e6, fogD: .006, hemi: [0xd6e6ff, 0x8a6a3a], moon: 0xfff1d6, lava: 0xc8a060, flame: 0xffb050, light: 0xfff0d0, ember: 0xfff4e0, floor: 0xffffff, wall: 0xffffff,
     floorTex: () => sandFloorTex, wallTex: () => sandBrickTex, hemiI: 1.0, moonI: 1.35, noEmbers: true,
-    sites: { A: { x0: 13, x1: 22, z0: -22, z1: -9 }, B: { x0: -22, x1: -10, z0: -22, z1: -6 } },
+    sites: { A: { x0: 18, x1: 39, z0: -39, z1: -20 }, B: { x0: -39, x1: -19, z0: -39, z1: -15 } },
     spawn(team) {
       const south = typeof isBomb === 'function' && isBomb() ? team === attackTeam() : team === 'red';
-      return south ? new V3(rand(-8, 4), .6, rand(16.5, 20.5)) : new V3(rand(-5, 3), .6, -rand(16.5, 20.5));
+      return south ? new V3(rand(-10, 6), .6, rand(28, 36)) : new V3(rand(-5, 1), .6, -rand(31, 37));
     },
     build() {
-      const WH = 5.2, N = 44, O = 22, walk = new Uint8Array(N * N);
+      const N = 80, O = 40, walk = new Uint8Array(N * N);
       const open = (x0, x1, z0, z1, v = 1) => { for (let x = x0; x < x1; x++) for (let z = z0; z < z1; z++) walk[(x + O) * N + (z + O)] = v; };
       // ---- yürünebilir alanlar ----
-      open(-10, 7, 14, 22);      // saldıran üssü
-      open(7, 13, 13, 19);       // dış uzun yol
-      open(13, 22, -9, 19);      // Uzun A
-      open(13, 15, 8, 9, 0); open(19, 22, 8, 9, 0);   // Uzun A kapı duvarı (ortası açık)
-      open(9, 22, -22, -9);      // A bölgesi
-      open(4, 9, -21, -13);      // A rampası (savunmadan A'ya)
-      open(-6, 4, -22, -14);     // savunma üssü
-      open(-9, 4, -14, -10);     // savunma ortası
-      open(-3, 2, -9, 14);       // orta
-      open(-1, 1, -10, -9);      // orta kapılar
-      open(2, 9, -6, -2); open(5, 9, -13, -6);       // kısa geçit (catwalk) → A
-      open(-13, -3, 4, 8);       // alt tüneller
-      open(-21, -13, -6, 18);    // üst B tünelleri
-      open(-13, -10, 14, 18);    // üsten tünellere bağlantı
-      open(-22, -10, -22, -6);   // B bölgesi
-      open(-10, -9, -16, -13);   // B kapıları
-      open(-9, -4, -18, -10);    // B kapılarının savunma tarafı
-      open(-9, -5, -21, -18);    // B penceresinin savunma tarafı
-      open(-10, -9, -20, -18, 2);   // B penceresi (alt ve üst duvar ayrıca)
-      // ---- kalan her hücre bina: hücreleri birleştirip az sayıda kutu kur ----
+      open(-14, 10, 24, 39);     // saldıran üssü
+      open(10, 24, 26, 34);      // dış uzun yol
+      open(22, 30, 19, 34);      // uzun kapılarının önü
+      open(25, 28, 18, 19);      // Uzun A kapıları
+      open(24, 39, -12, 18);     // Uzun A (doğu köşesi çukur)
+      open(24, 34, -17, -12);    // A'ya çıkan merdiven
+      open(6, 39, -39, -17);     // A bölgesi (yüksek)
+      open(2, 6, -36, -28);      // A rampası merdiveni (savunmadan)
+      open(-6, 2, -39, -30);     // savunma üssü
+      open(-17, 2, -30, -24);    // savunma ortası
+      open(-4, 2, -23, 24);      // orta koridor
+      open(-2, 0, -24, -23);     // orta kapılar
+      open(2, 6, 0, 8);          // alt orta (xbox)
+      open(6, 12, -17, 6);       // kısa geçit: merdiven + yüksek catwalk
+      open(-28, -4, 2, 8);       // alt tüneller
+      open(-38, -28, -14, 22);   // üst B tünelleri
+      open(-38, -14, 22, 32);    // tünellerin dışı (üsten)
+      open(-39, -18, -39, -14);  // B bölgesi
+      open(-18, -17, -28, -25);  // B kapıları
+      open(-17, -12, -36, -30);  // B penceresinin savunma tarafı
+      open(-18, -17, -34, -31, 2);   // B penceresi
+      // ---- binalar: kalan hücreler birleştirilir, yükseklikleri değişir (düz bir kutu gibi görünmesin) ----
       const used = new Uint8Array(N * N);
       for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
         const k = i * N + j; if (walk[k] || used[k]) continue;
-        let j2 = j; while (j2 + 1 < N && !walk[i * N + j2 + 1] && !used[i * N + j2 + 1]) j2++;
+        let j2 = j; while (j2 + 1 < N && j2 - j < 11 && !walk[i * N + j2 + 1] && !used[i * N + j2 + 1]) j2++;
         let i2 = i;
-        grow: while (i2 + 1 < N) { for (let jj = j; jj <= j2; jj++) { const kk = (i2 + 1) * N + jj; if (walk[kk] || used[kk]) break grow; } i2++; }
+        grow: while (i2 + 1 < N && i2 - i < 11) { for (let jj = j; jj <= j2; jj++) { const kk = (i2 + 1) * N + jj; if (walk[kk] || used[kk]) break grow; } i2++; }
         for (let x = i; x <= i2; x++) for (let z = j; z <= j2; z++) used[x * N + z] = 1;
-        dustBox(i - O, i2 + 1 - O, j - O, j2 + 1 - O, 0, WH, sandWallMat);
+        const hgt = 5.2 + ((i * 7 + j * 13) % 4) * .9;
+        dustBox(i - O, i2 + 1 - O, j - O, j2 + 1 - O, 0, hgt, sandWallMat);
+        dustBox(i - O - .08, i2 + 1 - O + .08, j - O - .08, j2 + 1 - O + .08, hgt, hgt + .25, trimMat, false);   // çatı kenarı
       }
-      // B penceresi: altı ve üstü duvar, arası açık (savunma tarafından B'yi görürsün)
-      dustBox(-10, -9, -20, -18, 0, 1.15, sandWallMat); dustBox(-10, -9, -20, -18, 2.25, WH, sandWallMat);
-      // ---- üstü kapalı tüneller ----
-      dustBox(-21, -13, 0, 15, 3.3, 3.75, roofMat); dustBox(-13, -10, 14, 18, 3.3, 3.75, roofMat); dustBox(-13, -4, 4, 8, 3.3, 3.75, roofMat);
-      // tünel içi gölgesi: zemine ve duvar diplerine koyu, yarı saydam katman
-      for (const [x0, x1, z0, z1] of [[-21, -13, 0, 15], [-13, -10, 14, 18], [-13, -4, 4, 8]]) {
-        const sh = mapMesh(new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), tunnelShade)); sh.rotation.x = -Math.PI / 2; sh.position.set((x0 + x1) / 2, .012, (z0 + z1) / 2);
-        for (const [cx, cz, w, ry] of [[x0 + .01, (z0 + z1) / 2, z1 - z0, Math.PI / 2], [x1 - .01, (z0 + z1) / 2, z1 - z0, -Math.PI / 2]]) {
-          const wl = mapMesh(new THREE.Mesh(new THREE.PlaneGeometry(w, 3.3), tunnelShade)); wl.position.set(cx, 1.65, cz); wl.rotation.y = ry;
+      dustBox(-18, -17, -34, -31, 0, 1.15, sandWallMat); dustBox(-18, -17, -34, -31, 2.3, 6, sandWallMat);   // B penceresi
+      // ---- yükseklikler ----
+      const steps = (x0, x1, z0, z1, h0, h1, dir, mat = lowSandMat) => {   // dir: yükselmenin yönü 'x+','x-','z+','z-'
+        const n = Math.max(1, Math.round((h1 - h0) / .25)), along = dir[0] === 'x' ? x1 - x0 : z1 - z0;
+        for (let k = 0; k < n; k++) {
+          const a0 = along * k / n, a1 = along * (k + 1) / n, h = h0 + (h1 - h0) * (k + 1) / n;
+          if (dir === 'x+') dustBox(x0 + a0, x0 + a1, z0, z1, 0, h, mat); if (dir === 'x-') dustBox(x1 - a1, x1 - a0, z0, z1, 0, h, mat);
+          if (dir === 'z+') dustBox(x0, x1, z0 + a0, z0 + a1, 0, h, mat); if (dir === 'z-') dustBox(x0, x1, z1 - a1, z1 - a0, 0, h, mat);
         }
-      }
-      // ---- kapılar: mavi ahşap kanatlar ve üst kiriş ----
-      dustBox(15, 19, 8, 9, 3.4, WH, sandWallMat);                                    // Uzun A kapı kirişi
-      dustBox(15, 15.12, 9, 10.9, 0, 3.35, blueDoorMat); dustBox(18.88, 19, 9, 10.9, 0, 3.35, blueDoorMat);
-      dustBox(-10, -9, -16, -13, 3.3, WH, sandWallMat);                               // B kapıları kirişi
-      dustBox(-11.9, -10, -16, -15.88, 0, 3.25, blueDoorMat); dustBox(-11.9, -10, -13.12, -13, 0, 3.25, blueDoorMat);
-      dustBox(-1, 1, -10, -9, 3.2, WH, sandWallMat);                                   // orta kapılar kirişi
-      dustBox(-1, -.88, -11.8, -10, 0, 3.15, blueDoorMat); dustBox(.88, 1, -11.8, -10, 0, 3.15, blueDoorMat);
-      // ---- yüksek A platformu ve basamakları ----
-      dustBox(15, 22, -21, -14, 0, .9, lowSandMat);
-      dustBox(15, 22, -14, -13, 0, .6, lowSandMat); dustBox(15, 22, -13, -12, 0, .3, lowSandMat);
-      dustBox(14, 15, -21, -14, 0, .6, lowSandMat); dustBox(13, 14, -21, -14, 0, .3, lowSandMat);
-      // B'nin arka platformu
-      dustBox(-22, -18, -22, -18, 0, .6, lowSandMat); dustBox(-18, -17, -22, -18, 0, .3, lowSandMat);
-      // ---- kasalar (siperler) ----
-      const crate = (x, z, s, h, y0 = 0) => dustBox(x - s / 2, x + s / 2, z - s / 2, z + s / 2, y0, y0 + h, colCrateMat);
-      crate(17.5, -17, 1.6, 1.3, .9); crate(19.2, -17.4, 1.2, 1, .9); crate(21, -21, 1.2, 1.1, .9);   // A'daki "varsayılan" kasa ve köşe
-      crate(11, -12, 1.2, 1.1); crate(10.5, -19, 1.4, 1.3); crate(20.5, -7.5, 1.4, 1.2);              // A rampası, uzun köşesi
-      crate(20.5, 12, 1.3, 1.2); crate(14, 16.5, 1.3, 1.2);                                              // Uzun A
-      crate(.6, -5.5, 1.3, 1.25);                                                                         // xbox (orta)
-      crate(-1.8, 10, 1.2, 1.1); crate(-17, -15, 1.6, 1.4); crate(-15, -19.5, 1.3, 1.1); crate(-20.6, -10, 1.4, 1.6); crate(-20.6, -11.6, 1.1, 1);
-      crate(-12, -20.5, 1.2, 1.1); crate(-20, -20, 1.2, 1.1, .6);                                         // B
-      crate(-7, 19, 1.4, 1.2); crate(4.5, 18.5, 1.3, 1.1); crate(-1, -19, 1.2, 1.1);                    // üsler
+      };
+      const AH = 1.5;
+      dustBox(6, 39, -39, -17, 0, AH, lowSandMat);              // yüksek A
+      steps(24, 34, -17, -12, 0, AH, 'z-');                    // Uzun A'dan A'ya merdiven
+      steps(2, 6, -36, -28, 0, AH, 'x+');                      // A rampası
+      dustBox(6, 12, -17, 0, 0, AH, lowSandMat);               // catwalk
+      steps(6, 12, 0, 6, 0, AH, 'z-');                         // xbox'tan catwalk'a merdiven
+      dustBox(-39, -31, -39, -31, 0, .9, lowSandMat); steps(-31, -29, -39, -31, 0, .9, 'x-');   // B platformu
+      dustBox(-39, -29, -39, -38.6, .9, 1.9, sandWallMat);     // B platformu arka korkuluk
+      // çukur (pit): Uzun A'nın doğu köşesinde alçak duvarla çevrili, içi gölgeli
+      dustBox(33, 34, -12, -4, 0, 1.1, lowSandMat); dustBox(33, 39, -4, -3, 0, 1.1, lowSandMat);
+      shade(34, 39, -12, -4);
+      // ---- üstü kapalı tüneller ----
+      dustBox(-38, -28, -10, 22, 3.6, 4.1, roofMat); dustBox(-28, -4, 2, 8, 3.6, 4.1, roofMat);
+      shade(-38, -28, -10, 22, 3.6); shade(-28, -4, 2, 8, 3.6);
+      // ---- kemerler ve kapılar ----
+      dustBox(25, 28, 18, 19, 3.6, 7, sandWallMat);                                      // Uzun A kapı kirişi
+      dustBox(25, 25.12, 19, 21, 0, 3.55, blueDoorMat); dustBox(27.88, 28, 19, 21, 0, 3.55, blueDoorMat);
+      dustBox(-18, -17, -28, -25, 3.4, 7, sandWallMat);                                  // B kapıları
+      dustBox(-20, -18, -28, -27.88, 0, 3.35, blueDoorMat); dustBox(-20, -18, -25.12, -25, 0, 3.35, blueDoorMat);
+      dustBox(-2, 0, -24, -23, 3.3, 7, sandWallMat);                                     // orta kapılar
+      dustBox(-2, -1.88, -26, -24, 0, 3.25, blueDoorMat); dustBox(-.12, 0, -26, -24, 0, 3.25, blueDoorMat);
+      dustBox(-4, 2, 21.5, 22.5, 3.8, 7.2, sandWallMat);                                 // orta girişinde kemer (suicide)
+      dustBox(10, 11, 26, 34, 3.8, 7.2, sandWallMat);                                    // dış uzun yola kemer
+      dustBox(-14, -13, 22, 32, 3.8, 7.2, sandWallMat);                                  // tünel dışına kemer
+      // ---- detaylar: kasalar, variller, araba, palmiyeler ----
+      const crate = (x, z, sz, h, y0 = 0) => dustBox(x - sz / 2, x + sz / 2, z - sz / 2, z + sz / 2, y0, y0 + h, colCrateMat);
+      crate(28, -28, 1.8, 1.4, AH); crate(30, -28.4, 1.3, 1.1, AH); crate(30, -28.4, 1.1, .9, AH + 1.1);   // A "varsayılan" kasalar
+      crate(37.5, -37.5, 1.5, 1.3, AH); crate(20, -24, 1.5, 1.2, AH); crate(13, -36, 1.6, 1.4, AH);         // A köşesi (goose), A rampası
+      crate(4, 2, 1.4, 1.3);                                                                                  // xbox
+      crate(36.5, -10.5, 1.4, 1.2); crate(37, -7.5, 1.3, 1.1);                                              // çukurda
+      crate(28, 10, 1.5, 1.3); crate(26, 23, 1.4, 1.2); crate(17, 31, 1.4, 1.2);                            // uzun yol
+      crate(-24, -24, 1.8, 1.5); crate(-27, -34, 1.5, 1.3); crate(-36.8, -17, 1.6, 2.2); crate(-21, -37, 1.4, 1.2);   // B
+      crate(-35, -35, 1.3, 1.1, .9);                                                                         // B platformu
+      crate(-10, 36, 1.6, 1.4); crate(6, 26.5, 1.4, 1.2); crate(-3, -36, 1.4, 1.2); crate(-33, 27, 1.5, 1.3);
+      for (const [x, z, y] of [[-1, 15, 0], [35, 0, 0], [-15, -33, 0], [16, -38, AH], [-34, 10, 0], [8, 36, 0]]) barrel(x, z, y);
+      car(34.5, 4);                                                                                            // Uzun A'daki araba
+      for (const [x, z] of [[-11, 26], [8, 37], [-5.5, -37], [-37, -30.5], [37.5, 15], [-36, 30]]) palm(x, z);
       // ---- bölge işaretleri ----
       for (const [k, st] of Object.entries(this.sites)) {
-        const L = mapMesh(new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4), siteLetter(k))); L.rotation.x = -Math.PI / 2;
-        L.position.set(k === 'A' ? 18 : -14, k === 'A' ? .93 : .02, k === 'A' ? -18 : -12);
+        const L = mapMesh(new THREE.Mesh(new THREE.PlaneGeometry(4.5, 4.5), siteLetter(k))); L.rotation.x = -Math.PI / 2;
+        L.position.set(k === 'A' ? 32 : -26, (k === 'A' ? AH : 0) + .03, k === 'A' ? -33 : -30);
       }
-      // duvara boyanmış yön işaretleri
-      const sign = (k, x, z, ry) => { const m = mapMesh(new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.4), siteLetter(k))); m.position.set(x, 2.4, z); m.rotation.y = ry; };
-      sign('A', 12.98, 4, -Math.PI / 2); sign('A', 9.02, -4, Math.PI / 2); sign('B', -12.98, 10, Math.PI / 2); sign('B', -3.02, 6.5, Math.PI / 2);
+      const sign = (k, x, z, ry) => { const m = mapMesh(new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), siteLetter(k))); m.position.set(x, 2.6, z); m.rotation.y = ry; };
+      sign('A', 23.98, 4, -Math.PI / 2); sign('A', 12.02, -6, Math.PI / 2); sign('B', -27.98, 5, -Math.PI / 2); sign('B', -16.98, -20, Math.PI / 2);
     },
   },
 };
@@ -218,13 +247,51 @@ const lowSandMat = new THREE.MeshStandardMaterial({ map: sandBrickTex, color: 0x
 const roofMat = new THREE.MeshStandardMaterial({ color: 0x3a2a1c, roughness: .95 });
 const tunnelShade = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .42, depthWrite: false });
 const blueDoorMat = new THREE.MeshStandardMaterial({ color: 0x2f5f9a, roughness: .7, map: canvasTex(64, (g, s) => { g.fillStyle = '#4a7ab8'; g.fillRect(0, 0, s, s); g.fillStyle = 'rgba(20,40,70,.5)'; for (let i = 0; i < s; i += 8) g.fillRect(i, 0, 2, s); grain(g, s, 600, .2); }, 1, 1) });
+const trimMat = new THREE.MeshStandardMaterial({ color: 0xb8956a, roughness: .9 });
+const barkMat = new THREE.MeshStandardMaterial({ color: 0x6a4a2a, roughness: .95 });
+const leafMat = new THREE.MeshStandardMaterial({ color: 0x4a7a2a, roughness: .8, side: THREE.DoubleSide });
+const carMat = new THREE.MeshStandardMaterial({ color: 0x8a3a22, roughness: .55, metalness: .3 });
+const tireMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .9 });
+const glassMat = new THREE.MeshStandardMaterial({ color: 0x2a3a48, roughness: .2, metalness: .5 });
+const barrelMat = new THREE.MeshStandardMaterial({ color: 0x3a5a3a, roughness: .6, metalness: .3 });
+// tünel ve çukur gibi kapalı yerlerin gölgesi: zemine ve duvar diplerine koyu yarı saydam katman
+function shade(x0, x1, z0, z1, h = 1.6) {
+  const sh = mapMesh(new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), tunnelShade)); sh.rotation.x = -Math.PI / 2; sh.position.set((x0 + x1) / 2, .012, (z0 + z1) / 2);
+  for (const [cx, cz, w, ry] of [[x0 + .01, (z0 + z1) / 2, z1 - z0, Math.PI / 2], [x1 - .01, (z0 + z1) / 2, z1 - z0, -Math.PI / 2]]) {
+    const wl = mapMesh(new THREE.Mesh(new THREE.PlaneGeometry(w, h), tunnelShade)); wl.position.set(cx, h / 2, cz); wl.rotation.y = ry;
+  }
+}
+function barrel(x, z, y = 0) {
+  const m = mapMesh(new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, 1.15, 14), barrelMat)); m.position.set(x, y + .575, z);
+  for (const yy of [.25, .9]) { const r = mapMesh(new THREE.Mesh(new THREE.CylinderGeometry(.44, .44, .05, 14), tireMat)); r.position.set(x, y + yy, z); }
+  addBlock(.8, 1.15, .8, x, y + .575, z, null, true, true);
+}
+function car(x, z) {   // eski bir sedan: gövde, kabin, camlar, tekerlekler
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = .25; mapMesh(g);
+  const add = (geo, mat, px, py, pz, rz = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(px, py, pz); m.rotation.z = rz; g.add(m); };
+  add(new THREE.BoxGeometry(2, .7, 4.4), carMat, 0, .65, 0); add(new THREE.BoxGeometry(1.8, .6, 2.2), carMat, 0, 1.3, .2);
+  add(new THREE.BoxGeometry(1.82, .45, 2.0), glassMat, 0, 1.3, .2);
+  for (const [wx, wz] of [[-.95, -1.4], [.95, -1.4], [-.95, 1.4], [.95, 1.4]]) add(new THREE.CylinderGeometry(.36, .36, .25, 14), tireMat, wx, .36, wz, Math.PI / 2);
+  addBlock(2.3, 1.6, 4.6, x, .8, z, null, true, true);
+}
+function palm(x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); mapMesh(g);
+  let px = 0, py = 0;
+  for (let i = 0; i < 6; i++) { const seg = new THREE.Mesh(new THREE.CylinderGeometry(.16 - i * .012, .2 - i * .012, 1.1, 8), barkMat); px += .08; py += 1.05; seg.position.set(px, py - .5, 0); seg.rotation.z = -.08; g.add(seg); }
+  for (let i = 0; i < 7; i++) {
+    const leaf = new THREE.Mesh(new THREE.PlaneGeometry(.7, 3), leafMat); const a = i / 7 * Math.PI * 2;
+    leaf.position.set(px + Math.cos(a) * 1.2, py + .1, Math.sin(a) * 1.2); leaf.rotation.set(Math.PI / 2 - .5, 0, -a + Math.PI / 2, 'YXZ'); leaf.rotation.y = -a; leaf.rotation.x = 1.1;
+    g.add(leaf);
+  }
+  addBlock(.4, 6, .4, x + .25, 3, z, null, true, true);
+}
 // Dust 2 kutusu: köşeleri (x0..x1, z0..z1) ve yüksekliği (y0..y1) verilir; doku duvar boyutuna göre tekrarlanır (gerilmez)
-function dustBox(x0, x1, z0, z1, y0, y1, mat) {
+function dustBox(x0, x1, z0, z1, y0, y1, mat, solid = true) {
   const w = x1 - x0, d = z1 - z0, h = y1 - y0, geo = new THREE.BoxGeometry(w, h, d), uv = geo.attributes.uv, T = 2.2;
   const dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];   // +x, -x, +y, -y, +z, -z
   for (let f = 0; f < 6; f++) for (let v = 0; v < 4; v++) { const i = f * 4 + v; uv.setXY(i, uv.getX(i) * dims[f][0] / T, uv.getY(i) * dims[f][1] / T); }
   const m = mapMesh(new THREE.Mesh(geo, mat)); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
-  addBlock(w, h, d, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, null, true, true);
+  if (solid) addBlock(w, h, d, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, null, true, true);
 }
 const colCrateMat = new THREE.MeshStandardMaterial({ map: canvasTex(64, (g, s) => { g.fillStyle = '#7a5530'; g.fillRect(0, 0, s, s); g.strokeStyle = '#4a3018'; g.lineWidth = 5; g.strokeRect(3, 3, s - 6, s - 6); g.beginPath(); g.moveTo(4, 4); g.lineTo(s - 4, s - 4); g.moveTo(s - 4, 4); g.lineTo(4, s - 4); g.stroke(); }, 1, 1), roughness: .85 });
 const siteMat = new THREE.MeshBasicMaterial({ color: 0xffc040, transparent: true, opacity: .08, depthWrite: false });
@@ -239,6 +306,7 @@ function buildMap(id) {
   mapStuff.meshes = []; mapStuff.bodies = []; statics.length = baseStatics; braziers.length = 0;
   curMap = id;
   const M = MAPS[id];
+  if ((M.half || 22) !== H) buildShell(M.half || 22); else statics.length = baseStatics;
   for (const L of torchLights) L.intensity = 0;   // haritada mangal yoksa meşale ışığı da yok
   M.build();
   scene.fog.color.setHex(M.fog); scene.background.setHex(M.sky || M.fog); scene.fog.density = M.fogD || .034;
@@ -250,6 +318,8 @@ function buildMap(id) {
   floorMat.color.setHex(M.floor); wallMat.color.setHex(M.wall);
   // haritaya özel dokular ve ışık (çöl gündüz aydınlık)
   floorMat.map = M.floorTex ? M.floorTex() : floorTex; wallMat.map = M.wallTex ? M.wallTex() : wallTex; floorMat.needsUpdate = wallMat.needsUpdate = true;
+  // büyük haritada zemin dokusu gerilmesin
+  const ft = floorMat.map; if (ft.baseRep == null) ft.baseRep = ft.repeat.x; ft.repeat.setScalar(ft.baseRep * H / 22);
   hemi.intensity = M.hemiI || .6; moon.intensity = M.moonI || .35;
   embers.material.color.setHex(M.ember);
 }
