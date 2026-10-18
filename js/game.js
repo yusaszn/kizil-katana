@@ -497,6 +497,13 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 let lockedOnce = false;
 function lockFailed() { if (!lockedOnce) fallbackLook = true; }
 function lock() {
+  // telefon / tablet: fare kilidi yok; tam ekran ve yatay yön istenir
+  if (typeof IS_TOUCH !== 'undefined' && IS_TOUCH) {
+    fallbackLook = true;
+    const de = document.documentElement;
+    if (!document.fullscreenElement && de.requestFullscreen) de.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
+    return;
+  }
   if (fallbackLook) return;
   try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(lockFailed); } catch (e) { lockFailed(); }
   // Ctrl ile eğilirken Ctrl+W pencereyi kapatmasın: tam ekranda bu tuşlar klavye kilidiyle oyuna verilir (Esc serbest kalır)
@@ -510,13 +517,16 @@ document.addEventListener('pointerlockerror', lockFailed);
 document.addEventListener('pointerlockchange', () => {
   if (document.pointerLockElement === canvas) lockedOnce = true;
   else { mouse.left = mouse.right = false; }
-  if (document.pointerLockElement !== canvas && state === 'play' && !fallbackLook) {
-    state = 'pause'; pauseOpenedAt = performance.now(); $('owned').textContent = ownedText();
-    $('pauseNote').hidden = net.mode === 'solo';
-    renderPausePlayers();
-    $('pause').hidden = false;
-  }
+  if (document.pointerLockElement !== canvas && state === 'play' && !fallbackLook) openPause();
 });
+// duraklat (fare kilidi çıkınca ya da telefonda II tuşuyla)
+function openPause() {
+  if (state !== 'play' && state !== 'dead') return;
+  state = 'pause'; pauseOpenedAt = performance.now(); $('owned').textContent = ownedText();
+  $('pauseNote').hidden = net.mode === 'solo';
+  renderPausePlayers();
+  $('pause').hidden = false;
+}
 function play(noLock) {
   initAudio(); if (!noLock) lock();
   $('start').hidden = true; $('pause').hidden = true; $('dead').hidden = true; $('upgrade').hidden = true; $('settings').hidden = true; $('hud').hidden = false;
@@ -683,6 +693,7 @@ function frame(now) {
   }
   updateAmbience(rdt, gameTime);
   updateVoice(rdt);
+  if (typeof updateTouch === 'function') updateTouch();
   renderer.clear();
   renderer.render(scene, camera);
   renderer.clearDepth();
