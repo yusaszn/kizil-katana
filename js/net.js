@@ -3,7 +3,7 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 15;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 16;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 // çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
@@ -33,7 +33,7 @@ function hostRoom() {
   const code = randomCode();
   lobbyMsg('Oda kuruluyor...');
   const peer = new Peer(NET_PREFIX + code, { debug: 0 });
-  net.peer = peer;
+  net.peer = peer; voiceHook(peer);
   peer.on('open', () => {
     net.mode = 'host'; net.myId = 'h'; net.code = code; net.players = {};
     addPlayer('h', playerName(), null);
@@ -56,7 +56,7 @@ function joinRoom(code) {
   leaveRoom(true);
   lobbyMsg('Odaya bağlanılıyor...');
   const peer = new Peer(undefined, { debug: 0 });
-  net.peer = peer;
+  net.peer = peer; voiceHook(peer);
   peer.on('open', () => {
     const conn = peer.connect(NET_PREFIX + code, { reliable: true, serialization: 'json' });
     net.hostConn = conn;
@@ -80,6 +80,7 @@ function leaveRoom(silent) {
   const peer = net.peer;
   if (peer) setTimeout(() => { try { peer.destroy(); } catch (e) { /* zaten kapalı */ } }, 150);
   for (const id in net.players) removeProxy(id);
+  if (typeof voiceStopAll === 'function') voiceStopAll();
   Object.assign(net, { mode: 'solo', peer: null, hostConn: null, myId: 'solo', code: '', players: {}, inMatch: false, gameMode: 'coop', vsMap: 'arena', money: 'normal' });
   if (!silent) { $('lobby').hidden = true; $('start').hidden = false; lobbyMsg(''); }
 }
@@ -143,7 +144,8 @@ setInterval(() => {
   }
 }, 1000);
 window.addEventListener('beforeunload', () => leaveRoom(true));
-function roster() { return Object.values(net.players).map(p => ({ id: p.id, name: p.name, color: p.color, team: p.team })); }
+// pid: oyuncunun PeerJS kimliği (sesli sohbette oyuncular birbirini doğrudan arar)
+function roster() { return Object.values(net.players).map(p => ({ id: p.id, name: p.name, color: p.color, team: p.team, pid: p.id === 'h' ? net.peer && net.peer.id : p.conn && p.conn.peer })); }
 function sendRoster() { bcast({ t: 'roster', list: roster(), code: net.code, mode: net.gameMode, map: net.vsMap, money: net.money }); renderLobby(); }
 function showLobby() {
   $('start').hidden = true; $('lobby').hidden = false;
@@ -284,7 +286,7 @@ function onGuestData(d) {
     }
     case 'roster': {
       const keep = {};
-      for (const r of d.list) { keep[r.id] = true; if (!net.players[r.id]) addPlayer(r.id, r.name, null); Object.assign(net.players[r.id], { name: r.name, color: r.color, team: r.team }); }
+      for (const r of d.list) { keep[r.id] = true; if (!net.players[r.id]) addPlayer(r.id, r.name, null); Object.assign(net.players[r.id], { name: r.name, color: r.color, team: r.team, pid: r.pid }); }
       for (const id in net.players) if (!keep[id]) { removeProxy(id); delete net.players[id]; }
       if (d.mode && !net.inMatch) net.gameMode = d.mode;
       if (d.map && !net.inMatch) net.vsMap = d.map;

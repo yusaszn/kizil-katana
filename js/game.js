@@ -528,7 +528,7 @@ $('againBtn').addEventListener('click', () => { if (net.mode === 'host') startMa
 function toMainMenu() {
   leaveRoom(true); resetGame(); state = 'menu';
   for (const id of ['dead', 'pause', 'upgrade', 'settings', 'hud']) $(id).hidden = true;
-  closeBuy(); closeTeamPick(); $('minimap').hidden = true; clearUtils();
+  closeBuy(); closeTeamPick(); $('minimap').hidden = true; voiceStopAll(); clearUtils();
   $('scope').hidden = true;
   $('start').hidden = false;
   if (document.pointerLockElement) document.exitPointerLock();
@@ -682,6 +682,7 @@ function frame(now) {
     const t = now / 1000 * .08; camera.position.set(Math.sin(t) * 12, 4, Math.cos(t) * 12); camera.rotation.set(-.18, t, 0);
   }
   updateAmbience(rdt, gameTime);
+  updateVoice(rdt);
   renderer.clear();
   renderer.render(scene, camera);
   renderer.clearDepth();
