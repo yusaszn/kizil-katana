@@ -52,7 +52,7 @@ const trPos = new Float32Array(TRMAX * 6), trCol = new Float32Array(TRMAX * 6), 
 const trGeo = new THREE.BufferGeometry();
 trGeo.setAttribute('position', new THREE.BufferAttribute(trPos, 3).setUsage(THREE.DynamicDrawUsage));
 trGeo.setAttribute('color', new THREE.BufferAttribute(trCol, 3).setUsage(THREE.DynamicDrawUsage));
-const tracers = new THREE.LineSegments(trGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })   // sis kapalı: sönen iz sis rengine boyanıp ekranda kalmasın);
+const tracers = new THREE.LineSegments(trGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));   // sis kapalı: sönen iz sis rengine boyanıp ekranda kalmasın
 tracers.frustumCulled = false; scene.add(tracers);
 let trIdx = 0;
 function addTracer(a, b) {
