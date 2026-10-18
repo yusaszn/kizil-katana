@@ -1,0 +1,4 @@
+# Claude Code ayarları (OpenRouter anahtarı burada) — asla depoya girmez
+.claude/
+*.zip
+Thumbs.db

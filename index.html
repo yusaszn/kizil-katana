@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="tr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kızıl Katana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik+Wet+Paint&family=Chakra+Petch:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+
+<canvas id="game"></canvas>
+<canvas id="splat"></canvas>
+<div id="hurt"></div>
+<div id="dashfx"></div>
+<div id="fps" hidden></div>
+<div id="scope" hidden><i></i></div>
+<div id="buy" hidden>
+  <div class="buyhead">
+    <div><small>KREDİ</small><b id="buyCr">800 ◈</b></div>
+    <div class="buymid"><strong>SATIN ALMA</strong><span>Sol tık: al · Sağ tık: sat · B: kapat</span></div>
+    <div class="buyr"><small>KALAN</small><b id="buyTime">20 SN</b></div>
+  </div>
+  <div id="buyBody"></div>
+  <div class="buyfoot">
+    <div id="buyMates"></div>
+    <div class="buybtns"><button type="button" class="lo" id="buyReady">HAZIRIM</button><button type="button" class="lo" id="buyClose">KAPAT</button></div>
+  </div>
+</div>
+<div id="vcursor" hidden></div>
+<div id="flashfx"></div>
+<div id="hud" hidden>
+  <div class="top">
+    <div id="wave">DALGA 1</div>
+    <div id="score">0</div>
+    <div id="bossbar" hidden><span id="bossName">KASAP</span><div class="bbar"><i id="bossFill"></i><span id="bossMarks"></span></div></div>
+  </div>
+  <div id="vsbar"><b id="vsRed">0</b><span id="vsTime">8:00</span><b id="vsBlue">0</b><small id="vsTeam"></small></div>
+  <div id="board"></div>
+  <div id="bombHud" hidden><span id="bombTxt"></span></div>
+  <div id="bombBar" hidden><span id="bombBarTxt"></span><div><i id="bombBarFill"></i></div></div>
+  <div id="perks"></div>
+  <div id="killfeed"></div>
+  <div id="respawnHint"></div>
+  <div id="cross"></div>
+  <div id="reload"></div>
+  <div id="reviveHint"></div>
+  <div id="waitHint"></div>
+  <div id="combo"><b id="comboLabel"></b><span id="comboN"></span></div>
+  <div id="banner"></div>
+  <div id="toast"></div>
+  <div id="xpbox">
+    <div class="xrow"><span id="lvl">SEVİYE 1</span><span id="pickHint"></span></div>
+    <div class="xbar"><i id="xpb"></i></div>
+  </div>
+  <div class="hp">
+    <div class="hp-num"><span id="hpn">100</span><small>CAN</small></div>
+    <div class="bar"><i id="hpb"></i></div>
+    <div class="bar armor"><i id="armorb"></i></div>
+    <div class="bar guard"><i id="guardb"></i></div>
+    <small>SAVUNMA</small>
+  </div>
+  <div class="right">
+    <div id="ecoHud"></div>
+    <div id="weapon">KATANA</div>
+    <div id="ammo"></div>
+    <div id="mags"></div>
+    <div class="pips" id="pips"></div>
+    <small>ATILMA</small>
+  </div>
+</div>
+
+<div id="start" class="screen">
+  <div class="panel">
+    <h1>Kızıl Katana</h1>
+    <p>Cehennemin kapıları açıldı. Bir katana, iki uzi. Ne gelirse doğra, içinden geç, kanla yıkan. Her 5 dalgada bir ara boss, her 10 dalgada büyük boss gelir.</p>
+    <div class="namerow">
+      <label for="nameIn">ADIN</label>
+      <input id="nameIn" maxlength="16" placeholder="Oyuncu" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="keys">
+      <div><kbd>W A S D</kbd><span>Hareket</span></div>
+      <div><kbd>SOL TIK</kbd><span>Kesik / ateş (basılı tut)</span></div>
+      <div><kbd>SAĞ TIK</kbd><span>Savunma (tam zamanında: kusursuz)</span></div>
+      <div><kbd>F</kbd><span>Silahı incele</span></div>
+      <div><kbd>G</kbd><span>Ağır dikey kesik (katana)</span></div>
+      <div><kbd>Q</kbd><span>Silah değiştir (1 / 2 / 3 / tekerlek)</span></div>
+      <div><kbd>R</kbd><span>Şarjör değiştir</span></div>
+      <div><kbd>SHIFT</kbd><span>Basılı: koş · Dokun: atılma</span></div>
+      <div><kbd>CTRL</kbd><span>Eğil (sessiz yürü) · Koşarken: kay</span></div>
+      <div><kbd>KAYARKEN SOL TIK</kbd><span>Kasırga: etrafı biç</span></div>
+      <div><kbd>KAYARKEN SPACE</kbd><span>Öne fırla</span></div>
+      <div><kbd>SPACE</kbd><span>Zıpla</span></div>
+      <div><kbd>E</kbd><span>Tekme: duvara fırlat</span></div>
+      <div><kbd>3</kbd><span>Pompalı (sağ tık: odaklı atış)</span></div>
+      <div><kbd>4</kbd><span>M4 (sağ tık: bomba atar)</span></div>
+      <div><kbd>5</kbd><span>AWP (sağ tık: dürbün)</span></div>
+      <div><kbd>6</kbd><span>Boss silahı: roketatar / bombaatar</span></div>
+      <div><kbd>V</kbd><span>1. / 3. şahıs kamera</span></div>
+      <div><kbd>T</kbd><span>Seviye atlayınca özellik seç</span></div>
+      <div><kbd>B</kbd><span>VS: satın alma menüsü (fareyle)</span></div>
+      <div><kbd>Z / X</kbd><span>VS: sis bombası / flaş</span></div>
+      <div><kbd>4 (BASILI)</kbd><span>Bomba modu: kur / imha et</span></div>
+    </div>
+    <div class="btns">
+      <button class="btn" id="startBtn" type="button">TEK KİŞİ OYNA</button>
+      <button class="btn ghost" id="setBtnStart" type="button">AYARLAR</button>
+    </div>
+    <div class="mp" id="mpBox">
+      <span class="mpt">ARKADAŞLA OYNA · EN FAZLA 4 KİŞİ</span>
+      <div class="mprow">
+        <button class="btn" id="hostBtn" type="button">ODA KUR</button>
+        <div class="join">
+          <input id="codeIn" maxlength="12" placeholder="ODA KODU" autocomplete="off" spellcheck="false" aria-label="Oda kodu">
+          <button class="btn ghost" id="joinBtn" type="button">KATIL</button>
+        </div>
+      </div>
+      <p id="lobbyMsg" role="status"></p>
+    </div>
+    <p class="note" id="mpOff" hidden>Arkadaşla oynamak için oyunu klasördeki Kızıl Katana.exe ile aç.</p>
+    <p class="note">Klavye ve fare gerekir. Ekrana tıklayınca fare kilitlenir, Esc duraklatır.</p>
+  </div>
+</div>
+<div id="lobby" class="screen" hidden>
+  <div class="panel">
+    <h2>Oda</h2>
+    <div class="code"><span id="roomCode">-----</span><button class="btn ghost" id="copyCode" type="button">KOPYALA</button></div>
+    <div class="modes" role="group" aria-label="Oyun modu">
+      <button type="button" id="modeCoop" class="on">CO-OP</button>
+      <button type="button" id="modeVs">VS · KIRMIZI / MAVİ</button>
+      <button type="button" id="modeBomb">BOMBA KURMA</button>
+    </div>
+    <div class="modes" id="mapPick" role="group" aria-label="VS haritası" hidden>
+      <button type="button" id="mapArena" class="on">HARİTA: KIZIL ARENA</button>
+      <button type="button" id="mapAvlu">HARİTA: KEMİK AVLUSU</button>
+      <button type="button" id="mapCol">HARİTA: ÇÖL GEÇİDİ</button>
+    </div>
+    <div class="modes" id="moneyPick" role="group" aria-label="Para" hidden>
+      <button type="button" id="moneyNormal" class="on">PARA: NORMAL</button>
+      <button type="button" id="moneyInf">PARA: SINIRSIZ</button>
+    </div>
+    <p id="modeInfo"></p>
+    <p id="lobbyNote" role="status"></p>
+    <ul id="lobbyList" class="plist"></ul>
+    <div class="btns">
+      <button class="btn" id="lobbyStart" type="button">BAŞLAT</button>
+      <button class="btn ghost" id="lobbyLeave" type="button">ODADAN ÇIK</button>
+    </div>
+  </div>
+</div>
+<div id="pause" class="screen" hidden>
+  <div class="panel">
+    <h2>Duraklatıldı</h2>
+    <p id="pauseNote" hidden>Arkadaşla oynarken oyun durmaz. Düşmanlar sana saldırmaya devam eder.</p>
+    <ul id="pausePlayers" class="plist" hidden></ul>
+    <p id="owned"></p>
+    <div class="btns">
+      <button class="btn" id="resumeBtn" type="button">DEVAM</button>
+      <button class="btn ghost" id="setBtnPause" type="button">AYARLAR</button>
+      <button class="btn ghost" id="pauseMenuBtn" type="button">ANA MENÜ</button>
+    </div>
+  </div>
+</div>
+<div id="settings" class="screen" hidden>
+  <div class="panel">
+    <h2>Ayarlar</h2>
+    <div class="srows" id="settingRows"></div>
+    <div class="btns">
+      <button class="btn" id="setBack" type="button">GERİ</button>
+      <button class="btn ghost" id="setReset" type="button">VARSAYILANLAR</button>
+    </div>
+  </div>
+</div>
+<div id="upgrade" class="screen" hidden>
+  <div class="panel">
+    <h2 id="pickTitle">Güçlen</h2>
+    <p id="pickInfo"></p>
+    <div class="cards" id="cards"></div>
+    <button class="btn ghost" id="pickLater" type="button">SONRA SEÇ (T)</button>
+  </div>
+</div>
+<div id="dead" class="screen" hidden>
+  <div class="panel">
+    <h2 id="endTitle">Katledildin</h2>
+    <p id="endMsg"></p>
+    <p class="endwave" id="endWave">DALGA <b>1</b></p>
+    <div class="tablewrap"><table id="endBoard"></table></div>
+    <p id="endNote"></p>
+    <div class="btns">
+      <button class="btn" id="againBtn" type="button">TEKRAR</button>
+      <button class="btn ghost" id="menuBtn" type="button">ANA MENÜ</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/world.js"></script>
+<script src="js/debris.js"></script>
+<script src="js/upgrades.js"></script>
+<script src="js/player.js"></script>
+<script src="js/uzi.js"></script>
+<script src="js/shotgun.js"></script>
+<script src="js/rifles.js"></script>
+<script src="js/knives.js"></script>
+<script src="js/specials.js"></script>
+<script src="js/inspect.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/avatar.js"></script>
+<script src="js/net.js"></script>
+<script src="js/pvp.js"></script>
+<script src="js/guns.js"></script>
+<script src="js/shop.js"></script>
+<script src="js/bomb.js"></script>
+<script src="js/game.js"></script>
