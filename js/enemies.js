@@ -157,7 +157,79 @@ function buildModel(kind, skin) {
     const bladeM = new THREE.Mesh(new THREE.BoxGeometry(.04, .55, .45), shieldMat); bladeM.position.set(0, -.25, .15); cleaver.add(bladeM);
     const edge = new THREE.Mesh(new THREE.BoxGeometry(.045, .55, .04), coreMat); edge.position.set(0, -.25, .38); cleaver.add(edge);
   }
-  return Object.assign({ g, parts, legs, arms, head, torso }, extra);
+  // hazır model varsa kutular gizlenir ama yerinde kalır: ölünce et parçaları onların konumundan kopar
+  const cfg = ENEMY_GLB[kind], glb = cfg && modelInstance(cfg.m, cfg.h, cfg);
+  if (glb) {
+    g.traverse(o => { if (o.isMesh) o.visible = false; });
+    for (const k of ['shield', 'cleaver']) {
+      const x = extra[k] || (k === 'cleaver' && kind === 'cellat' && arms[1].children.find(c => c.isGroup));
+      if (!x) continue;
+      x.parent.remove(x); g.add(x); x.traverse(o => { o.visible = true; }); extra[k] = x;
+    }
+    g.add(glb.root);
+  }
+  return Object.assign({ g, parts, legs, arms, head, torso, glb, cfg }, extra);
+}
+
+/* ================= HAZIR MODELLER ================= */
+// tür → model (modeller/ klasörü), ölçek 1'deki boy, oyuna özel klip ve renk ayarları
+const ENEMY_GLB = {
+  grunt: { m: 'goblin', h: 1.85, gib: 0x6f8a2c },
+  imp: { m: 'imp', h: 1.55, gib: 0x6a120a, atk: ['Weapon', 'Punch'], tint: { BlueDemon_Main: 0x5c0c06 } },
+  brute: { m: 'ogre', h: 1.95, gib: 0xa8442e },
+  boss: { m: 'ork', h: 2.0, gib: 0x4a0d06, atk: ['Weapon', 'Punch'], glow: 0x1a0300, tint: { Orc_Main: 0x4a0d06, Orc_Secondary: 0x240404, Orc_Hair: 0x0c0c0c } },
+  runner: { m: 'iskelet', h: 1.9, gib: 0xd6c49a },
+  shielder: { m: 'sovalye', h: 1.95, gib: 0xd6c49a },
+  bomber: { m: 'sisko', h: 1.7, gib: 0x6a5c98, run: ['Run_Arms', 'Run'], glow: 0x1c3800 },
+  flyer: { m: 'yarasa', h: 1.5, gib: 0x241a2c, fly: true },
+  cellat: { m: 'kilicli', h: 2.0, gib: 0xd6c49a, atk: ['Sword', 'Punch'] },
+  witch: { m: 'cadi', h: 1.95, gib: 0x2a1040, fly: true, atk: ['Punch_Right'] },
+  lord: { m: 'seytan', h: 2.1, gib: 0x5a0a04, atk: ['Weapon', 'Punch'], glow: 0x3a0c00 },
+};
+const CLIP = {
+  idle: ['Idle', 'Skeleton_Idle', 'Bat_Flying'],
+  walk: ['Walk', 'Skeleton_Running', 'Bat_Flying'],
+  run: ['Run', 'Skeleton_Running', 'Bat_Flying'],
+  atk: ['Attack', 'Punch', 'Skeleton_Attack', 'Bat_Attack'],
+  hit: ['HitRecieve', 'HitReact', 'Bat_Hit'],
+};
+const BOSS_SWING = ['swipe', 'slam', 'cleave', 'volley', 'summon', 'leap'];
+const _bw = new V3();
+function animateGlb(e, dt, speedNow, s, flinch) {
+  const mi = e.model.glb, cfg = e.model.cfg, T = e.T, sc = T.scale;
+  for (const m of mi.mats) m.emissive.copy(m.userData.baseEmissive).add(e.skin.emissive);   // vurulunca parlama
+  const attacking = s.windup || (isBossKind(e.kind) && BOSS_SWING.includes(s.act) && !s.actDone);
+  // yeni darbe: parlama aniden arttıysa kısa sarsılma klibi (kamikazenin yanıp sönmesi sayılmaz)
+  if (!e.fuse && e.flash > (e.glbFlash || 0) + .3) e.hitT = .3;
+  e.glbFlash = e.flash; e.hitT = (e.hitT || 0) - dt;
+  if (attacking) {
+    if (!e.glbAtk) {
+      const clip = (cfg.atk || CLIP.atk).map(n => mi.clips[n]).find(Boolean);
+      // vuruş anı (klibin ~%60'ı) kurulma süresinin sonuna denk gelsin
+      const sp = clip && s.windup && !isBossKind(e.kind) ? clamp(clip.duration * .6 / T.wind, .6, 2.5) : 1;
+      playClip(mi, cfg.atk || CLIP.atk, { once: true, restart: true, speed: sp, fade: .1 });
+    }
+  } else if (e.hitT > 0 && !s.charging) {
+    playClip(mi, CLIP.hit, { once: true, fade: .08 });
+  } else if (cfg.fly) {
+    playClip(mi, CLIP.idle);
+  } else if (s.charging || speedNow > 3.2 * sc) {
+    playClip(mi, cfg.run || CLIP.run, { speed: clamp(speedNow / (4.2 * sc), .8, 1.8) });
+  } else if (speedNow > .5) {
+    playClip(mi, CLIP.walk, { speed: clamp(speedNow / (1.8 * sc), .7, 1.6) });
+  } else playClip(mi, CLIP.idle);
+  e.glbAtk = attacking;
+  mi.root.rotation.x = -flinch * (isBossKind(e.kind) ? .08 : .25);
+  mi.mixer.update(dt);
+  // kalkan sol kolu, satır sağ kolu izler
+  const g = e.model.g;
+  if (e.model.shield && boneWorld(mi, ['LowerArmL', 'WristL', 'ArmL_end', 'ArmL'], _bw)) {
+    g.updateMatrixWorld(); e.model.shield.position.copy(g.worldToLocal(_bw)); e.model.shield.position.z += .22;
+  }
+  if (e.model.cleaver && boneWorld(mi, ['LowerArmR', 'WristR', 'ArmR_end', 'ArmR'], _bw)) {
+    g.updateMatrixWorld(); e.model.cleaver.position.copy(g.worldToLocal(_bw));
+    e.model.cleaver.rotation.x = attacking ? -1.2 : -.4;
+  }
 }
 const shieldMat = new THREE.MeshStandardMaterial({ color: 0x55585e, roughness: .4, metalness: .8, envMap: envTex });
 const bellyMat = new THREE.MeshStandardMaterial({ color: 0x8ab020, emissive: 0x3a5a00, roughness: .4 });
@@ -167,7 +239,9 @@ const spawnFx = [];
 const spawnFxMat = new THREE.MeshBasicMaterial({ color: 0xff2a10, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
 function makeEnemy(id, kind, x, y, z, remote) {
   const T = TYPES[kind];
-  const skin = new THREE.MeshStandardMaterial({ color: T.skin, roughness: .78, metalness: .05 });
+  // hazır model yüklüyse et parçaları modelin rengini alır
+  const gib = MODELS[(ENEMY_GLB[kind] || {}).m] && ENEMY_GLB[kind].gib;
+  const skin = new THREE.MeshStandardMaterial({ color: gib || T.skin, roughness: .78, metalness: .05 });
   const model = buildModel(kind, skin); model.g.scale.setScalar(T.scale); scene.add(model.g);
   const body = remote
     ? new CANNON.Body({ mass: 0, type: CANNON.Body.KINEMATIC, material: mChar, collisionFilterGroup: G_ENEMY, collisionFilterMask: G_PLAYER })
@@ -629,6 +703,7 @@ function animateEnemy(e, dt, speedNow, face, s) {
   e.model.torso.rotation.z = flinch * Math.sin(e.phase * 4) * (e.kind === 'boss' ? .08 : .22);
   e.model.head.rotation.x = flinchHead;
   e.model.head.position.y = 1.75 + Math.sin(e.phase * 2) * .03 + (flinch ? -.04 : 0);
+  if (e.model.glb) animateGlb(e, dt, speedNow, s, flinch);
 }
 
 /* ================= DÜŞMAN GÜNCELLEME ================= */
