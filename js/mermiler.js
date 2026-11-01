@@ -7,7 +7,7 @@
      diğer oyuncularda doğrudan silahtan çıkar. */
 
 /* ================= İZLER ================= */
-const TR_MAX = 48, TRACER = { speed: 300, len: 2.6 };   // izin hızı (m/sn) ve boyu
+const TR_MAX = 64, TRACER = { speed: 170, len: 2.4 };   // görünen hız (m/sn; göz takip edebilsin) ve iz boyu
 const trBuf = { pos: new Float32Array(TR_MAX * 12), col: new Float32Array(TR_MAX * 12), uv: new Float32Array(TR_MAX * 8), idx: [] };
 for (let i = 0; i < TR_MAX; i++) { const b = i * 4; trBuf.idx.push(b, b + 1, b + 2, b + 2, b + 1, b + 3); trBuf.uv.set([0, 0, 0, 1, 1, 0, 1, 1], i * 8); }
 // iz dokusu: enine yumuşak kenar (ortası parlak), boyuna baştan kuyruğa sönme
@@ -31,18 +31,23 @@ tracerMesh.frustumCulled = false; scene.add(tracerMesh);
 const trList = [];   // { a, d, len, t, dist, w, bright }
 let trSlot = 0, trCount = 0;
 // a: namlu, b: isabet noktası. opts.chance: görünme olasılığı, opts.w: kalınlık, opts.bright: parlaklık
+let trCount3 = 0;
 function spawnTracer(a, b, opts = {}) {
+  // her mermi uçarken görünür: üçte biri parlak izli mermi, diğerleri soluk ince çizgi; chance 0 ise hiç görünmez
   const chance = opts.chance !== undefined ? opts.chance : .35;
-  if (Math.random() > chance) return;
+  if (chance <= 0) return;
+  if (chance < .2 && Math.random() > chance * 4) return;   // pompalı saçması: yalnız bir kısmı görünür
+  const tracerRound = opts.chance >= 1 || (trCount3++ % 3 === 0);
   const d = b.clone().sub(a), dist = d.length(); if (dist < 1.5) return;
   d.divideScalar(dist);
   const tr = trList[trSlot] || (trList[trSlot] = { a: new V3(), d: new V3() });
   tr.a.copy(a); tr.d.copy(d); tr.dist = dist; tr.t = 0; tr.on = true;
-  tr.len = Math.min(TRACER.len, dist * .6); tr.w = opts.w || .045; tr.bright = opts.bright || 1;
+  tr.len = Math.min(TRACER.len, dist * .6);
+  tr.w = (opts.w || .045) * (tracerRound ? 1 : .55); tr.bright = (opts.bright || 1) * (tracerRound ? 1 : .32);
   tr.start = Math.min(1.2, dist * .3);   // ilk karede namlunun içinden çıkmış gibi görünsün
   trSlot = (trSlot + 1) % TR_MAX;
 }
-// silah başına iz olasılığı: susturuculu sesaltı mermide iz yok, pompalı saçmasında çok seyrek
+// silah başına iz: 0 = görünmez (susturuculu sesaltı mermi), küçük değer = pompalı saçmasında seyrek; diğerlerinde her mermi görünür
 const TRACER_CHANCE = { uzi: .22, m4: .3, ak47: .3, pistol: .15, deagle: .25, usps: 0, glock: .15, shotgun: .05 };
 // eski adla çağrılar (uzi, tüfekler, ağ): her atış iz değildir
 function addTracer(a, b, opts) { spawnTracer(a, b, opts); }
@@ -53,7 +58,8 @@ function updateTracers(dt) {
     const tr = trList[i], o = i * 12;
     if (!tr || !tr.on) { for (let k = 0; k < 12; k++) C[o + k] = 0; continue; }
     tr.t += dt;
-    const head = Math.min(tr.dist, tr.start + tr.t * TRACER.speed), tail = Math.max(0, head - tr.len);
+    // uç hedefte durur ama kuyruk ilerlemeye devam eder: kuyruk da hedefe girince iz biter (asılı kalmaz)
+    const travel = tr.start + tr.t * TRACER.speed, head = Math.min(tr.dist, travel), tail = Math.max(0, travel - tr.len);
     if (tail >= tr.dist - .01) { tr.on = false; for (let k = 0; k < 12; k++) C[o + k] = 0; continue; }
     _th.copy(tr.a).addScaledVector(tr.d, head); _tt.copy(tr.a).addScaledVector(tr.d, tail);
     // kameraya dönük şerit: yön × (kameraya doğru) = yan vektör
@@ -64,7 +70,7 @@ function updateTracers(dt) {
     P[o + 3] = _th.x - _ts.x * wH; P[o + 4] = _th.y - _ts.y * wH; P[o + 5] = _th.z - _ts.z * wH;
     P[o + 6] = _tt.x + _ts.x * wT; P[o + 7] = _tt.y + _ts.y * wT; P[o + 8] = _tt.z + _ts.z * wT;
     P[o + 9] = _tt.x - _ts.x * wT; P[o + 10] = _tt.y - _ts.y * wT; P[o + 11] = _tt.z - _ts.z * wT;
-    const f = tr.bright * (head >= tr.dist ? Math.max(0, 1 - (tail / tr.dist)) : 1);
+    const f = tr.bright * (travel > tr.dist ? Math.max(0, 1 - (travel - tr.dist) / tr.len) : 1);
     C.set([f, f * .82, f * .55, f, f * .82, f * .55, f * .9, f * .4, f * .12, f * .9, f * .4, f * .12], o);
   }
   trGeo2.attributes.position.needsUpdate = true; trGeo2.attributes.color.needsUpdate = true;
