@@ -8,17 +8,20 @@ const INSPECT = {
   katana: { dur: 2.8, keys: [[0, 0, 0, 0, 0, 0, 0], [.22, -.2, .12, .06, -.55, .9, 1.35], [.48, -.24, .1, .06, -.5, .95, -1.6], [.72, -.1, .06, 0, .35, .4, 0], [1, 0, 0, 0, 0, 0, 0]] },
   // uzi: kök sadece hafifçe kalkar; asıl gösteri uziInspect'te her tabancada ayrı ayrı
   uzi: { dur: 3.0, keys: [[0, 0, 0, 0, 0, 0, 0], [.1, 0, .03, .03, .12, 0, 0], [.9, 0, .03, .03, .12, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
-  shotgun: { dur: 2.6, keys: [[0, 0, 0, 0, 0, 0, 0], [.28, -.12, .08, .06, .15, .55, -1.0], [.55, -.05, .1, .05, .3, -.3, .4], [.8, 0, .04, 0, -.25, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
-  m4: { dur: 2.6, keys: [[0, 0, 0, 0, 0, 0, 0], [.28, -.1, .08, .06, .1, .6, -1.0], [.55, -.04, .1, .05, .35, -.35, .5], [.8, 0, .04, 0, -.2, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
-  awp: { dur: 2.8, keys: [[0, 0, 0, 0, 0, 0, 0], [.3, -.14, .1, .06, .1, .6, -.9], [.6, -.06, .12, .06, .4, -.2, .3], [.85, 0, .04, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
-  ak47: { dur: 2.7, keys: [[0, 0, 0, 0, 0, 0, 0], [.28, -.1, .08, .06, .1, .6, -1.0], [.55, -.04, .1, .05, .35, -.35, .5], [.8, 0, .04, 0, -.2, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
-  deagle: { dur: 2.4, keys: [[0, 0, 0, 0, 0, 0, 0], [.28, -.1, .06, .05, 0, .8, -1.1], [.55, -.06, .08, .05, 0, -.6, 1.0], [.8, 0, .05, 0, .6, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
-  usps: { dur: 2.4, keys: [[0, 0, 0, 0, 0, 0, 0], [.28, -.1, .06, .05, 0, .8, -1.1], [.55, -.06, .08, .05, 0, -.6, 1.0], [.8, 0, .05, 0, .6, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
-  glock: { dur: 2.2, keys: [[0, 0, 0, 0, 0, 0, 0], [.28, -.1, .06, .05, 0, .8, -1.1], [.55, -.06, .08, .05, 0, -.6, 1.0], [.8, 0, .05, 0, .6, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
-  rocket: { dur: 2.6, keys: [[0, 0, 0, 0, 0, 0, 0], [.3, -.16, .06, .08, .15, .7, -.5], [.62, -.1, .1, .06, -.25, -.4, .35], [.85, 0, .03, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
-  launcher: { dur: 2.4, keys: [[0, 0, 0, 0, 0, 0, 0], [.3, -.1, .08, .06, .2, .6, -.9], [.6, -.05, .1, .05, .35, -.3, .4], [.85, 0, .04, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
-  pistol: { dur: 2.2, keys: [[0, 0, 0, 0, 0, 0, 0], [.28, -.1, .06, .05, 0, .8, -1.1], [.55, -.06, .08, .05, 0, -.6, 1.0], [.8, 0, .05, 0, .6, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
-  knife: { dur: 2.0, keys: [[0, 0, 0, 0, 0, 0, 0], [.25, -.05, .1, 0, 0, .6, -1.2], [.55, -.05, .26, 0, TAU, .6, -1.2], [.8, 0, .05, 0, TAU, 0, 0], [1, 0, 0, 0, TAU, 0, 0]] },
+  // tüfekler: sol yüzü göster → çevirip sağ yüzü (fişek penceresi) göster → yuvaya bak, şarjör kontrolü → kurma kolu → dinlen
+  shotgun: { dur: 3.8, keys: [[0, 0, 0, 0, 0, 0, 0], [0.16, -0.06, 0.07, -0.04, 0.12, 0.55, -0.7125], [0.32, -0.08, 0.08, -0.03, 0.18, 0.62, -0.81], [0.48, -0.02, 0.1, -0.04, 0.3, -0.36, 0.39], [0.6, -0.03, 0.1, -0.04, 0.26, -0.42, 0.45], [0.72, -0.01, 0.05, -0.06, 0.05, 0.1, -0.1875], [0.86, 0, 0.04, -0.07, 0.02, 0.06, -0.1125], [1, 0, 0, 0, 0, 0, 0]] },
+  m4: { dur: 4.2, keys: [[0, 0, 0, 0, 0, 0, 0], [0.14, -0.06, 0.07, -0.04, 0.12, 0.55, -0.675], [0.3, -0.08, 0.08, -0.03, 0.18, 0.62, -0.7875], [0.44, -0.02, 0.1, -0.04, 0.32, -0.38, 0.4125], [0.56, -0.03, 0.1, -0.04, 0.28, -0.42, 0.465], [0.67, -0.04, 0.05, -0.04, -0.05, 0.15, -0.285], [0.8, -0.04, 0.05, -0.04, -0.08, 0.12, -0.315], [0.9, 0, 0.02, -0.07, 0.05, 0.05, -0.075], [1, 0, 0, 0, 0, 0, 0]] },
+  awp: { dur: 4.4, keys: [[0, 0, 0, 0, 0, 0, 0], [0.14, -0.1, 0.09, -0.03, 0.12, 0.58, -0.6375], [0.3, -0.12, 0.1, -0.03, 0.16, 0.62, -0.7125], [0.44, -0.04, 0.11, -0.03, 0.36, -0.22, 0.2625], [0.66, -0.04, 0.11, -0.03, 0.34, -0.26, 0.3], [0.74, -0.04, 0.05, -0.04, -0.05, 0.12, -0.2625], [0.86, -0.04, 0.05, -0.04, -0.08, 0.1, -0.3], [1, 0, 0, 0, 0, 0, 0]] },
+  ak47: { dur: 4.2, keys: [[0, 0, 0, 0, 0, 0, 0], [0.14, -0.06, 0.07, -0.04, 0.12, 0.55, -0.675], [0.3, -0.08, 0.08, -0.03, 0.18, 0.62, -0.7875], [0.44, -0.02, 0.1, -0.04, 0.32, -0.38, 0.4125], [0.56, -0.03, 0.1, -0.04, 0.28, -0.42, 0.465], [0.67, -0.04, 0.05, -0.04, -0.05, 0.15, -0.285], [0.8, -0.04, 0.05, -0.04, -0.08, 0.12, -0.315], [0.9, -0.01, 0.04, -0.06, 0.1, -0.2, 0.225], [1, 0, 0, 0, 0, 0, 0]] },
+  // tabancalar: sol yüz → sağ yüz (fişek penceresi) → namlu kontrolü (kızak hafif geri) → dinlen
+  deagle: { dur: 3.4, keys: [[0, 0, 0, 0, 0, 0, 0], [0.14, -0.04, 0.05, -0.05, 0.05, 0.72, -0.75], [0.3, -0.05, 0.06, -0.04, 0.08, 0.78, -0.825], [0.46, -0.03, 0.07, -0.04, 0.06, -0.58, 0.69], [0.6, -0.03, 0.07, -0.04, 0.04, -0.62, 0.75], [0.74, 0, 0.05, -0.06, 0.12, 0.14, -0.165], [0.88, 0, 0.05, -0.06, 0.14, 0.1, -0.15], [1, 0, 0, 0, 0, 0, 0]] },
+  usps: { dur: 3.4, keys: [[0, 0, 0, 0, 0, 0, 0], [0.14, -0.04, 0.05, -0.05, 0.05, 0.72, -0.75], [0.3, -0.05, 0.06, -0.04, 0.08, 0.78, -0.825], [0.46, -0.03, 0.07, -0.04, 0.06, -0.58, 0.69], [0.6, -0.03, 0.07, -0.04, 0.04, -0.62, 0.75], [0.74, 0, 0.05, -0.06, 0.12, 0.14, -0.165], [0.88, 0, 0.05, -0.06, 0.14, 0.1, -0.15], [1, 0, 0, 0, 0, 0, 0]] },
+  glock: { dur: 3.2, keys: [[0, 0, 0, 0, 0, 0, 0], [0.14, -0.04, 0.05, -0.05, 0.05, 0.72, -0.75], [0.3, -0.05, 0.06, -0.04, 0.08, 0.78, -0.825], [0.46, -0.03, 0.07, -0.04, 0.06, -0.58, 0.69], [0.6, -0.03, 0.07, -0.04, 0.04, -0.62, 0.75], [0.74, 0, 0.05, -0.06, 0.12, 0.14, -0.165], [0.88, 0, 0.05, -0.06, 0.14, 0.1, -0.15], [1, 0, 0, 0, 0, 0, 0]] },
+  rocket: { dur: 3.4, keys: [[0, 0, 0, 0, 0, 0, 0], [0.18, -0.14, 0.06, -0.01, 0.15, 0.7, -0.375], [0.4, -0.16, 0.07, -0.01, 0.2, 0.74, -0.4125], [0.6, -0.08, 0.1, -0.03, -0.25, -0.4, 0.2625], [0.8, -0.06, 0.09, -0.04, -0.2, -0.36, 0.225], [1, 0, 0, 0, 0, 0, 0]] },
+  launcher: { dur: 3.6, keys: [[0, 0, 0, 0, 0, 0, 0], [0.16, -0.08, 0.08, -0.03, 0.2, 0.6, -0.675], [0.34, -0.08, 0.09, -0.03, 0.24, 0.64, -0.735], [0.5, -0.03, 0.1, -0.04, 0.35, -0.3, 0.3], [0.6, -0.02, 0.06, -0.05, 0.1, 0.1, -0.1125], [0.8, -0.02, 0.06, -0.05, 0.12, 0.08, -0.09], [1, 0, 0, 0, 0, 0, 0]] },
+  pistol: { dur: 3.2, keys: [[0, 0, 0, 0, 0, 0, 0], [0.14, -0.04, 0.05, -0.05, 0.05, 0.72, -0.75], [0.3, -0.05, 0.06, -0.04, 0.08, 0.78, -0.825], [0.46, -0.03, 0.07, -0.04, 0.06, -0.58, 0.69], [0.6, -0.03, 0.07, -0.04, 0.04, -0.62, 0.75], [0.74, 0, 0.05, -0.06, 0.12, 0.14, -0.165], [0.88, 0, 0.05, -0.06, 0.14, 0.1, -0.15], [1, 0, 0, 0, 0, 0, 0]] },
+  // bıçak: yan yüzü göster, avuçta tam tur çevir, ağzı kameraya döndür, ters yüzü göster, dinlen
+  knife: { dur: 3.0, keys: [[0, 0, 0, 0, 0, 0, 0], [.16, -.05, .08, .02, .1, .6, -1.15], [.32, -.06, .09, .03, .15, .65, -1.25], [.52, -.05, .2, .02, TAU, .6, -1.2], [.68, -.05, .08, .02, TAU + .1, -.5, 1.0], [.84, -.04, .07, .02, TAU + .12, -.55, 1.1], [1, 0, 0, 0, TAU, 0, 0]] },
   // karambit ve kelebeğin asıl numarası aşağıdaki özel hareketlerde (halkada dönme, sallama)
   karambit: { dur: 2.4, keys: [[0, 0, 0, 0, 0, 0, 0], [.15, -.12, .05, -.12, .2, .15, -.25], [.85, -.12, .05, -.12, .2, .15, -.25], [1, 0, 0, 0, 0, 0, 0]] },
   butterfly: { dur: 2.6, keys: [[0, 0, 0, 0, 0, 0, 0], [.15, -.12, .06, -.12, .2, .15, -.3], [.85, -.1, .06, -.12, .2, -.15, .3], [1, 0, 0, 0, 0, 0, 0]] },
@@ -55,11 +58,15 @@ function inspectBusy() {
   return mouse.left || mouse.right || wpn.next || wpn.cur !== insp.w || !player.alive || state !== 'play' || player.sprinting ||
     ammo.reloadT > 0 || shells.loading || m4.reloadT > 0 || awp.reloadT > 0 || pis.reloadT > 0 || (isGun(wpn.cur) && gst[wpn.cur].reloadT > 0) || block.on || sword.phase !== 'idle' || kn.phase !== 'idle';
 }
+// anahtar pozlar arası Catmull-Rom: hareket pozlarda durmaz, akıcı geçer (ilk ve son pozda yumuşakça durur)
 function keyOffset(def, t) {
   const k = def.keys;
   let i = 0; while (i < k.length - 2 && t > k[i + 1][0]) i++;
-  const a = k[i], b = k[i + 1], f = smooth(clamp((t - a[0]) / (b[0] - a[0]), 0, 1));
-  return [1, 2, 3, 4, 5, 6].map(j => a[j] + (b[j] - a[j]) * f);
+  const a = k[i], b = k[i + 1], p0 = k[Math.max(0, i - 1)], p3 = k[Math.min(k.length - 1, i + 2)];
+  let u = clamp((t - a[0]) / (b[0] - a[0]), 0, 1);
+  if (i === 0 || i === k.length - 2) u = smooth(u);
+  const u2 = u * u, u3 = u2 * u;
+  return [1, 2, 3, 4, 5, 6].map(j => .5 * (2 * a[j] + (-p0[j] + b[j]) * u + (2 * p0[j] - 5 * a[j] + 4 * b[j] - p3[j]) * u2 + (-p0[j] + 3 * a[j] - 3 * b[j] + p3[j]) * u3));
 }
 const WEAPON_ROOTS = () => ({ katana: swordRoot, uzi: uziRoot, shotgun: sgRoot, m4: m4Root, awp: awpRoot, pistol: pisRoot, ak47: gunRoots.ak47, deagle: gunRoots.deagle, usps: gunRoots.usps, glock: gunRoots.glock, rocket: rocketRoot, launcher: launcherRoot, knife: knifeRoot, karambit: knifeRoot, butterfly: knifeRoot });
 function addOffset(w, o) {
@@ -151,10 +158,24 @@ function applyInspect(dt) {
   if (insp.t >= 1) { insp.active = false; return; }
   const t = insp.t;
   addOffset(insp.w, keyOffset(def, t));
-  if (insp.w === 'shotgun' && t > .6 && t < .78) sg.pump.position.z = -.3 + Math.sin((t - .6) / .18 * Math.PI) * .12;
-  if (insp.w === 'm4') m4m.mag.position.y = -.12 - (t > .58 && t < .76 ? Math.sin((t - .58) / .18 * Math.PI) * .05 : 0);
-  if (insp.w === 'awp' && t > .62 && t < .85) { const k = Math.sin((t - .62) / .23 * Math.PI); awpm.bolt.rotation.z = k * 1.2; awpm.bolt.position.z = .1 + k * .06; }
-  if (insp.w === 'pistol' && t > .82 && t < .96) pism.slide.position.z = Math.sin((t - .82) / .14 * Math.PI) * .04;
+  // pompalı: yarım pompa (namlu kontrolü)
+  if (insp.w === 'shotgun' && t > .64 && t < .84) sg.pump.position.z = -.3 + Math.sin((t - .64) / .2 * Math.PI) * .07;
+  // tüfekler: destek eli şarjörü tutup biraz çeker, bakar, geri iter
+  const magCheck = (m, t0, t1) => {
+    if (!m || !m.magHand || t < t0 || t > t1) return;
+    const u = (t - t0) / (t1 - t0), out = u < .3 ? smooth(u / .3) : u < .7 ? 1 : 1 - smooth((u - .7) / .3);
+    const b = m.mag.userData.base; if (!b) return;
+    m.mag.position.y = b.p.y - out * .035; m.mag.rotation.x = b.r - out * .08;
+    if (m.lh) m.lh.visible = false; m.magHand.visible = true;
+  };
+  if (insp.w === 'm4') magCheck(m4m, .66, .84);
+  if (insp.w === 'ak47') { magCheck(gunModels.ak47, .66, .82); if (t > .84 && t < .95) gunModels.ak47.slide.position.z = Math.sin((t - .84) / .11 * Math.PI) * .03; }
+  if (insp.w === 'awp') { if (t > .47 && t < .64) { const k = Math.sin((t - .47) / .17 * Math.PI); awpm.bolt.rotation.z = k * 1.2; awpm.bolt.position.z = .1 + k * .05; } magCheck(awpm, .72, .88); }
+  // tabancalar: namlu kontrolü, kızak hafif geri çekilip bırakılır
+  if (insp.w === 'pistol' && t > .72 && t < .88) pism.slide.position.z = Math.max(pism.slide.position.z, Math.sin((t - .72) / .16 * Math.PI) * .018);
+  if (isGun(insp.w) && GUNS[insp.w].slot === 'pistol' && gunModels[insp.w].slide && t > .72 && t < .88) gunModels[insp.w].slide.position.z = Math.max(gunModels[insp.w].slide.position.z, Math.sin((t - .72) / .16 * Math.PI) * .018);
+  // bombaatar: namlu kırılıp fişeğe bakılır
+  if (insp.w === 'launcher' && t > .56 && t < .84) glm.barrel.rotation.x = -Math.sin((t - .56) / .28 * Math.PI) * .38;
   if (insp.w === 'uzi') uziInspect(t);
   if (insp.w === 'katana') swordModel.userData.bloodMat.opacity = Math.max(0, swordModel.userData.bloodMat.opacity - dt * .2);
   // karambit: parmakta kesintisiz, akıcı 3.5 tur döner

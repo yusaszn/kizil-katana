@@ -11,52 +11,28 @@ const isKnife = w => !!KNIVES[w];
 
 /* ================= MODELLER ================= */
 const knifeRoot = new THREE.Group(); vmScene.add(knifeRoot); knifeRoot.visible = false;
-const knifeSteel = new THREE.MeshStandardMaterial({ color: 0xd8dee6, metalness: .95, roughness: .2, envMap: envTex, envMapIntensity: 1.3 });
-const knifeDark = new THREE.MeshStandardMaterial({ color: 0x151213, roughness: .7 });
-const knifeRed = new THREE.MeshStandardMaterial({ color: 0x7a1410, roughness: .6 });
-function bladeGeo(shape, depth = .004) {
-  const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: .0015, bevelSize: .0012, bevelSegments: 1, curveSegments: 12 });
-  g.rotateY(Math.PI / 2); g.translate(-depth / 2, 0, 0);
-  return g;
-}
 function handPart(g, isKarambit = false) {
   const h = typeof createTacticalHand === 'function' ? createTacticalHand(false, { grip: 'h', r: .014 }) : new THREE.Group();
   h.position.set(0, 0, isKarambit ? .085 : .07);
   g.add(h);
 }
 const knifeModels = {};
-{ // normal bıçak: düz, oluklu ağız
-  const g = new THREE.Group(), s = new THREE.Shape();
-  s.moveTo(0, -.014); s.lineTo(.17, -.012); s.quadraticCurveTo(.205, -.006, .215, .006); s.lineTo(.13, .016); s.lineTo(0, .016); s.lineTo(0, -.014);
-  g.add(new THREE.Mesh(bladeGeo(s), knifeSteel));
-  const fuller = new THREE.Mesh(new THREE.BoxGeometry(.006, .004, .1), knifeDark); fuller.position.set(0, .006, -.08); g.add(fuller);
-  const guard = new THREE.Mesh(new THREE.BoxGeometry(.012, .05, .012), knifeDark); g.add(guard);
-  const handle = new THREE.Mesh(new THREE.BoxGeometry(.024, .03, .11), knifeDark); handle.position.z = .062; g.add(handle);
+// modeller: gunmodels.js (GM.knife / GM.karambit / GM.butterfly); burada el ve tutuş yönü eklenir
+{ // normal bıçak: muharebe bıçağı
+  const g = GM.knife().g;
   handPart(g); knifeRoot.add(g); knifeModels.knife = { g };
 }
 { // karambit: ters tutuş. Halka üstte (işaret parmağı içinde), hilal ağız yumruğun altından öne kıvrılır.
   // Bıçak (b) elden ayrı döner, el yerinde kalır; o: b'yi dik tutar (sap ekseni yukarı, ağız aşağı ve öne)
-  const g = new THREE.Group(), o = new THREE.Group(), b = new THREE.Group(), s = new THREE.Shape();
+  const g = new THREE.Group(), o = new THREE.Group(), b = GM.karambit().b;
   o.rotation.set(-Math.PI / 2, Math.PI, 0, 'YXZ'); o.position.y = -.06; g.add(o); o.add(b);
-  s.moveTo(0, .012); s.quadraticCurveTo(.08, .02, .15, -.045); s.lineTo(.145, -.05); s.quadraticCurveTo(.07, -.01, 0, -.014); s.lineTo(0, .012);
-  b.add(new THREE.Mesh(bladeGeo(s, .005), knifeSteel));
-  const handle = new THREE.Mesh(new THREE.BoxGeometry(.022, .03, .09), knifeRed); handle.position.z = .05; b.add(handle);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(.022, .006, 8, 18), knifeSteel); ring.rotation.y = Math.PI / 2; ring.position.set(0, -.005, .115); b.add(ring);
   if (typeof createTacticalHand === 'function') { const h = createTacticalHand(false, { grip: 'v', r: .015, trigger: false }); h.position.y = -.01; g.add(h); }
   g.position.set(-.03, .04, -.08); g.rotation.set(.35, .55, -.15);   // yumruk dik, ağız öne-sola kıvrık görünsün
   knifeRoot.add(g); knifeModels.karambit = { g, b };
 }
-{ // kelebek: ince ağız, açılıp kapanan iki sap. Bıçak (b) elden ayrı sallanır
-  const g = new THREE.Group(), b = new THREE.Group(), s = new THREE.Shape(); g.add(b);
-  s.moveTo(0, -.011); s.lineTo(.16, -.009); s.quadraticCurveTo(.19, -.002, .2, .006); s.lineTo(.12, .012); s.lineTo(0, .012); s.lineTo(0, -.011);
-  const blade = new THREE.Mesh(bladeGeo(s, .0035), knifeSteel); b.add(blade);
-  const handles = [];
-  for (const sx of [-1, 1]) {
-    const piv = new THREE.Group(); piv.position.set(sx * .008, 0, 0); b.add(piv);
-    const h = new THREE.Mesh(new THREE.BoxGeometry(.008, .026, .12), sx > 0 ? knifeSteel : knifeDark); h.position.z = .06; piv.add(h);
-    handles.push(piv);
-  }
-  handPart(g); knifeRoot.add(g); knifeModels.butterfly = { g, b, handles };
+{ // kelebek: ince ağız, açılıp kapanan iki iskelet sap. Bıçak (b) elden ayrı sallanır
+  const g = new THREE.Group(), m = GM.butterfly(); g.add(m.b);
+  handPart(g); knifeRoot.add(g); knifeModels.butterfly = { g, b: m.b, handles: m.handles };
 }
 const KN_REST = P([.2, -.19, -.4], [.3, .35, .35]);
 knifeRoot.scale.setScalar(1.35);
