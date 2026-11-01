@@ -35,7 +35,8 @@ function updateHands(dt) {
   handLife.squeeze = Math.max(0, handLife.squeeze - dt * 5);
   handLife.relax += ((player.sprinting && player.grounded ? 1 : 0) - handLife.relax) * Math.min(1, dt * 6);
   const t = performance.now() / 1000;
-  for (const o of handsOf(root)) if (shownIn(o, root)) animateHand(o.userData.hand, dt, t, handLife);
+  root.updateMatrixWorld(true);
+  for (const o of handsOf(root)) if (shownIn(o, root)) { animateHand(o.userData.hand, dt, t, handLife); aimArm(o, dt); }
 }
 function stepSpring(x, v, k, c, dt) { for (const a of ['x', 'y', 'z']) { v[a] += (-k * x[a] - c * v[a]) * dt; x[a] += v[a] * dt; } }
 function updateGunSpring(dt) {

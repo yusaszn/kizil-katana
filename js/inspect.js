@@ -171,6 +171,13 @@ function applyInspect(dt) {
   if (insp.w === 'm4') magCheck(m4m, .66, .84);
   if (insp.w === 'ak47') { magCheck(gunModels.ak47, .66, .82); if (t > .84 && t < .95) gunModels.ak47.slide.position.z = Math.sin((t - .84) / .11 * Math.PI) * .03; }
   if (insp.w === 'awp') { if (t > .47 && t < .64) { const k = Math.sin((t - .47) / .17 * Math.PI); awpm.bolt.rotation.z = k * 1.2; awpm.bolt.position.z = .1 + k * .05; } magCheck(awpm, .72, .88); }
+  // tabancalar: destek eli tabancayı bırakır, aşağı iner; tabanca tek elle çevrilir, sonda el geri gelir
+  const pm = insp.w === 'pistol' ? pism : isGun(insp.w) && GUNS[insp.w].slot === 'pistol' ? gunModels[insp.w] : null;
+  if (pm && pm.lh && pm.lh.userData.base) {
+    const off = t < .1 ? smooth(t / .1) : t > .9 ? 1 - smooth((t - .9) / .1) : 1;
+    pm.lh.position.copy(pm.lh.userData.base); pm.lh.position.y -= off * .3; pm.lh.position.x -= off * .05;
+    pm.lh.visible = off < .98;
+  }
   // tabancalar: namlu kontrolü, kızak hafif geri çekilip bırakılır
   if (insp.w === 'pistol' && t > .72 && t < .88) pism.slide.position.z = Math.max(pism.slide.position.z, Math.sin((t - .72) / .16 * Math.PI) * .018);
   if (isGun(insp.w) && GUNS[insp.w].slot === 'pistol' && gunModels[insp.w].slide && t > .72 && t < .88) gunModels[insp.w].slide.position.z = Math.max(gunModels[insp.w].slide.position.z, Math.sin((t - .72) / .16 * Math.PI) * .018);

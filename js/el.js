@@ -181,12 +181,13 @@ function skinHandGeo(pose) {
 /* ================= KOL ================= */
 // bilekten dirseğe kumaş kol, bilekte büzgüler; eldiven bileği ve cırt cırtlı bant
 function handArm(parent, wrist, armDir) {
-  const q = new THREE.Quaternion().setFromUnitVectors(UP, armDir);
-  const lathe = (pts, mat, seg = 20) => { const m = new THREE.Mesh(new THREE.LatheGeometry(pts.map(([r, d]) => new THREE.Vector2(r, d)), seg), mat); m.position.copy(wrist); m.quaternion.copy(q); parent.add(m); return m; };
+  const q = new THREE.Quaternion().setFromUnitVectors(UP, armDir), parts = [];
+  const lathe = (pts, mat, seg = 20) => { const m = new THREE.Mesh(new THREE.LatheGeometry(pts.map(([r, d]) => new THREE.Vector2(r, d)), seg), mat); m.position.copy(wrist); m.quaternion.copy(q); parent.add(m); parts.push(m); return m; };
   lathe([[0, -.012], [.024, -.011], [.0285, -.004], [.03, .008], [.0315, .03], [.029, .036], [0, .036]], handLeather);
   lathe([[.0316, .01], [.0334, .012], [.0334, .027], [.0316, .029]], handCuff);
   lathe([[.0335, .017], [.034, .018], [.034, .021], [.0335, .022]], handStrap);
   lathe([[0, .03], [.031, .031], [.0365, .035], [.0395, .045], [.0375, .055], [.041, .068], [.0385, .081], [.0415, .096], [.04, .114], [.0425, .137], [.0435, .18], [.0445, .24], [.0458, .3], [.047, .36], [.0472, .44]], handSleeve, 22);
+  return parts;
 }
 
 /* ================= ANA KURUCU ================= */
@@ -239,7 +240,8 @@ function createTacticalHand(isLeft = false, opts = {}) {
     work: { P: pose.P.map(p => p.clone()), Q: pose.Q.map(q => q.clone()) },
     mesh, trigger, grip, phase: rand(0, 100), regripT: rand(3, 9), regrip: 0, lastSig: '',
   };
-  handArm(g, pose.P[H_WRIST].clone().addScaledVector(armDir, .012), armDir);
+  const wristP = pose.P[H_WRIST].clone().addScaledVector(armDir, .012);
+  out.userData.arm = { parts: handArm(g, wristP, armDir), g, wrist: wristP, base: armDir.clone(), left: isLeft, dir: armDir.clone() };
   return out;
 }
 
@@ -290,4 +292,24 @@ function animateHand(h, dt, t, st) {
 function handsOf(root) {
   if (!root.userData.hands) { const list = []; root.traverse(o => { if (o.userData && o.userData.hand) list.push(o); }); root.userData.hands = list; }
   return root.userData.hands;
+}
+
+/* ================= OMZA BAĞLI ÖNKOL ================= */
+// Önkol silaha sabit değil: her karede bilekten kameranın altındaki omuz noktasına doğru döner.
+// Silah ne kadar dönerse dönsün sol kol soldan, sağ kol sağdan gelir. Ani kırılmayı önlemek için temel yönden
+// en fazla ~80° sapar ve yumuşakça izler. Silah sahnesi kamera uzayıdır (kamera başlangıçta, -z'ye bakar).
+const SHOULDER = { L: new V3(-.26, -.58, .2), R: new V3(.22, -.58, .2) };
+const _ad = new V3(), _aw = new V3(), _aq = new THREE.Quaternion();
+function aimArm(out, dt) {
+  const A = out.userData.arm; if (!A) return;
+  A.g.updateMatrixWorld(true);
+  _aw.copy(A.left ? SHOULDER.L : SHOULDER.R);
+  A.g.worldToLocal(_aw);                                   // omuz noktası elin kendi uzayında (sol elde aynalı)
+  _ad.copy(_aw).sub(A.wrist).normalize();
+  // temel yönden en fazla 80° sap
+  const ang = _ad.angleTo(A.base), max = 1.4;
+  if (ang > max) _ad.copy(A.base).lerp(_ad, max / ang).normalize();
+  A.dir.lerp(_ad, Math.min(1, dt * 14)).normalize();
+  _aq.setFromUnitVectors(UP, A.dir);
+  for (const m of A.parts) m.quaternion.copy(_aq);
 }
