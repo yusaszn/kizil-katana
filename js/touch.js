@@ -4,6 +4,7 @@
 
 const IS_TOUCH = (('ontouchstart' in window) || navigator.maxTouchPoints > 0) && matchMedia('(pointer: coarse)').matches;
 const touch = { stick: null, look: null, sx: 0, sy: 0, kx: 0, ky: 0, btn: {} };
+const LOBBY_TB = new Set(['jump', 'talk', 'cam', 'pause', 'sit', 'wave', 'dance', 'chat']);   // lobide görünen tuşlar
 
 // telefonda varsayılan çözünürlük düşük (kayıtlı bir ayar yoksa): akıcı oynansın
 if (IS_TOUCH) {
@@ -30,8 +31,12 @@ const TBTN = [
   ['flash', 'FLAŞ', () => isVS() && eco.flash > 0, () => throwUtil('flash')],
   ['bomb', 'BOMBA', () => typeof isBomb === 'function' && isBomb(), () => { keys.Digit4 = true; }, () => { keys.Digit4 = false; }],
   ['talk', 'KONUŞ', () => net.mode !== 'solo' && voiceMode() === 'ptt', () => { keys.KeyK = true; }, () => { keys.KeyK = false; }],
-  ['cam', 'KAMERA', () => true, () => { SETTINGS.thirdPerson = !SETTINGS.thirdPerson; saveSettings(); }],
-  ['pause', 'II', () => true, () => openPause()],
+  ['cam', 'KAMERA', () => true, () => { if (state === 'lobby') lobby.tp = !lobby.tp; else { SETTINGS.thirdPerson = !SETTINGS.thirdPerson; saveSettings(); } }],
+  ['pause', 'II', () => true, () => { if (state === 'lobby') lobbyWalk(false); else openPause(); }],
+  ['sit', 'OTUR', () => false, () => lobbyUse()],
+  ['wave', 'SELAM', () => false, () => lobbyEmote('wave')],
+  ['dance', 'DANS', () => false, () => lobbyEmote('dance')],
+  ['chat', 'SOHBET', () => net.mode !== 'solo', () => chatOpen()],
 ];
 
 function buildTouchUI() {
@@ -43,7 +48,7 @@ function buildTouchUI() {
     const el = $('tb_' + id);
     el.addEventListener('touchstart', e => {
       e.preventDefault(); e.stopPropagation();
-      if (state !== 'play' && state !== 'dead' && id !== 'pause') return;
+      if (state !== 'play' && state !== 'dead' && state !== 'lobby' && id !== 'pause') return;
       el.classList.add('on'); touch.btn[id] = true;
       down();
       // ateş tuşu aynı zamanda nişan alanı: basılı parmak kaydıkça kamera döner
@@ -73,7 +78,7 @@ function buildTouchUI() {
         touch.kx = dx / R; touch.ky = dy / R;
         $('tStick').firstChild.style.transform = `translate(${dx}px,${dy}px)`;
       }
-      if (touch.look && t.identifier === touch.look.id && (state === 'play') && player.alive && !anyMenu()) {
+      if (touch.look && t.identifier === touch.look.id && ((state === 'play' && player.alive && !anyMenu()) || (state === 'lobby' && lobby.walking))) {
         const s = .0052 * SETTINGS.sens * (camera.fov / SETTINGS.fov);
         player.yaw -= (t.clientX - touch.look.x) * s; player.pitch = clamp(player.pitch - (t.clientY - touch.look.y) * s, -1.45, 1.45);
         touch.look.x = t.clientX; touch.look.y = t.clientY;
@@ -92,7 +97,7 @@ function buildTouchUI() {
 
 function updateTouch() {
   const root = $('touch');
-  const show = IS_TOUCH && (state === 'play' || state === 'dead');
+  const show = IS_TOUCH && (state === 'play' || state === 'dead' || (state === 'lobby' && lobby.walking));
   if (root.hidden === show) root.hidden = !show;
   if (!show) { if (touch.stickKeys) { keys.KeyW = keys.KeyA = keys.KeyS = keys.KeyD = false; shiftDown = 0; touch.stickKeys = false; } return; }
   // çubuk → WASD (sonuna kadar ileri: koşu)
@@ -102,7 +107,7 @@ function updateTouch() {
   shiftDown = far ? performance.now() - 1000 : 0;
   touch.stickKeys = true;
   // moda göre görünen tuşlar
-  for (const [id, , cond] of TBTN) { const el = $('tb_' + id), on = !!cond(); if (el.hidden === on) el.hidden = !on; }
+  for (const [id, , cond] of TBTN) { const el = $('tb_' + id), on = state === 'lobby' ? LOBBY_TB.has(id) : !!cond(); if (el.hidden === on) el.hidden = !on; }
   $('tRotate').hidden = innerWidth >= innerHeight;
 }
 if (IS_TOUCH) buildTouchUI();

@@ -307,13 +307,15 @@ function buildMap(id) {
   curMap = id;
   const M = MAPS[id];
   if ((M.half || 22) !== H) buildShell(M.half || 22); else statics.length = baseStatics;
-  for (const L of torchLights) L.intensity = 0;   // haritada mangal yoksa meşale ışığı da yok
+  for (const L of torchLights) { L.intensity = 0; L.distance = 24; L.color.setHex(M.light); }   // haritada mangal yoksa meşale ışığı da yok
+  moon.position.set(6, 20, 9);
   M.build();
+  // açık mekân (lobi): dış duvarlar ve ışıklı oluk görünmez, çarpışma kalır
+  for (const m of shell.meshes) m.visible = !M.open || m.material === floorMat;
   scene.fog.color.setHex(M.fog); scene.background.setHex(M.sky || M.fog); scene.fog.density = M.fogD || .034;
   embers.visible = !M.noEmbers;
   hemi.color.setHex(M.hemi[0]); hemi.groundColor.setHex(M.hemi[1]); moon.color.setHex(M.moon);
   lavaMat.color.setHex(M.lava); flameMat.color.setHex(M.flame); coalMat.color.setHex(M.flame);
-  for (const L of torchLights) L.color.setHex(M.light);
   vmFire.color.setHex(M.light);   // silahlara vuran alt ışık haritanın meşale rengini alsın
   floorMat.color.setHex(M.floor); wallMat.color.setHex(M.wall);
   // haritaya özel dokular ve ışık (çöl gündüz aydınlık)
@@ -492,7 +494,7 @@ function updateAmbience(dt, t) {
   runeMat.opacity = .35 + Math.sin(t * 1.5) * .12;
   vmFire.intensity = 1.2 + Math.sin(t * 11) * .2;
   muzzleGlow = Math.max(0, muzzleGlow - dt * 22);
-  playerLight.intensity = .75 + muzzleGlow * 2.6;
+  playerLight.intensity = ((MAPS[curMap] || {}).pl ?? .75) + muzzleGlow * 2.6;
   vmMuzzle.intensity = muzzleGlow * 3.5;
   if (typeof worldMuzzle !== 'undefined') worldMuzzle.intensity = Math.max(worldMuzzle.intensity, muzzleGlow * 3.2);
 }

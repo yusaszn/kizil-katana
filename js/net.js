@@ -3,11 +3,11 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 16;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 17;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 // çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
-const net = { mode: 'solo', peer: null, hostConn: null, myId: 'solo', code: '', players: {}, sendT: 0, snapT: 0, guestSeq: 0, inMatch: false, gameMode: 'coop', vsMap: 'arena', money: 'normal' };
+const net = { mode: 'solo', peer: null, hostConn: null, myId: 'solo', code: '', players: {}, sendT: 0, snapT: 0, guestSeq: 0, inMatch: false, gameMode: 'coop', vsMap: 'arena', money: 'normal', venue: 'kamp' };
 const netFx = { sw: 0, sh: 0 };
 const PLAYER_COLORS = [0x2f6f8f, 0xc9a227, 0x6f3f9f, 0x3f8f4f];
 
@@ -77,11 +77,12 @@ function leaveRoom(silent) {
     if (net.mode === 'guest') toHost({ t: 'bye' });
     if (net.mode === 'host') bcast({ t: 'closed' });
   } catch (e) { /* bağlantı zaten kopmuş */ }
+  if (typeof exitLobby === 'function') exitLobby();
   const peer = net.peer;
   if (peer) setTimeout(() => { try { peer.destroy(); } catch (e) { /* zaten kapalı */ } }, 150);
   for (const id in net.players) removeProxy(id);
   if (typeof voiceStopAll === 'function') voiceStopAll();
-  Object.assign(net, { mode: 'solo', peer: null, hostConn: null, myId: 'solo', code: '', players: {}, inMatch: false, gameMode: 'coop', vsMap: 'arena', money: 'normal' });
+  Object.assign(net, { mode: 'solo', peer: null, hostConn: null, myId: 'solo', code: '', players: {}, inMatch: false, gameMode: 'coop', vsMap: 'arena', money: 'normal', venue: 'kamp' });
   if (!silent) { $('lobby').hidden = true; $('start').hidden = false; lobbyMsg(''); }
 }
 function hostLost() {
@@ -89,7 +90,7 @@ function hostLost() {
   const wasPlaying = net.inMatch;
   leaveRoom(true);
   if (wasPlaying) { state = 'dead'; showEnd('Host oyundan çıktı'); }
-  else { $('lobby').hidden = true; $('start').hidden = false; lobbyMsg('Host odayı kapattı.'); }
+  else { toMainMenu(); lobbyMsg('Host odayı kapattı.'); }
 }
 function addPlayer(id, name, conn) {
   const used = Object.values(net.players).map(p => p.color);
@@ -102,6 +103,7 @@ function addPlayer(id, name, conn) {
 function setGameMode(m) { if (net.mode !== 'host' || net.inMatch) return; net.gameMode = m; sendRoster(); }
 function setVsMap(m) { if (net.mode !== 'host' || net.inMatch) return; net.vsMap = m; sendRoster(); }
 function setMoney(m) { if (net.mode !== 'host' || net.inMatch) return; net.money = m; sendRoster(); }
+function setVenue(v) { if (net.mode !== 'host' || net.inMatch || !MAPS[v] || net.venue === v) return; net.venue = v; sendRoster(); if (state === 'lobby') lobbyBuild(); }
 function switchTeam(id) {
   const p = net.players[id]; if (!p) return;
   if (net.mode === 'guest') { toHost({ t: 'team' }); return; }
@@ -111,7 +113,7 @@ function switchTeam(id) {
 }
 function dropGuest(conn, why) {
   const id = conn.pid; if (!id || !net.players[id]) return;
-  toast(net.players[id].name + (why || ' ayrıldı'));
+  toast(net.players[id].name + (why || ' ayrıldı')); chatSys(net.players[id].name + (why || ' ayrıldı'));
   removeProxy(id); delete net.players[id];
   try { conn.close(); } catch (e) { /* zaten kapalı */ }
   sendRoster(); renderLobby(); renderPausePlayers();
@@ -146,13 +148,13 @@ setInterval(() => {
 window.addEventListener('beforeunload', () => leaveRoom(true));
 // pid: oyuncunun PeerJS kimliği (sesli sohbette oyuncular birbirini doğrudan arar)
 function roster() { return Object.values(net.players).map(p => ({ id: p.id, name: p.name, color: p.color, team: p.team, pid: p.id === 'h' ? net.peer && net.peer.id : p.conn && p.conn.peer })); }
-function sendRoster() { bcast({ t: 'roster', list: roster(), code: net.code, mode: net.gameMode, map: net.vsMap, money: net.money }); renderLobby(); }
+function sendRoster() { bcast({ t: 'roster', list: roster(), code: net.code, mode: net.gameMode, map: net.vsMap, money: net.money, venue: net.venue }); renderLobby(); }
 function showLobby() {
   $('start').hidden = true; $('lobby').hidden = false;
   $('roomCode').textContent = net.code;
   $('lobbyStart').hidden = net.mode !== 'host';
   lobbyMsg(net.mode === 'host' ? 'Kodu arkadaşına gönder. O da oyunu açıp ODAYA KATIL kısmına yazsın.' : 'Bağlandın. Host başlatınca oyun başlayacak.');
-  renderLobby();
+  enterLobby();   // lobi.js: 3D buluşma alanı
 }
 function renderLobby() {
   fillPlayerList($('lobbyList'));
@@ -164,6 +166,9 @@ function renderLobby() {
   $('moneyPick').hidden = gm === 'coop';
   $('moneyNormal').classList.toggle('on', net.money !== 'inf'); $('moneyInf').classList.toggle('on', net.money === 'inf');
   $('moneyNormal').disabled = $('moneyInf').disabled = !host;
+  $('venueKamp').classList.toggle('on', net.venue !== 'ev'); $('venueEv').classList.toggle('on', net.venue === 'ev');
+  $('venueKamp').disabled = $('venueEv').disabled = !host;
+  if (state === 'lobby') drawVenueBoard();
   $('modeInfo').textContent = gm === 'vs'
     ? 'VS: Kırmızı ve Mavi takım, rauntlu. Raunt başında kredinle silah, kalkan ve yetenek alırsın. Son kalan takım raundu alır, ilk ' + ROUNDS_WIN + ' raunt kazanır.'
     : gm === 'bomb'
@@ -202,6 +207,7 @@ function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp
 function startMatchHost() {
   if (net.mode !== 'host') return;
   if (net.gameMode === 'bomb') net.vsMap = 'col';
+  exitLobby();
   net.inMatch = true; resetGame();
   bcast({ t: 'start', wave: hashWave, mode: net.gameMode, map: net.vsMap, money: net.money, list: roster() });
   $('lobby').hidden = true;
@@ -211,6 +217,7 @@ function startMatchHost() {
 function startMatchGuest(d) {
   net.gameMode = d.mode || 'coop'; net.vsMap = d.map || 'arena'; net.money = d.money || 'normal';
   if (d.list) for (const r of d.list) if (net.players[r.id]) net.players[r.id].team = r.team;
+  exitLobby();
   net.inMatch = true; resetGame();
   waveN = d.wave || 0;
   $('lobby').hidden = true; $('start').hidden = true;
@@ -232,7 +239,7 @@ function onHostData(conn, d) {
       addPlayer(id, String(d.name || 'Oyuncu').slice(0, 16), conn);
       conn.send({ t: 'welcome', id, code: net.code });
       sendRoster();
-      toast(net.players[id].name + ' katıldı');
+      toast(net.players[id].name + ' katıldı'); chatSys(net.players[id].name + ' odaya katıldı');
       if (net.inMatch) {
         conn.send({ t: 'start', wave: waveN, mode: net.gameMode, map: net.vsMap, money: net.money, list: roster() });
         if (isBomb()) conn.send(bombMsg());
@@ -265,6 +272,13 @@ function onHostData(conn, d) {
       break;
     }
     case 'fbshot': { const f = fbById(d.id); if (f) explodeFireball(f); break; }
+    case 'chat': {
+      const p = net.players[conn.pid]; if (!p) return;
+      const now = performance.now(); if (now - (p.chatT || 0) < 350) return; p.chatT = now;
+      const text = String(d.text || '').replace(/\s+/g, ' ').trim().slice(0, 120); if (!text) return;
+      bcast({ t: 'chat', id: conn.pid, text }, conn); chatShow(conn.pid, text);
+      break;
+    }
   }
 }
 
@@ -281,16 +295,18 @@ function onGuestData(d) {
       const txt = d.t === 'kicked' ? 'Odadan atıldın.' : 'Host odayı kapattı.';
       const wasPlaying = net.inMatch;
       leaveRoom(true);
-      if (wasPlaying) { state = 'dead'; showEnd(txt); } else { $('lobby').hidden = true; $('start').hidden = false; lobbyMsg(txt); }
+      if (wasPlaying) { state = 'dead'; showEnd(txt); } else { toMainMenu(); lobbyMsg(txt); }
       break;
     }
     case 'roster': {
-      const keep = {};
+      const keep = {}, keepOld = {}; for (const id in net.players) keepOld[id] = true;
       for (const r of d.list) { keep[r.id] = true; if (!net.players[r.id]) addPlayer(r.id, r.name, null); Object.assign(net.players[r.id], { name: r.name, color: r.color, team: r.team, pid: r.pid }); }
       for (const id in net.players) if (!keep[id]) { removeProxy(id); delete net.players[id]; }
       if (d.mode && !net.inMatch) net.gameMode = d.mode;
       if (d.map && !net.inMatch) net.vsMap = d.map;
       if (d.money && !net.inMatch) net.money = d.money;
+      if (d.venue && d.venue !== net.venue) { net.venue = d.venue; if (state === 'lobby') lobbyBuild(); }
+      for (const r of d.list) if (!keepOld[r.id] && r.id !== net.myId && state === 'lobby') chatSys(r.name + ' odaya katıldı');
       renderLobby();
       break;
     }
@@ -317,23 +333,26 @@ function onGuestData(d) {
     case 'clear': onWaveClear(); break;
     case 'over': state = 'dead'; showEnd('Herkes parçalandı'); break;
     case 'toast': toast(d.text); break;
+    case 'chat': if (d.id !== net.myId) chatShow(d.id, String(d.text || '').slice(0, 120)); break;
+    case 'tolobby': enterLobby(); break;
   }
 }
 
 /* ================= DURUM GÖNDERME ================= */
 function myState() {
   const b = player.body.position, v = player.body.velocity;
-  return { t: 'ps', id: net.myId, name: playerName(), p: arr(b), v: [r2(v.x), r2(v.z)], yaw: r2(player.yaw), pitch: r2(player.pitch), w: wpn.cur, b: block.on ? 1 : 0, a: player.alive ? 1 : 0, sw: netFx.sw, sh: netFx.sh, hp: Math.ceil(player.hp), lv: prog.lv, k: kills, s: score, rv: r2(revive.p), c: r2(player.crouchK), sl: player.slideT > 0 ? 1 : 0, kc: netFx.kc || 0, ft: netFx.ft ? 1 : 0, pk: picksLeft(), dt: vs.deaths, cr: eco.cr, rd: eco.ready ? 1 : 0 };
+  const lob = state === 'lobby';
+  return { t: 'ps', id: net.myId, name: playerName(), p: arr(b), v: [r2(v.x), r2(v.z)], yaw: r2(player.yaw), pitch: r2(player.pitch), w: lob ? 'none' : wpn.cur, st: lob && lobby.sit >= 0 ? lobby.sit + 1 : 0, em: lob ? lobby.emote : '', b: block.on ? 1 : 0, a: player.alive ? 1 : 0, sw: netFx.sw, sh: netFx.sh, hp: Math.ceil(player.hp), lv: prog.lv, k: kills, s: score, rv: r2(revive.p), c: r2(player.crouchK), sl: player.slideT > 0 ? 1 : 0, kc: netFx.kc || 0, ft: netFx.ft ? 1 : 0, pk: picksLeft(), dt: vs.deaths, cr: eco.cr, rd: eco.ready ? 1 : 0 };
 }
 function updateNet(dt) {
-  if (net.mode === 'solo' || !net.inMatch) return;
+  if (net.mode === 'solo' || (!net.inMatch && state !== 'lobby')) return;
   net.sendT -= dt;
   if (net.sendT <= 0) {
     net.sendT = .05;
     const st = myState();
     if (net.mode === 'guest') toHost(st); else { applyPlayerState('h', st, true); bcast(st); }
   }
-  if (net.mode === 'host') {
+  if (net.mode === 'host' && net.inMatch) {
     net.snapT -= dt;
     if (net.snapT <= 0) { net.snapT = .05; bcast(makeSnapshot()); }
   }
@@ -399,6 +418,7 @@ function applyPlayerState(id, d, self) {
   if (pr.name !== d.name && d.name) { pr.name = d.name; p.name = d.name; pr.g.remove(pr.label); pr.label = nameSprite(d.name, p.color); pr.label.position.y = 2.25; pr.g.add(pr.label); }
   pr.tgt.set(d.p[0], d.p[1], d.p[2]); pr.vel.set(d.v[0], 0, d.v[1]);
   pr.tyaw = d.yaw; pr.pitch = d.pitch; pr.w = d.w; pr.block = d.b; pr.rv = d.rv || 0; pr.c = d.c || 0; pr.sl = d.sl || 0;
+  pr.st = d.st || 0; const em = d.em || ''; if (em !== (pr.em || '')) { pr.em = em; pr.emT = 0; }
   if (pr.sw >= 0 && d.sw !== pr.sw) pr.swingT = .25;
   if (pr.sh >= 0 && d.sh > pr.sh) remoteShots(pr, Math.min(3, d.sh - pr.sh), d.ft);
   if (pr.kc >= 0 && d.kc !== pr.kc) pr.kickT = .38;
@@ -437,12 +457,14 @@ function updateProxies(dt) {
     }
     pr.lastY = pr.pos.y;
     pr.swingT -= dt; pr.kickT -= dt;
-    if (isVS()) {
+    const lob = state === 'lobby';
+    if (lob && pr.teamSet) { pr.teamSet = null; pr.cloth.color.setHex(p.color); if (pr.label) pr.label.material.depthTest = false; pr.g.visible = true; }
+    if (isVS() && !lob) {
       // takım rengi; rakiplerin ismi duvarın arkasından görünmez
       if (pr.teamSet !== p.team) { pr.teamSet = p.team; pr.cloth.color.setHex(TEAMS[p.team].color); if (pr.label) { pr.label.material.depthTest = p.team !== myTeam(); } }
       pr.g.visible = p.alive && performance.now() - (pr.deadAt || 0) > 1500;
     }
-    animateAvatar(pr, dt, { x: pr.pos.x, y: pr.pos.y, z: pr.pos.z, yaw: pr.yaw, pitch: pr.pitch, speed: sp, w: pr.w, block: pr.block, alive: p.alive, crouch: pr.c, slide: pr.sl, swing: pr.swingT > 0, kick: pr.kickT > 0 });
+    animateAvatar(pr, dt, Object.assign({ x: pr.pos.x, y: pr.pos.y, z: pr.pos.z, yaw: pr.yaw, pitch: pr.pitch, speed: sp, w: pr.w, block: pr.block, alive: p.alive, crouch: pr.c, slide: pr.sl, swing: pr.swingT > 0, kick: pr.kickT > 0 }, lob ? lobbyProxyPose(pr, dt) : null));
   }
 }
 function checkAllDead() {
@@ -469,7 +491,7 @@ $('mapCol').addEventListener('click', () => setVsMap('col'));
 $('modeBomb').addEventListener('click', () => setGameMode('bomb'));
 $('moneyNormal').addEventListener('click', () => setMoney('normal'));
 $('moneyInf').addEventListener('click', () => setMoney('inf'));
-$('lobbyLeave').addEventListener('click', () => leaveRoom(false));
+$('lobbyLeave').addEventListener('click', () => toMainMenu());
 $('copyCode').addEventListener('click', () => {
   const t = net.code;
   const done = () => { $('copyCode').textContent = 'KOPYALANDI'; setTimeout(() => { $('copyCode').textContent = 'KOPYALA'; }, 1500); };

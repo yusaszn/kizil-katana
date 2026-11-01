@@ -413,6 +413,7 @@ function showEnd(msg, vsWin) {
   }
   const canRestart = net.mode !== 'guest';
   $('againBtn').hidden = !canRestart;
+  $('lobbyBackBtn').hidden = net.mode !== 'host';
   $('endNote').textContent = canRestart ? '' : 'Host yeniden başlatınca oyun başlar.';
   $('bossbar').hidden = true;
   $('upgrade').hidden = true;
@@ -423,6 +424,9 @@ function showEnd(msg, vsWin) {
 /* ================= KONTROLLER ================= */
 let pauseOpenedAt = 0;
 window.addEventListener('keydown', e => {
+  if (chat.open) return;
+  // Enter: yazılı sohbet (odadayken)
+  if (e.code === 'Enter' && !e.repeat && net.mode !== 'solo' && (state === 'play' || state === 'dead' || state === 'lobby')) { e.preventDefault(); chatOpen(); return; }
   keys[e.code] = true;
   // Esc açık ekranı kapatır
   if (e.code === 'Escape') {
@@ -439,6 +443,7 @@ window.addEventListener('keydown', e => {
   // M: takım seç (ölüyken de)
   if (isVS() && e.code === 'KeyM' && !e.repeat && (state === 'play' || state === 'dead')) { toggleTeamPick(); return; }
   if (isVS() && teamUI.open && e.code === 'Escape') { closeTeamPick(); return; }
+  if (state === 'lobby') { lobbyKey(e); return; }
   if (state !== 'play') return;
   if (e.repeat) return;
   // VS: satın alma menüsü fareyle kullanılır (B), raunt içinde 1 / 2 / 3 yuvalar, Z sis, X flaş
@@ -475,7 +480,7 @@ window.addEventListener('keyup', e => {
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouse.left = mouse.right = false; shiftDown = 0; });
 document.addEventListener('mousemove', e => {
   if ((state === 'play' || state === 'dead') && buyMouseMove(e)) return;
-  if (state !== 'play' || !player.alive) return;
+  if (!(state === 'play' && player.alive) && !(state === 'lobby' && lobby.walking)) return;
   if (document.pointerLockElement !== canvas && !fallbackLook) return;
   const s = .0022 * SETTINGS.sens * (camera.fov / SETTINGS.fov);   // dürbünde fare yavaşlar
   player.yaw -= e.movementX * s; player.pitch = clamp(player.pitch - e.movementY * s, -1.45, 1.45);
@@ -524,6 +529,7 @@ function openPause() {
   if (state !== 'play' && state !== 'dead') return;
   state = 'pause'; pauseOpenedAt = performance.now(); $('owned').textContent = ownedText();
   $('pauseNote').hidden = net.mode === 'solo';
+  $('pauseLobbyBtn').hidden = net.mode !== 'host';
   renderPausePlayers();
   $('pause').hidden = false;
 }
@@ -688,14 +694,16 @@ function frame(now) {
     updateHUD(rdt);
     drawSplats(rdt);
     syncCamera(dt, rdt);
-  } else if (state === 'menu') {
+  } else if (state === 'lobby') updateLobby(rdt);   // lobi.js: sosyal buluşma alanı
+  else if (state === 'menu') {
     gameTime += rdt;
     const t = now / 1000 * .08; camera.position.set(Math.sin(t) * 12, 4, Math.cos(t) * 12); camera.rotation.set(-.18, t, 0);
   }
   updateAmbience(rdt, gameTime);
   updateVoice(rdt);
+  updateChat(rdt);
   if (typeof updateTouch === 'function') updateTouch();
-  renderFrame(state !== 'menu' && !SETTINGS.thirdPerson && awp.scopeK < .6, rdt);   // efektler.js (parlama, renk, vinyet)
+  renderFrame(state !== 'menu' && state !== 'lobby' && !SETTINGS.thirdPerson && awp.scopeK < .6, rdt);   // efektler.js (parlama, renk, vinyet)
 }
 // silah ve el renkleri sRGB olarak yazıldı; doğrusal renk uzayına çevrilmezse soluk / pembe görünürler
 function linearizeViewmodel() {

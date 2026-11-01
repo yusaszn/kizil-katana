@@ -117,6 +117,7 @@
       <div><kbd>4 (BASILI)</kbd><span>Bomba modu: kur / imha et</span></div>
       <div><kbd>M</kbd><span>VS: takım değiştir</span></div>
       <div><kbd>K (BASILI)</kbd><span>Sesli sohbet: konuş</span></div>
+      <div><kbd>ENTER</kbd><span>Odada yazılı sohbet</span></div>
     </div>
     <div class="btns">
       <button class="btn" id="startBtn" type="button">TEK KİŞİ OYNA</button>
@@ -157,14 +158,28 @@
       <button type="button" id="moneyInf">PARA: SINIRSIZ</button>
     </div>
     <p id="modeInfo"></p>
+    <div class="modes" id="venuePick" role="group" aria-label="Lobi mekânı">
+      <button type="button" id="venueKamp" class="on">MEKÂN: ORMAN KAMPI</button>
+      <button type="button" id="venueEv">MEKÂN: DAĞ EVİ</button>
+    </div>
     <p id="lobbyNote" role="status"></p>
     <ul id="lobbyList" class="plist"></ul>
     <div class="btns">
       <button class="btn" id="lobbyStart" type="button">BAŞLAT</button>
+      <button class="btn ghost" id="lobbyWalkBtn" type="button">MEKÂNDA DOLAŞ</button>
+      <button class="btn ghost" id="setBtnLobby" type="button">AYARLAR</button>
       <button class="btn ghost" id="lobbyLeave" type="button">ODADAN ÇIK</button>
     </div>
   </div>
 </div>
+<div id="lobbyHud" hidden>
+  <div id="lhRoom"></div>
+  <div id="lhMic" hidden>🎙 KONUŞUYORSUN</div>
+  <div id="lhPrompt"></div>
+  <div id="lhClick">MEKÂNDA DOLAŞMAK İÇİN EKRANA TIKLA</div>
+  <div class="lhKeys"><b>WASD</b> dolaş · <b>SHIFT</b> koş · <b>E</b> otur / kalk · <b>G</b> el salla · <b>H</b> dans · <b>ENTER</b> sohbet · <b>K</b> konuş · <b>V</b> kamera · <b>TAB</b> oda paneli</div>
+</div>
+<div id="chatBox" hidden><div id="chatLog" aria-live="polite"></div><input id="chatIn" maxlength="120" autocomplete="off" spellcheck="false" placeholder="Mesaj yaz · Enter gönder · Esc kapat" aria-label="Sohbet mesajı"></div>
 <div id="pause" class="screen" hidden>
   <div class="panel">
     <h2>Duraklatıldı</h2>
@@ -174,6 +189,7 @@
     <div class="btns">
       <button class="btn" id="resumeBtn" type="button">DEVAM</button>
       <button class="btn ghost" id="setBtnPause" type="button">AYARLAR</button>
+      <button class="btn ghost" id="pauseLobbyBtn" type="button" hidden>LOBİYE DÖN</button>
       <button class="btn ghost" id="pauseMenuBtn" type="button">ANA MENÜ</button>
     </div>
   </div>
@@ -205,6 +221,7 @@
     <p id="endNote"></p>
     <div class="btns">
       <button class="btn" id="againBtn" type="button">TEKRAR</button>
+      <button class="btn ghost" id="lobbyBackBtn" type="button" hidden>LOBİYE DÖN</button>
       <button class="btn ghost" id="menuBtn" type="button">ANA MENÜ</button>
     </div>
   </div>
@@ -226,6 +243,7 @@
 <script src="js/models.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/world.js"></script>
+<script src="js/mekan.js"></script>
 <script src="js/debris.js"></script>
 <script src="js/upgrades.js"></script>
 <script src="js/el-veri.js"></script>
@@ -249,6 +267,7 @@
 <script src="js/bomb.js"></script>
 <script src="js/minimap.js"></script>
 <script src="js/voice.js"></script>
+<script src="js/lobi.js"></script>
 <script src="js/gunanim.js"></script>
 <script src="js/mermiler.js"></script>
 <script src="js/efektler.js"></script>

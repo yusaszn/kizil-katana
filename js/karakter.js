@@ -10,6 +10,7 @@
    Kemik yönleri modele göre değiştiği için bütün pozlar dünya uzayında hesaplanır (kemik ekseninden bağımsız). */
 
 const CHAR_H = 1.78;
+const CHAR_HIP = .98;   // kalça ekleminin yerden yüksekliği (oturma pozu)
 const _cv1 = new V3(), _cv2 = new V3(), _cv3 = new V3(), _cq1 = new THREE.Quaternion(), _cq2 = new THREE.Quaternion(), _cm = new THREE.Matrix4();
 
 /* ================= KEMİK YARDIMCILARI (dünya uzayında) ================= */
@@ -202,6 +203,7 @@ function animateCharAvatar(av, dt, s) {
   // hız: konum farkından (ağdaki oyuncular için de çalışır)
   if (av.lastP && dt > 0) { _cv1.set(s.x - av.lastP.x, s.y - av.lastP.y, s.z - av.lastP.z).divideScalar(dt); av.vel.lerp(_cv1, k(10)); }
   av.lastP = av.lastP || new V3(); av.lastP.set(s.x, s.y, s.z);
+  if (s.sit) av.vel.set(0, 0, 0);   // oturağa geçerken konum sıçraması koşu sanılmasın
   const fx = -Math.sin(s.yaw), fz = -Math.cos(s.yaw), rx = Math.cos(s.yaw), rz = -Math.sin(s.yaw);
   const vf = av.vel.x * fx + av.vel.z * fz, vs = av.vel.x * rx + av.vel.z * rz, hs = Math.hypot(vf, vs);
   const air = s.air !== undefined ? s.air : Math.abs(av.vel.y) > 2.2;
@@ -249,13 +251,20 @@ function animateCharAvatar(av, dt, s) {
   // ---- yan / çapraz koşu: kalça ve bacaklar hareket yönüne döner, gövde karşı dönüşle nişan yönünde kalır ----
   if (Math.abs(av.legYaw) > .01) { rotW(B.Body, UPW, -av.legYaw); rotW(B.Abdomen, UPW, av.legYaw * .85); rotW(B.Chest, UPW, av.legYaw * .15); }
   // ---- eğilme / kayma / havada: kalça iner, dizler bükülür ----
-  const cr = av.crouchK * (1 - av.slideK), sl = av.slideK, ai = av.airK * (1 - sl);
-  C.obj.position.y = -CHAR_SRC.minY * CHAR_SRC.k - cr * .34 - sl * .55 + ai * .05;
+  // oturma (lobi): kalça oturağa iner, uyluklar öne, baldırlar aşağı; dans ederken dizler tempoyla bükülür
+  av.sitK = (av.sitK || 0) + ((s.sit ? 1 : 0) - (av.sitK || 0)) * k(9);
+  if (s.sit) av.sitH = s.sit;
+  const si = av.sitK > .002 ? av.sitK : 0;
+  const emEnv = s.emote ? Math.min(1, (s.emoteT || 0) * 4, Math.max(0, ((EMOTE_DUR[s.emote] || 2) - (s.emoteT || 0)) * 4)) : 0;
+  const bounce = s.emote === 'dance' ? Math.abs(Math.sin((s.emoteT || 0) * 4.2)) * .16 * emEnv : 0;
+  const cr = av.crouchK * (1 - av.slideK) + bounce, sl = av.slideK, ai = av.airK * (1 - sl);
+  C.obj.position.y = -CHAR_SRC.minY * CHAR_SRC.k - cr * .34 - sl * .55 + ai * .05 - si * Math.max(0, CHAR_HIP - (av.sitH || .47) - .08);
   C.obj.updateMatrixWorld(true);
   for (const sd of ['L', 'R']) {
     const up = B['UpperLeg.' + sd], lo = B['LowerLeg.' + sd], i = sd === 'R' ? 1 : 0;
     let hip = cr * .95 + ai * (.55 + i * .35), knee = cr * 1.7 + ai * (.9 + i * .2);
     if (sl > .02) { hip = hip * (1 - sl) + (i ? 1.45 : .15) * sl; knee = knee * (1 - sl) + (i ? .1 : 1.9) * sl; }
+    if (si > 0) { const kh = (av.sitH || .47) > .65 ? 1.1 : 1.5; hip = hip * (1 - si) + (1.42 - i * .06) * si; knee = knee * (1 - si) + (kh + i * .1) * si; }
     rotW(up, RIGHT, hip); rotW(lo, RIGHT, -knee);
   }
   // ayaklar yeniden baldıra bağlanır
@@ -269,7 +278,8 @@ function animateCharAvatar(av, dt, s) {
   }
   // ---- gövde: kayarken geriye yaslanır, eğilince öne; bakış yönüne eğilir ----
   const pitch = s.pitch || 0;
-  rotW(B.Abdomen, RIGHT, -cr * .25 + sl * .45);   // + geriye yaslanma
+  rotW(B.Abdomen, RIGHT, -cr * .25 + sl * .45 + si * .1);   // + geriye yaslanma
+  if (s.look) { rotW(B.Neck, UPW, s.look * .35); rotW(B.Head, UPW, s.look * .45); }   // oturan başını çevirir
   for (const n of ['Torso', 'Chest']) rotW(B[n], RIGHT, pitch * .22);
   rotW(B.Neck, RIGHT, pitch * .15); rotW(B.Head, RIGHT, pitch * .2);
   // ---- silah ve kollar ----
@@ -287,6 +297,32 @@ function animateCharAvatar(av, dt, s) {
     ikArm(B['UpperArm.R'], B['LowerArm.R'], B['Wrist.R'], tgt.clone().addScaledVector(RIGHT, .1), new V3(0, -1, 0).addScaledVector(RIGHT, 1));
     ikArm(B['UpperArm.L'], B['LowerArm.L'], B['Wrist.L'], tgt.clone().addScaledVector(RIGHT, -.05), new V3(0, -1, 0).addScaledVector(RIGHT, -1));
     if (melee) poseBlade(av, w);
+  }
+  if (si > .3 && !s.emote && !gun && !melee) {   // oturunca eller dizlerin üstünde
+    for (const sd of ['L', 'R']) {
+      const side = sd === 'R' ? 1 : -1, hp = wpos(B['UpperLeg.' + sd], new V3()), kn = wpos(B['LowerLeg.' + sd], new V3());
+      ikArm(B['UpperArm.' + sd], B['LowerArm.' + sd], B['Wrist.' + sd], hp.lerp(kn, .72).addScaledVector(UPW, .09).addScaledVector(RIGHT, side * .03), RIGHT.clone().multiplyScalar(side).addScaledVector(FWD, -.8).addScaledVector(UPW, -.3));
+    }
+  }
+  if (emEnv > 0 && !gun && !melee) poseEmote(av, s, emEnv, RIGHT, UPW, FWD);
+}
+// lobi hareketleri: el sallama, dans. env: giriş / çıkış yumuşatması (0..1)
+function poseEmote(av, s, env, RIGHT, UPW, FWD) {
+  const B = av.char.bones, t = s.emoteT || 0;
+  const rot = (b, axis, a) => { if (b && Math.abs(a) > 1e-4) boneRotateWorld(b, new THREE.Quaternion().setFromAxisAngle(axis, a)); };
+  const arm = (sd, tgt, pole) => { const w = B['Wrist.' + sd], cur = wpos(w, new V3()); ikArm(B['UpperArm.' + sd], B['LowerArm.' + sd], w, cur.lerp(tgt, env), pole); };
+  if (s.emote === 'wave') {
+    const sh = wpos(B['UpperArm.R'], new V3());
+    arm('R', sh.addScaledVector(UPW, .42).addScaledVector(RIGHT, .26 + Math.sin(t * 9) * .12).addScaledVector(FWD, .1), RIGHT.clone().addScaledVector(UPW, -1).addScaledVector(FWD, -.4));
+    rot(B.Head, UPW, -.15 * env);
+  } else if (s.emote === 'dance') {
+    const ph = t * 4.2, sway = Math.sin(ph) * env;
+    rot(B.Abdomen, FWD, sway * .16); rot(B.Chest, FWD, -sway * .2); rot(B.Head, FWD, sway * .14);
+    rot(B.Neck, RIGHT, Math.max(0, Math.sin(ph * 2)) * .22 * env);
+    for (const sd of ['L', 'R']) {
+      const side = sd === 'R' ? 1 : -1, sh = wpos(B['UpperArm.' + sd], new V3()), up = Math.sin(ph + (side > 0 ? 0 : Math.PI)) * .5 + .5;
+      arm(sd, sh.addScaledVector(UPW, -.22 + up * .68).addScaledVector(RIGHT, side * (.3 + up * .08)).addScaledVector(FWD, .2), RIGHT.clone().multiplyScalar(side).addScaledVector(UPW, -.6));
+    }
   }
 }
 // 1. şahısta yalnız bacaklar görünür: üst gövde ve baş ağları gizlenir (kamera içlerinden görünmesin)

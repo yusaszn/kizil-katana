@@ -78,16 +78,16 @@ function updateVoice(rdt) {
   // artık odada olmayanların ve 8 sn'de bağlanamayan aramaları kapat (aranan taraf sonra tekrar aranır)
   for (const pid in voice.calls) if (!voicePidToPlayer(pid) || (!voice.remote[pid] && performance.now() - voice.calls[pid].t0 > 8000)) voiceDrop(pid);
   // bas-konuş
-  const talkKey = keys.KeyK && (state === 'play' || state === 'dead');
+  const talkKey = keys.KeyK && (state === 'play' || state === 'dead' || state === 'lobby');
   if (talkKey && !voice.mic) voiceAskMic();
   const talking = voice.mic && (voiceMode() === 'open' || talkKey);
   if (voice.mic) voice.mic.enabled = !!talking;
   // takım filtresi ve ses seviyesi
-  const vsMode = isVS(), mt = vsMode ? myTeam() : null;
+  const lob = state === 'lobby', vsMode = isVS() && !lob, mt = vsMode ? myTeam() : null;
   for (const pid in voice.remote) {
     const r = voice.remote[pid], id = voicePidToPlayer(pid);
     const hear = !vsMode || !id || teamOf(id) === mt;
-    r.a.muted = !hear; r.a.volume = clamp(SETTINGS.voiceVol ?? .9, 0, 1);
+    r.a.muted = !hear; r.a.volume = clamp(SETTINGS.voiceVol ?? .9, 0, 1) * (lob && id ? lobbyHearVol(id) : 1);   // lobide mesafeye göre
   }
   // kim konuşuyor göstergesi
   voice.hudT -= rdt; if (voice.hudT > 0) return; voice.hudT = .1;

@@ -322,3 +322,38 @@ body.touchdev .screen,body.touchdev #buy,body.touchdev #teamPick{touch-action:pa
 body.touchdev .screen{place-items:start center}
 @media (max-height:520px){.panel h1{font-size:clamp(40px,9vh,64px)}.panel{gap:10px}.panel p{margin:0;font-size:13px}#buy{max-height:calc(100vh - 12px);padding:10px}.bc{min-height:70px;padding:6px 8px}}
 body.touchdev #game{touch-action:none}
+
+/* ================= SOSYAL LOBİ ================= */
+#lobby.social{inset:16px 16px 16px auto;width:min(480px,calc(100vw - 32px));display:block;padding:18px 20px;background:rgba(14,8,7,.84);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(239,225,205,.14);border-radius:4px}
+#lobby.social .panel{gap:12px;max-width:none}
+#lobby.social .panel h2{font-size:42px}
+#lobby.social .modes button{font-size:12px;letter-spacing:.14em;padding:8px 11px}
+#lobby.social #modeInfo{font-size:13px}
+#lobby.social .btns{flex-wrap:wrap;gap:8px}
+#lobby.social .btn{font-size:14px;padding:11px 20px;letter-spacing:.2em}
+#lobby:not(.social) #venuePick,#lobby:not(.social) #lobbyWalkBtn,#lobby:not(.social) #setBtnLobby{display:none}
+#lobbyHud{position:fixed;inset:0;pointer-events:none;font-family:var(--hud);color:var(--bone);text-shadow:0 2px 0 #000,0 0 10px rgba(0,0,0,.85)}
+#lhRoom{position:absolute;left:20px;top:16px;font-weight:700;letter-spacing:.2em;font-size:14px}
+#lhMic{position:absolute;left:20px;top:42px;color:#9fe8ff;font-weight:700;letter-spacing:.2em;font-size:13px}
+#lhPrompt{position:absolute;left:50%;top:62%;transform:translateX(-50%);font-weight:700;font-size:18px;letter-spacing:.25em;color:var(--gold)}
+#lhClick{position:absolute;left:calc((100vw - 520px) / 2);top:50%;transform:translate(-50%,-50%);font-weight:700;font-size:15px;letter-spacing:.25em;padding:10px 16px;background:rgba(10,5,4,.55);white-space:nowrap}
+.lhKeys{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font-size:12px;letter-spacing:.1em;color:rgba(239,225,205,.78);white-space:nowrap}
+.lhKeys b{color:var(--bone)}
+#lobbyHud:not(.walk) .lhKeys,#lobbyHud:not(.walk) #lhPrompt{display:none}
+#lobbyHud.walk #lhClick{display:none}
+body.touchdev #lhClick,body.touchdev .lhKeys{display:none}
+@media (max-width:900px){#lhClick{display:none}.lhKeys{font-size:10px}}
+
+/* ================= SOHBET ================= */
+#chatBox{position:fixed;left:20px;bottom:210px;width:min(440px,70vw);font-family:var(--hud);font-size:14px;pointer-events:none;z-index:5}
+body.inlobby #chatBox{bottom:44px}
+#chatLog{display:flex;flex-direction:column;gap:2px;max-height:38vh;overflow:hidden}
+#chatLog .cl{color:var(--bone);text-shadow:0 1px 0 #000,0 0 6px rgba(0,0,0,.9);transition:opacity .8s;line-height:1.35;overflow-wrap:anywhere}
+#chatLog .cl.sys{color:var(--gold);font-size:12px;letter-spacing:.08em}
+#chatLog .cl.old{opacity:0}
+#chatBox:not(.open) #chatLog .cl:nth-last-child(n+7){display:none}
+#chatBox.open #chatLog{max-height:46vh;overflow:auto;pointer-events:auto;background:rgba(10,5,4,.6);padding:6px 8px}
+#chatBox.open #chatLog .cl.old{opacity:1}
+#chatIn{display:none;width:100%;box-sizing:border-box;margin-top:6px;font:inherit;color:var(--bone);background:rgba(10,5,4,.88);border:1px solid rgba(239,225,205,.35);padding:8px 10px;pointer-events:auto;outline:none}
+#chatIn:focus{border-color:var(--blood-hi)}
+#chatBox.open #chatIn{display:block}
