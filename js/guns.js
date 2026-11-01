@@ -6,7 +6,7 @@ const GUNS = {
   ak47: {
     name: 'AK-47', slot: 'primary', mag: 30, rounds: 90, rate: 9.6, auto: true, reload: 2.45,
     dmg: 1.3, pvp: 27, head: 4.2, falloff: 32, spread: .03, ads: .009, moveMul: 2.2, bloom: .14, bloomMax: 1.6,
-    recoil: .016, recoilYaw: .006, shake: .05, pose: [.2, -.2, -.46], adsPose: [0, -.088, -.34], adsFov: 16, heavy: false,
+    recoil: .016, recoilYaw: .006, shake: .05, pose: [.2, -.2, -.46], adsPose: [0, -.088, -.34], adsFov: 16, heavy: false, slideBack: .05,
   },
   deagle: {
     name: 'DEAGLE', slot: 'pistol', mag: 7, rounds: 35, rate: 2.3, auto: false, reload: 2.1,
@@ -38,82 +38,12 @@ sfx.usps = () => { if (!gate('usp', 40)) return; nz(.09, 1600, 500, 1.2, .35); p
 sfx.glock = () => { if (!gate('glk', 40)) return; punch(200, .1, .5); nz(.1, 3800, 900, .8, .5); tn('square', 260, 70, .08, .22); };
 
 /* ================= MODELLER ================= */
-const gunWood = new THREE.MeshStandardMaterial({ color: 0x7a4422, roughness: .62 });
-const gunSilver = new THREE.MeshStandardMaterial({ color: 0x80848c, metalness: .7, roughness: .28, envMap: envTex });
-const gunPoly = new THREE.MeshStandardMaterial({ color: 0x2a2c30, roughness: .45, metalness: .35 });
-const gunRubber = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: .9 });
-function gAdd(parent, geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); parent.add(m); return m; }
-const B = (w, h, d) => new THREE.BoxGeometry(w, h, d), C = (r0, r1, l, s = 12) => new THREE.CylinderGeometry(r0, r1, l, s);
-function gunFlash(g, z, y, col = 0xffc060) {
-  const f = new THREE.Sprite(new THREE.SpriteMaterial({ map: flashTex, color: col, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
-  f.position.set(0, y, z); f.visible = false; g.add(f); return f;
-}
 const gunRoots = {}, gunModels = {};
-function buildAK() {
-  const g = new THREE.Group();
-  gAdd(g, B(.054, .072, .3), gunMetal, 0, 0, 0);                                   // gövde
-  gAdd(g, B(.05, .018, .27), gunDark, 0, .044, .005);                              // toz kapağı
-  gAdd(g, C(.025, .025, .27, 12), gunDark, 0, .036, .005, Math.PI / 2).scale.set(1, 1, .45);
-  gAdd(g, B(.03, .028, .045), gunDark, 0, .058, -.12);                             // gez
-  gAdd(g, B(.03, .012, .02), gunMetal, .034, .018, -.03);                          // kurma kolu
-  gAdd(g, B(.062, .058, .2), gunWood, 0, -.006, -.26);                             // alt el kundağı
-  gAdd(g, C(.019, .019, .19, 10), gunWood, 0, .04, -.255, Math.PI / 2);            // üst kundak (gaz borusu)
-  gAdd(g, B(.03, .045, .03), gunMetal, 0, .03, -.375);                             // gaz bloğu
-  gAdd(g, C(.011, .011, .32, 10), gunDark, 0, .01, -.52, Math.PI / 2);             // namlu
-  gAdd(g, C(.007, .007, .2, 8), gunDark, 0, .034, -.47, Math.PI / 2);              // gaz borusu ucu
-  gAdd(g, B(.008, .05, .01), gunDark, 0, .045, -.62);                               // arpacık
-  gAdd(g, new THREE.TorusGeometry(.016, .003, 6, 12), gunDark, 0, .05, -.62);
-  gAdd(g, C(.017, .015, .055, 10), gunDark, 0, .01, -.69, Math.PI / 2);            // namlu freni
-  const mag = new THREE.Group(); mag.position.set(0, -.04, -.07); g.add(mag);       // kavisli şarjör
-  for (let i = 0; i < 4; i++) gAdd(mag, B(.034, .052, .062), gunMetal, 0, -.024 - i * .044, -i * .017 - i * i * .004, -(.08 + i * .13));
-  gAdd(g, B(.036, .1, .046), gunDark, 0, -.08, .1, .35);                            // kabza
-  gAdd(g, B(.008, .03, .07), gunDark, 0, -.052, .035);                              // tetik korkuluğu
-  gAdd(g, B(.045, .07, .26), gunWood, 0, -.028, .3, -.08);                          // dipçik
-  gAdd(g, B(.047, .085, .02), gunRubber, 0, -.04, .43, -.08);
-  const rH = createTacticalHand(false, { grip: 'v', r: .021 }); rH.position.set(0, -.075, .1); rH.rotation.x = .35; g.add(rH);
-  const lH = createTacticalHand(true, { grip: 'h', r: .034 }); lH.position.set(0, -.004, -.26); g.add(lH);
-  return { g, mag, flash: gunFlash(g, -.75, .01), muzzleZ: -.75 };
-}
-function buildPistol(kind) {
-  const g = new THREE.Group(), slide = new THREE.Group(); g.add(slide);
-  let flashZ;
-  if (kind === 'deagle') {
-    gAdd(slide, B(.042, .046, .23), gunSilver, 0, .028, -.04);                     // iri kızak
-    for (let i = 0; i < 5; i++) gAdd(slide, B(.044, .03, .004), gunDark, 0, .028, .045 + i * .01);   // tırtıklar
-    gAdd(slide, B(.026, .008, .2), gunSilver, 0, .055, -.04);                       // üst rampa
-    gAdd(slide, B(.006, .014, .01), gunDark, 0, .065, -.14);                        // arpacık
-    gAdd(slide, B(.03, .012, .012), gunDark, 0, .063, .06);                         // gez
-    gAdd(g, B(.038, .03, .19), gunSilver, 0, -.008, -.045);                         // gövde
-    gAdd(g, B(.012, .022, .018), gunDark, 0, .056, .09);                            // horoz
-    gAdd(g, B(.04, .115, .055), gunRubber, 0, -.072, .055, .2);                     // kabza
-    flashZ = -.17;
-  } else if (kind === 'usps') {
-    gAdd(slide, B(.032, .034, .19), gunPoly, 0, .022, -.02);
-    gAdd(slide, B(.005, .01, .008), gunDark, 0, .043, -.1);
-    gAdd(g, B(.03, .026, .17), gunPoly, 0, -.005, -.025);
-    gAdd(g, C(.019, .019, .19, 14), gunDark, 0, .02, -.205, Math.PI / 2);          // susturucu
-    gAdd(g, C(.02, .02, .012, 14), gunMetal, 0, .02, -.3, Math.PI / 2);
-    gAdd(g, B(.033, .105, .047), gunPoly, 0, -.068, .05, .22);
-    flashZ = -.31;
-  } else {   // glock
-    gAdd(slide, B(.032, .036, .18), gunPoly, 0, .022, -.02);
-    for (let i = 0; i < 4; i++) gAdd(slide, B(.034, .026, .003), gunDark, 0, .022, .04 + i * .009);
-    gAdd(slide, B(.005, .01, .008), gunDark, 0, .044, -.1);
-    gAdd(g, B(.03, .026, .16), gunPoly, 0, -.005, -.02);
-    gAdd(g, B(.034, .102, .048), gunPoly, 0, -.068, .05, .22);
-    for (let i = 0; i < 3; i++) gAdd(g, B(.036, .006, .01), gunDark, 0, -.045 - i * .022, .03 - i * .005);   // parmak oyukları
-    flashZ = -.12;
-  }
-  gAdd(g, B(.007, .025, .05), gunDark, 0, -.03, .01);                               // tetik korkuluğu
-  const mag = gAdd(g, B(.026, .09, .034), gunMetal, 0, -.075, .052, .22);
-  const hand = createTacticalHand(false, { grip: 'v', r: .02 }); hand.position.set(0, -.064, .05); hand.rotation.x = .22; g.add(hand);
-  // destek eli: tabancayı alttan saran sol el
-  const sup = createTacticalHand(true, { grip: 'v', r: .024, trigger: false }); sup.position.set(-.02, -.08, .045); sup.rotation.set(.25, .5, 0); g.add(sup);
-  return { g, slide, mag, flash: gunFlash(g, flashZ, .022, kind === 'usps' ? 0xffe0a0 : 0xffc060) };
-}
+// modeller: gunmodels.js (AK-47, Deagle, USP-S, Glock)
 for (const id in GUNS) {
   const root = new THREE.Group(); root.visible = false; vmScene.add(root);
-  const m = id === 'ak47' ? buildAK() : buildPistol(id);
+  const m = GM[id === 'ak47' ? 'ak' : id]();
+  if (m.sight) GUNS[id].adsPose[1] = -m.sight;   // nişanda gez ve arpacık tam göz hizasında
   root.add(m.g); gunRoots[id] = root; gunModels[id] = m;
   GUNS[id].restP = P(GUNS[id].pose, [0, .03, 0]); GUNS[id].adsP = P(GUNS[id].adsPose, [0, 0, 0]);
 }

@@ -3,54 +3,10 @@
    Boss'tan "Otomatik Pompalı" çıkarsa pompalamadan seri atar. */
 
 const sgRoot = new THREE.Group(); vmScene.add(sgRoot); sgRoot.visible = false;
-const woodMat = new THREE.MeshStandardMaterial({ color: 0x4a2a16, roughness: .7 });
-const shellMat = new THREE.MeshStandardMaterial({ color: 0xa3140f, roughness: .5 });
-const brassMat = new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: .9, roughness: .3, envMap: envTex });
-function makeShell() {
-  const s = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(.016, .016, .07, 10), shellMat); s.add(body);
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(.0175, .0175, .018, 10), brassMat); base.position.y = -.04; s.add(base);
-  return s;
-}
-const sg = (() => {
-  const g = new THREE.Group();
-  const add = (geo, mat, x, y, z, rx = 0, parent = g) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.x = rx; parent.add(m); return m; };
-  add(new THREE.CylinderGeometry(.022, .022, .78, 10), gunDark, 0, .03, -.42, Math.PI / 2);   // namlu
-  add(new THREE.CylinderGeometry(.018, .018, .62, 8), gunMetal, 0, -.022, -.36, Math.PI / 2); // fişek tüpü
-  add(new THREE.BoxGeometry(.07, .09, .28), gunMetal, 0, .0, .02);                             // gövde
-  add(new THREE.BoxGeometry(.03, .012, .1), gunDark, 0, -.046, .04);                           // doldurma yuvası
-  add(new THREE.BoxGeometry(.06, .08, .32), woodMat, 0, -.03, .3, -.12);                       // dipçik
-  add(new THREE.BoxGeometry(.05, .13, .06), woodMat, 0, -.09, .13, .35);                       // kabza
-  // Sağ el: kabzayı kavrayan taktik el
-  if (typeof createTacticalHand === 'function') {
-    const rHand = createTacticalHand(false, { grip: 'v', r: .026 });
-    rHand.position.set(0, -.085, .13);
-    rHand.rotation.x = .35;
-    g.add(rHand);
-  } else {
-    add(new THREE.BoxGeometry(.075, .07, .09), gloveMat, 0, -.1, .14, .3);
-    add(new THREE.BoxGeometry(.085, .085, .5), sleeveMat, .02, -.14, .42);
-  }
-  const pump = new THREE.Group(); pump.position.set(0, -.02, -.3); g.add(pump);
-  add(new THREE.CylinderGeometry(.034, .034, .2, 10), woodMat, 0, 0, 0, Math.PI / 2, pump);    // pompa kolu
-  // Sol el: pompayı alttan kavrar ya da fişek doldurur
-  const hand = new THREE.Group(); g.add(hand);
-  if (typeof createTacticalHand === 'function') {
-    const lHand = createTacticalHand(true, { grip: 'h', r: .036 });
-    lHand.position.set(0, .01, -.02);
-    hand.add(lHand);
-  } else {
-    add(new THREE.BoxGeometry(.075, .07, .1), gloveMat, 0, 0, 0, 0, hand);
-    add(new THREE.BoxGeometry(.085, .085, .55), sleeveMat, -.06, -.06, .28, 0, hand);
-  }
-  const shell = makeShell(); shell.position.set(.01, .045, -.02); shell.rotation.x = Math.PI / 2; shell.visible = false; hand.add(shell);
-  const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: flashTex, color: 0xffb850, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
-  flash.position.set(0, .03, -.86); flash.visible = false; g.add(flash);
-  sgRoot.add(g);
-  return { g, pump, hand, shell, flash, kick: 0, flashT: 0 };
-})();
+const makeShell = () => GM.shell();
+const sg = GM.r870(); sgRoot.add(sg.g);   // model: gunmodels.js
 const SG_REST = P([.21, -.22, -.46], [0, .03, 0]);
-const SG_AIM = P([.06, -.2, -.42], [0, 0, 0]);          // sağ tık: gözüne doğru kaldırır
+const SG_AIM = P([0, -sg.sight - .004, -.36], [0, 0, 0]);   // sağ tık: dipçiği yanağa alır, gövde üstünden arpacık boncuğuna bakar
 const SG_LOAD = P([.2, -.24, -.46], [.25, .35, -.55]);  // doldururken yana yatırır
 const sgPose = P([0, 0, 0], [0, 0, 0]);
 const HAND_PUMP = new V3(0, -.06, -.3), HAND_PORT = new V3(.01, -.1, .04), HAND_BELT = new V3(-.12, -.3, .12);

@@ -11,47 +11,10 @@ const special = { kind: null, ammo: 0, cd: 0, kick: 0, flashT: 0 };
 const specialShots = [], specialDrops = [];
 
 /* ================= MODELLER ================= */
-function spAdd(g, geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); g.add(m); return m; }
-const olive = new THREE.MeshStandardMaterial({ color: 0x3d4a2a, roughness: .7 });
-const wood = new THREE.MeshStandardMaterial({ color: 0x5a3418, roughness: .65 });
 const warheadMat = new THREE.MeshStandardMaterial({ color: 0x6b6f3a, roughness: .5, metalness: .3 });
-const glowRed = new THREE.MeshBasicMaterial({ color: 0xff4a1a });
-const glowGreen = new THREE.MeshBasicMaterial({ color: 0x8aff3a });
-function rocketModel(hands) {
-  const g = new THREE.Group();
-  spAdd(g, new THREE.CylinderGeometry(.065, .065, .95, 14, 1, true), olive, 0, 0, -.05, Math.PI / 2);          // tüp
-  spAdd(g, new THREE.CylinderGeometry(.078, .07, .1, 14), gunDark, 0, 0, .4, Math.PI / 2);                       // arka ağız
-  spAdd(g, new THREE.CylinderGeometry(.075, .075, .06, 14), gunDark, 0, 0, -.5, Math.PI / 2);                    // ön bilezik
-  spAdd(g, new THREE.BoxGeometry(.04, .11, .05), gunDark, 0, -.11, .02, .25);                                     // kabza
-  spAdd(g, new THREE.BoxGeometry(.04, .1, .05), gunDark, 0, -.11, -.22, .1);                                      // ön tutamak
-  spAdd(g, new THREE.BoxGeometry(.03, .07, .1), gunDark, -.085, .05, -.12);                                        // nişangah kutusu
-  spAdd(g, new THREE.CircleGeometry(.018, 10), glowRed, -.085, .06, -.171);
-  const head = new THREE.Group(); head.position.z = -.52; g.add(head);                                           // roket ucu
-  spAdd(head, new THREE.CylinderGeometry(.05, .062, .14, 12), warheadMat, 0, 0, -.07, Math.PI / 2);
-  spAdd(head, new THREE.ConeGeometry(.05, .2, 12), warheadMat, 0, 0, -.24, -Math.PI / 2);
-  if (hands && typeof createTacticalHand === 'function') {
-    const rH = createTacticalHand(false, { grip: 'v', r: .022 }); rH.position.set(0, -.1, .02); rH.rotation.x = .25; g.add(rH);
-    const lH = createTacticalHand(true, { grip: 'v', r: .022, trigger: false }); lH.position.set(0, -.1, -.22); lH.rotation.x = .1; g.add(lH);
-  }
-  return { g, head };
-}
-function launcherModel(hands) {
-  const g = new THREE.Group();
-  const barrel = new THREE.Group(); barrel.position.set(0, .01, -.06); g.add(barrel);  // kırma namlu: menteşe etrafında aşağı açılır
-  spAdd(barrel, new THREE.CylinderGeometry(.048, .048, .36, 14), gunMetal, 0, 0, -.18, Math.PI / 2);
-  spAdd(barrel, new THREE.CylinderGeometry(.052, .052, .04, 14), gunDark, 0, 0, -.36, Math.PI / 2);
-  const shell = spAdd(barrel, new THREE.CylinderGeometry(.036, .036, .07, 12), warheadMat, 0, 0, .02, Math.PI / 2); // fişek
-  spAdd(barrel, new THREE.BoxGeometry(.02, .05, .02), gunDark, 0, .06, -.12);                                        // gez
-  spAdd(g, new THREE.BoxGeometry(.06, .07, .12), gunDark, 0, -.005, .02);                                             // gövde
-  spAdd(g, new THREE.BoxGeometry(.05, .08, .32), wood, 0, -.05, .22, .12);                                            // ahşap dipçik
-  spAdd(g, new THREE.BoxGeometry(.05, .045, .2), wood, 0, -.055, -.16);                                               // el kundağı
-  spAdd(g, new THREE.CircleGeometry(.02, 10), glowGreen, 0, .0, -.381);
-  if (hands && typeof createTacticalHand === 'function') {
-    const rH = createTacticalHand(false, { grip: 'v', r: .026 }); rH.position.set(0, -.07, .09); rH.rotation.x = .9; g.add(rH);
-    const lH = createTacticalHand(true, { grip: 'h', r: .03 }); lH.position.set(0, -.055, -.16); g.add(lH);
-  }
-  return { g, barrel, shell };
-}
+// modeller: gunmodels.js (roketatar: RPG tipi, bombaatar: M79 tipi kırma namlu)
+const rocketModel = hands => GM.rpg({ hands });
+const launcherModel = hands => GM.m79({ hands });
 const rocketRoot = new THREE.Group(); vmScene.add(rocketRoot); rocketRoot.visible = false;
 const launcherRoot = new THREE.Group(); vmScene.add(launcherRoot); launcherRoot.visible = false;
 const rkm = rocketModel(true); rocketRoot.add(rkm.g);

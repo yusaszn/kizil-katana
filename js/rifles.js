@@ -10,89 +10,16 @@ const awp = { mag: 5, reserve: 15, reloadT: 0, boltT: 0, cd: 0, scopeK: 0, kick:
 let rifClick = false, rifClickR = false;
 
 /* ================= MODELLER ================= */
-function rifleAdd(g, geo, mat, x, y, z, rx = 0, rz = 0) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.x = rx; m.rotation.z = rz; g.add(m); return m; }
 const m4Root = new THREE.Group(); vmScene.add(m4Root); m4Root.visible = false;
-const m4m = (() => {
-  const g = new THREE.Group(), tan = new THREE.MeshStandardMaterial({ color: 0x3a3833, metalness: .5, roughness: .55, envMap: envTex });
-  rifleAdd(g, new THREE.BoxGeometry(.06, .09, .36), gunMetal, 0, 0, 0);                       // gövde
-  rifleAdd(g, new THREE.BoxGeometry(.068, .075, .3), tan, 0, .005, -.32);                      // el kundağı
-  rifleAdd(g, new THREE.CylinderGeometry(.012, .012, .26, 8), gunDark, 0, .01, -.6, Math.PI / 2); // namlu
-  rifleAdd(g, new THREE.BoxGeometry(.012, .05, .012), gunDark, 0, .06, -.44);                  // arpacık
-  rifleAdd(g, new THREE.BoxGeometry(.03, .035, .12), gunDark, 0, .065, .02);                   // gez / taşıma kolu
-  rifleAdd(g, new THREE.BoxGeometry(.04, .1, .05), gunDark, 0, -.085, .11, .3);                // kabza
-  rifleAdd(g, new THREE.BoxGeometry(.05, .08, .24), tan, 0, -.02, .3);                         // dipçik
-  const mag = rifleAdd(g, new THREE.BoxGeometry(.038, .16, .06), gunDark, 0, -.12, -.05, .22); // şarjör
-  const gl = rifleAdd(g, new THREE.CylinderGeometry(.026, .026, .22, 10), gunDark, 0, -.062, -.33, Math.PI / 2); // bomba atar
-  // M4 elleri: sağ el kabzada, sol el el kundağında
-  if (typeof createTacticalHand === 'function') {
-    const rH = createTacticalHand(false, { grip: 'v', r: .022 }); rH.position.set(0, -.08, .11); rH.rotation.x = .3; g.add(rH);
-    const lH = createTacticalHand(true, { grip: 'h', r: .04 }); lH.position.set(0, .005, -.3); g.add(lH);
-  } else {
-    rifleAdd(g, new THREE.BoxGeometry(.075, .07, .09), gloveMat, 0, -.09, .11, .3);
-    rifleAdd(g, new THREE.BoxGeometry(.085, .085, .5), sleeveMat, .02, -.13, .4);
-    rifleAdd(g, new THREE.BoxGeometry(.075, .07, .1), gloveMat, -.01, -.06, -.3);
-    rifleAdd(g, new THREE.BoxGeometry(.085, .085, .55), sleeveMat, -.08, -.1, -.02);
-  }
-  const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: flashTex, color: 0xffc860, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
-  flash.position.set(0, .01, -.76); flash.visible = false; g.add(flash);
-  m4Root.add(g);
-  return { g, mag, gl, flash };
-})();
+const m4m = GM.m4(); m4Root.add(m4m.g);   // model: gunmodels.js
 const awpRoot = new THREE.Group(); vmScene.add(awpRoot); awpRoot.visible = false;
-const awpm = (() => {
-  const g = new THREE.Group(), green = new THREE.MeshStandardMaterial({ color: 0x2f4a2a, roughness: .6 });
-  rifleAdd(g, new THREE.BoxGeometry(.065, .085, .42), green, 0, 0, 0);                         // gövde
-  rifleAdd(g, new THREE.CylinderGeometry(.015, .013, .78, 10), gunDark, 0, .015, -.6, Math.PI / 2); // uzun namlu
-  rifleAdd(g, new THREE.CylinderGeometry(.03, .03, .34, 14), gunDark, 0, .088, -.06, Math.PI / 2);  // dürbün
-  rifleAdd(g, new THREE.CylinderGeometry(.038, .03, .05, 14), gunDark, 0, .088, -.24, Math.PI / 2);
-  rifleAdd(g, new THREE.CircleGeometry(.03, 14), new THREE.MeshBasicMaterial({ color: 0x2a6fa0 }), 0, .088, -.266);
-  rifleAdd(g, new THREE.BoxGeometry(.06, .1, .3), green, 0, -.03, .34);                         // dipçik
-  rifleAdd(g, new THREE.BoxGeometry(.04, .1, .05), green, 0, -.09, .14, .3);                   // kabza
-  const mag = rifleAdd(g, new THREE.BoxGeometry(.04, .08, .08), gunDark, 0, -.08, -.04);
-  const bolt = new THREE.Group(); bolt.position.set(.035, .03, .1); g.add(bolt);
-  rifleAdd(bolt, new THREE.BoxGeometry(.06, .012, .012), gunMetal, .03, 0, 0);
-  rifleAdd(bolt, new THREE.SphereGeometry(.014, 8, 6), gunMetal, .06, 0, 0);
-  // AWP elleri
-  if (typeof createTacticalHand === 'function') {
-    const rH = createTacticalHand(false, { grip: 'v', r: .022 }); rH.position.set(0, -.085, .14); rH.rotation.x = .3; g.add(rH);
-    const lH = createTacticalHand(true, { grip: 'h', r: .045 }); lH.position.set(0, 0, -.16); g.add(lH);
-  } else {
-    rifleAdd(g, new THREE.BoxGeometry(.075, .07, .09), gloveMat, 0, -.1, .14, .3);
-    rifleAdd(g, new THREE.BoxGeometry(.085, .085, .5), sleeveMat, .02, -.14, .43);
-    rifleAdd(g, new THREE.BoxGeometry(.075, .07, .1), gloveMat, -.01, -.06, -.26);
-    rifleAdd(g, new THREE.BoxGeometry(.085, .085, .55), sleeveMat, -.08, -.1, .02);
-  }
-  const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: flashTex, color: 0xffd080, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
-  flash.position.set(0, .015, -1.0); flash.visible = false; g.add(flash);
-  awpRoot.add(g);
-  return { g, mag, bolt, flash };
-})();
+const awpm = GM.awp(); awpRoot.add(awpm.g);   // model: gunmodels.js
 /* ================= TABANCA (VS silah setinde) ================= */
 RIF.pistol = { mag: 12, rounds: 36, reload: 1.3, dmg: 1.5, pvp: 26, spread: .014, ads: .004 };
 const pis = { mag: 12, reserve: 36, reloadT: 0, cd: 0, adsK: 0, kick: 0, flashT: 0, slide: 0 };
 const pisRoot = new THREE.Group(); vmScene.add(pisRoot); pisRoot.visible = false;
-const pism = (() => {
-  const g = new THREE.Group();
-  const slide = new THREE.Group(); g.add(slide);
-  rifleAdd(slide, new THREE.BoxGeometry(.036, .038, .19), gunMetal, 0, .02, -.03);           // kızak
-  rifleAdd(slide, new THREE.BoxGeometry(.008, .012, .01), gunDark, 0, .043, -.115);          // arpacık
-  rifleAdd(slide, new THREE.BoxGeometry(.03, .012, .012), gunDark, 0, .043, .055);           // gez
-  rifleAdd(g, new THREE.BoxGeometry(.032, .03, .16), gunDark, 0, -.012, -.02);               // gövde
-  rifleAdd(g, new THREE.BoxGeometry(.034, .1, .045), gunDark, 0, -.065, .045, .25);          // kabza
-  const mag = rifleAdd(g, new THREE.BoxGeometry(.026, .09, .035), gunMetal, 0, -.075, .05, .25);
-  // Tabanca eli
-  if (typeof createTacticalHand === 'function') {
-    const rH = createTacticalHand(false, { grip: 'v', r: .02 }); rH.position.set(0, -.062, .048); rH.rotation.x = .25; g.add(rH);
-  } else {
-    rifleAdd(g, new THREE.BoxGeometry(.07, .075, .09), gloveMat, 0, -.075, .06, .25);
-    rifleAdd(g, new THREE.BoxGeometry(.08, .08, .48), sleeveMat, .02, -.11, .33);
-  }
-  const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: flashTex, color: 0xffc860, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
-  flash.position.set(0, .02, -.17); flash.visible = false; g.add(flash);
-  pisRoot.add(g);
-  return { g, slide, mag, flash };
-})();
-const PIS_REST = P([.17, -.18, -.4], [0, .03, 0]), PIS_ADS = P([0, -.1, -.36], [0, 0, 0]);
+const pism = GM.beretta(); pisRoot.add(pism.g);   // model: gunmodels.js
+const PIS_REST = P([.17, -.18, -.4], [0, .03, 0]), PIS_ADS = P([0, -pism.sight, -.32], [0, 0, 0]);   // nişanda gez ve arpacık göz hizasında
 const pisAds = () => wpn.cur === 'pistol' && !wpn.next && mouse.right && player.alive && pis.reloadT <= 0 && state === 'play';
 function firePistol() {
   pis.mag--; netFx.sh++; netFx.ft = 0;

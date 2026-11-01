@@ -2,33 +2,10 @@
 /* Çift uzi: model, atış, mermi izleri, şarjör sistemi */
 
 const uziRoot = new THREE.Group(); vmScene.add(uziRoot); uziRoot.visible = false;
-const gunMetal = new THREE.MeshStandardMaterial({ color: 0x2b2d31, metalness: .85, roughness: .35, envMap: envTex });
-const gunDark = new THREE.MeshStandardMaterial({ color: 0x141416, metalness: .6, roughness: .5, envMap: envTex });
-const gloveMat = new THREE.MeshStandardMaterial({ color: 0x241612, roughness: .8 });
-const sleeveMat = new THREE.MeshStandardMaterial({ color: 0x2a1c18, roughness: .9 });
 function buildUzi(side) {
-  const g = new THREE.Group();
-  const add = (geo, mat, x, y, z, rx = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.x = rx; g.add(m); return m; };
-  add(new THREE.BoxGeometry(.065, .085, .3), gunMetal, 0, 0, 0);
-  add(new THREE.BoxGeometry(.05, .02, .22), gunDark, 0, .052, .01);
-  add(new THREE.CylinderGeometry(.013, .013, .09, 8), gunDark, 0, .01, -.19, Math.PI / 2);
-  add(new THREE.BoxGeometry(.055, .15, .06), gunDark, 0, -.11, .04, .18);
-  const mag = add(new THREE.BoxGeometry(.04, .14, .045), gunMetal, 0, -.21, .06, .18);
-  add(new THREE.BoxGeometry(.012, .03, .012), gunDark, 0, .07, -.12);
-  add(new THREE.BoxGeometry(.03, .02, .06), gunDark, side * .035, .02, .05);
-  // Kabzayı saran taktik eldivenli el
-  if (typeof createTacticalHand === 'function') {
-    const hand = createTacticalHand(side === -1, { grip: 'v', r: .029, trigger: true });
-    hand.position.set(0, -.1, .045);
-    hand.rotation.x = .18;
-    g.add(hand);
-  } else {
-    add(new THREE.BoxGeometry(.078, .075, .09), gloveMat, 0, -.1, .05, .18);
-    add(new THREE.BoxGeometry(.085, .085, .5), sleeveMat, side * .02, -.13, .34);
-  }
-  const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: flashTex, color: 0xffc860, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
-  flash.position.set(0, .01, -.3); flash.visible = false; g.add(flash);
-  g.userData = { flash, mag, kick: 0, twist: 0, flashT: 0, side };
+  const m = GM.uzi(side);   // model: gunmodels.js
+  const g = m.g;
+  g.userData = { flash: m.flash, mag: m.mag, kick: 0, twist: 0, flashT: 0, side, port: m.port };
   uziRoot.add(g);
   return g;
 }
