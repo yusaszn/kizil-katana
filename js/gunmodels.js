@@ -14,9 +14,9 @@ function gmGripHand(parent, { left = false, r = .021, rake = .35, x = 0, y = 0, 
   h.position.set(x, y, z); h.rotation.set(-rake, ry, rz);
   parent.add(h); return h;
 }
-// yatay sapı (el kundağı, pompa) kavrayan el
-function gmBarHand(parent, { left = true, r = .036, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0 } = {}) {
-  const h = createTacticalHand(left, { grip: 'h', r });
+// yatay sapı (el kundağı, pompa) alttan kavrayan destek eli
+function gmBarHand(parent, { left = true, r = .036, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, grip = 'u', arm } = {}) {
+  const h = createTacticalHand(left, { grip, r, arm });
   h.position.set(x, y, z); h.rotation.set(rx, ry, rz);
   parent.add(h); return h;
 }
@@ -194,8 +194,8 @@ GM.ak = ({ hands = true } = {}) => {
   GK.tube(g, GK.steel, .005, .01, 0, .028, .179, 10);
   // ---- arka gez bloğu, gez yaprağı ve gez çentiği (çentik dibi nişan çizgisinde) ----
   GK.prof(g, GK.blued, [[-.155, .018], [-.085, .018], [-.088, .03, .004], [-.11, SL - .013, .006], [-.15, SL - .02, .008], [-.155, .035]], .036);
-  GK.box(g, GK.blued, .02, .004, .05, 0, SL - .011, -.11, -.09);
-  GK.box(g, GK.steel, .024, .006, .01, 0, SL - .009, -.118);
+  GK.box(g, GK.dark, .02, .004, .05, 0, SL - .011, -.11, -.09);
+  GK.box(g, GK.dark, .024, .006, .01, 0, SL - .009, -.118);
   GK.plate(g, GK.blued, [[-.01, SL - .012], [.01, SL - .012], [.01, SL + .003], [.0018, SL + .003], [.0018, SL], [-.0018, SL], [-.0018, SL + .003], [-.01, SL + .003]], .004, 0, 0, -.088);
   // ---- fişek penceresi, sürgü taşıyıcısı ve kurma kolu (atışta geri gider) ----
   GK.box(g, GK.hole, .001, .017, .085, .0222, .006, .012);

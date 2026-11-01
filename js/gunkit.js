@@ -54,31 +54,32 @@ const gkWoodTex = (() => {
 })();
 const gkWoodBump = (() => { const n = gkValueNoise(256, 64, 3); return gkTex(256, 4, 2, (x, y) => .5 + Math.sin((y + n(x, y) * 9) * .55) * .2 + (Math.random() - .5) * .12); })();
 // eloksal / boya aşınması: kenarlarda parlayan lekeler (pürüzlülük)
-const gkWearTex = (() => { const n = gkValueNoise(128, 12, 19); return gkTex(128, 4, 4, (x, y) => .8 + (n(x, y) - .5) * .4); })();
+const gkWearTex = (() => { const n = gkValueNoise(128, 12, 19); return gkTex(128, 4, 4, (x, y) => .95 + (n(x, y) - .5) * .3); })();
 
 /* ================= MALZEMELER ================= */
-const gkStd = (color, metalness, roughness, extra = {}) => new THREE.MeshStandardMaterial(Object.assign({ color, metalness, roughness, envMap: envTex }, extra));
-GK.steel = gkStd(0x34363a, .78, .42, { bumpMap: gkGrainTex, bumpScale: .0005, roughnessMap: gkWearTex });   // fosfatlı çelik (namlu, sürgü, pimler)
-GK.black = gkStd(0x1d1e21, .55, .48, { bumpMap: gkGrainTex, bumpScale: .0004, roughnessMap: gkWearTex });   // eloksallı siyah alüminyum gövde
-GK.dark = gkStd(0x121214, .5, .55, { bumpMap: gkGrainTex, bumpScale: .0003 });                              // en koyu parçalar
-GK.poly = gkStd(0x1f2023, .05, .72, { bumpMap: gkGrainTex, bumpScale: .0003 });                             // polimer (kabza, kundak)
-GK.grip = gkStd(0x1b1c1e, .05, .85, { bumpMap: gkStippleTex, bumpScale: .0004 });                            // tırtıklı kabza yüzeyi
-GK.fde = gkStd(0x7d6a4f, .08, .78, { bumpMap: gkGrainTex, bumpScale: .0003 });                              // çöl rengi (FDE) polimer
-GK.od = gkStd(0x46502f, .15, .7, { bumpMap: gkGrainTex, bumpScale: .0003, roughnessMap: gkWearTex });       // haki askeri boya
-GK.sniper = gkStd(0x3b4a2e, .1, .74, { bumpMap: gkStippleTex, bumpScale: .0008 });                           // keskin nişancı dipçiği
-GK.wood = gkStd(0xffffff, 0, .5, { map: gkWoodTex, bumpMap: gkWoodBump, bumpScale: .0005, envMapIntensity: .5 });
-GK.woodDark = gkStd(0x8a7466, 0, .55, { map: gkWoodTex, bumpMap: gkWoodBump, bumpScale: .0005 });
-GK.rubber = gkStd(0x111111, 0, .95, { bumpMap: gkStippleTex, bumpScale: .0008 });
-GK.brass = gkStd(0xc9a24c, .9, .3);
-GK.chrome = gkStd(0x868a92, .85, .28, { bumpMap: gkGrainTex, bumpScale: .0002 });
-GK.red = gkStd(0x9a1a12, .1, .5);
-GK.blued = gkStd(0x24272c, .72, .36, { bumpMap: gkGrainTex, bumpScale: .0004, roughnessMap: gkWearTex });     // maviye çalan karartılmış çelik (AK gövdesi)
-GK.bakelite = gkStd(0x5a2616, .05, .42, { bumpMap: gkGrainTex, bumpScale: .0003 });                            // kızıl-kahve bakalit (AK kabzası / şarjörü)
-GK.white = gkStd(0xe8e4dc, 0, .5);                                                                              // nişangah noktaları
-GK.blackDS = gkStd(0x1d1e21, .55, .48, { side: THREE.DoubleSide });                                              // açık uçlu borular (arpacık kalkanı)
-GK.shell = gkStd(0x8e1610, .05, .45);                                                                            // pompalı fişeği gövdesi
-GK.grenade = gkStd(0x5d6238, .3, .5);                                                                            // 40 mm bomba başlığı
-GK.lens = gkStd(0x0b1622, .9, .05, { envMapIntensity: 1.6 });
+// envI: silah sahnesindeki stüdyo yansımasının şiddeti (matlar düşük, parlak metaller yüksek)
+const gkStd = (color, metalness, roughness, extra = {}, envI = .45) => { const m = new THREE.MeshStandardMaterial(Object.assign({ color, metalness, roughness, envMap: envTex }, extra)); m.userData.envI = envI; return m; };
+GK.steel = gkStd(0x2a2c2f, .7, .44, { bumpMap: gkGrainTex, bumpScale: .0005, roughnessMap: gkWearTex }, .5);   // fosfatlı çelik (namlu, sürgü, pimler)
+GK.black = gkStd(0x161719, .45, .5, { bumpMap: gkGrainTex, bumpScale: .0004, roughnessMap: gkWearTex }, .3);   // eloksallı siyah alüminyum gövde
+GK.dark = gkStd(0x121214, .5, .55, { bumpMap: gkGrainTex, bumpScale: .0003 }, .25);                              // en koyu parçalar
+GK.poly = gkStd(0x1f2023, .05, .72, { bumpMap: gkGrainTex, bumpScale: .0003 }, .25);                             // polimer (kabza, kundak)
+GK.grip = gkStd(0x1b1c1e, .05, .85, { bumpMap: gkStippleTex, bumpScale: .0004 }, .2);                            // tırtıklı kabza yüzeyi
+GK.fde = gkStd(0x7d6a4f, .08, .78, { bumpMap: gkGrainTex, bumpScale: .0003 }, .3);                              // çöl rengi (FDE) polimer
+GK.od = gkStd(0x46502f, .15, .7, { bumpMap: gkGrainTex, bumpScale: .0003, roughnessMap: gkWearTex }, .3);       // haki askeri boya
+GK.sniper = gkStd(0x3b4a2e, .1, .74, { bumpMap: gkStippleTex, bumpScale: .0008 }, .25);                           // keskin nişancı dipçiği
+GK.wood = gkStd(0xffffff, 0, .5, { map: gkWoodTex, bumpMap: gkWoodBump, bumpScale: .0005 }, .35);
+GK.woodDark = gkStd(0x8a7466, 0, .55, { map: gkWoodTex, bumpMap: gkWoodBump, bumpScale: .0005 }, .3);
+GK.rubber = gkStd(0x111111, 0, .95, { bumpMap: gkStippleTex, bumpScale: .0008 }, .15);
+GK.brass = gkStd(0xc9a24c, .9, .3, {}, .9);
+GK.chrome = gkStd(0x868a92, .85, .28, { bumpMap: gkGrainTex, bumpScale: .0002 }, .75);
+GK.red = gkStd(0x9a1a12, .1, .5, {}, .3);
+GK.blued = gkStd(0x1b1e22, .58, .4, { bumpMap: gkGrainTex, bumpScale: .0004, roughnessMap: gkWearTex }, .4);     // maviye çalan karartılmış çelik (AK gövdesi)
+GK.bakelite = gkStd(0x5a2616, .05, .42, { bumpMap: gkGrainTex, bumpScale: .0003 }, .45);                            // kızıl-kahve bakalit (AK kabzası / şarjörü)
+GK.white = gkStd(0xe8e4dc, 0, .5, {}, .2);                                                                              // nişangah noktaları
+GK.blackDS = gkStd(0x161719, .45, .5, { side: THREE.DoubleSide }, .3);                                              // açık uçlu borular (arpacık kalkanı)
+GK.shell = gkStd(0x8e1610, .05, .45, {}, .35);                                                                            // pompalı fişeği gövdesi
+GK.grenade = gkStd(0x5d6238, .3, .5, {}, .4);                                                                            // 40 mm bomba başlığı
+GK.lens = gkStd(0x0b1622, .9, .05, {}, 1.4);
 GK.hole = new THREE.MeshBasicMaterial({ color: 0x030303 });
 GK.glowRed = new THREE.MeshBasicMaterial({ color: 0xff4a1a });
 GK.glowGreen = new THREE.MeshBasicMaterial({ color: 0x8aff3a });

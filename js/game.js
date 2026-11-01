@@ -710,6 +710,7 @@ function linearizeViewmodel() {
       m.color.convertSRGBToLinear(); if (m.emissive) m.emissive.convertSRGBToLinear();
       if (m.envMap) m.envMap = vmEnvTex;
       if (m.envMap) m.envMapIntensity = m.metalness > .9 ? .9 : m.metalness > .5 ? .8 : .6;   // cehennem yansıması metali kızıla boyamasın
+      if (m.userData.envI !== undefined) m.envMapIntensity = m.userData.envI;   // silah malzemesi kendi yansıma şiddetini taşır (gunkit.js)
       if (m.metalness > .9) { m.metalness = .75; m.roughness = Math.max(m.roughness, .2); }    // kılıç ağzı: çelik grisi
     }
   });

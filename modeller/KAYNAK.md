@@ -17,3 +17,7 @@ Poly Pizza üzerinden indirildi; `araclar/modelleri-kucult.mjs` kullanılmayan a
 | cadi.glb | Cadı | https://poly.pizza/m/QBEOV9ZUT8 |
 | ork.glb | Kasap (boss), koyu kırmızıya boyanır | https://poly.pizza/m/5vO2YJsPEf |
 | seytan.glb | Ateş Lordu | https://poly.pizza/m/LnfIziKv4o |
+
+## El modeli
+
+`el/sag.glb`: WebXR Input Profiles "generic-hand" (MIT Lisansı, © 2019 Amazon). Lisans metni ve ayrıntılar: [el/LISANS.md](el/LISANS.md).
