@@ -535,22 +535,24 @@ GM.karambit = () => {
   const ring = GK.mesh(new THREE.TorusGeometry(.021, .0055, 10, 24), GK.steel, b, 0, -.005, .115); ring.rotation.y = Math.PI / 2;
   return { b };
 };
-// kelebek: ince ağız ve iki iskelet sap (pim ekseninde döner)
+// kelebek (balisong): el bir sapı tutar (held). Bıçak o sapın ön ucundaki pimde döner (blade), serbest sap bıçağın
+// öbür pimindedir (free). Pimler bıçağın yassı yüzüne diktir (x ekseni). Açık: blade = free = 0 (iki sap elde yan yana,
+// ağız önde). Kapalı: ikisi de π (ağız iki sapın arasına girer). Ağız saptan kısadır: kapanınca saplardan taşmaz.
 GM.butterfly = () => {
-  const b = new THREE.Group();
-  GK.prof(b, KN_FLAT, [[0, .012], [-.11, .012], ...gmBez([-.11, .012], [-.17, .01], [-.2, .002], 6, true), ...gmBez([-.2, .002], [-.18, -.012], [-.14, -.011], 6, true), [-.01, -.011], [0, -.008]], .0035, 0, { bevel: .0009, seg: 1 });
-  GK.prof(b, KN_EDGE, [[-.02, -.0105], [-.14, -.0108], ...gmBez([-.14, -.0108], [-.18, -.0115], [-.198, .0005], 5, true), [-.192, .002], [-.14, -.0058], [-.02, -.0055]], .0037, 0, { bevel: .0003, seg: 1 });
-  GK.pin(b, GK.steel, .003, .022, 0, .009, -.004, 10); GK.pin(b, GK.steel, .003, .022, 0, -.007, -.004, 10);   // pimler
-  const handles = [];
-  for (const sx of [-1, 1]) {
-    const piv = new THREE.Group(); piv.position.set(sx * .008, 0, 0); b.add(piv);
-    const mat = sx > 0 ? GK.steel : GK.black;
-    // iskelet kanal sap: üç uzun delik, sonunda mandal
-    GK.prof(piv, mat, [[-.006, .013, .004], [.122, .013, .004], [.122, -.013, .004], [-.006, -.013, .004]], .0075, 0,
-      { holes: [[[.012, .006, .003], [.045, .006, .003], [.045, -.006, .003], [.012, -.006, .003]], [[.052, .006, .003], [.082, .006, .003], [.082, -.006, .003], [.052, -.006, .003]], [[.089, .006, .003], [.112, .006, .003], [.112, -.006, .003], [.089, -.006, .003]]], bevel: .0015 });
-    GK.screws(piv, GK.steel, .0075, [[.0, .0], [0, .117]], .0024);
-    if (sx > 0) GK.box(piv, GK.dark, .006, .02, .012, 0, 0, .128);   // mandal
-    handles.push(piv);
-  }
-  return { b, handles };
+  const held = new THREE.Group(), blade = new THREE.Group(), free = new THREE.Group();
+  held.add(blade); blade.add(free);
+  // iskelet kanal sap: üç uzun delik, iki pim başı
+  const handle = (parent, mat, x) => {
+    GK.prof(parent, mat, [[-.006, .012, .004], [.136, .012, .004], [.136, -.012, .004], [-.006, -.012, .004]], .0062, x,
+      { holes: [[[.012, .0055, .003], [.05, .0055, .003], [.05, -.0055, .003], [.012, -.0055, .003]], [[.057, .0055, .003], [.092, .0055, .003], [.092, -.0055, .003], [.057, -.0055, .003]], [[.099, .0055, .003], [.124, .0055, .003], [.124, -.0055, .003], [.099, -.0055, .003]]], bevel: .0013 });
+    GK.screws(parent, GK.steel, .0062, [[0, 0], [0, .13]], .0022);
+  };
+  handle(held, GK.steel, .0049);          // tutulan (güvenli) sap: bıçağın sağında
+  handle(free, GK.black, -.0049);         // serbest (ısıran) sap: bıçağın solunda
+  GK.box(free, GK.dark, .006, .018, .01, -.0049, 0, .14);   // kilit mandalı
+  // ağız: pimden öne 12 cm
+  GK.prof(blade, KN_FLAT, [[.006, .011], [-.075, .011], ...gmBez([-.075, .011], [-.108, .01], [-.124, .002], 6, true), ...gmBez([-.124, .002], [-.11, -.0105], [-.085, -.01], 6, true), [.002, -.01], [.008, -.004]], .0035, 0, { bevel: .0009, seg: 1 });
+  GK.prof(blade, KN_EDGE, [[-.012, -.0095], [-.085, -.0098], ...gmBez([-.085, -.0098], [-.11, -.0102], [-.122, .0005], 5, true), [-.117, .002], [-.085, -.0055], [-.012, -.0052]], .0037, 0, { bevel: .0003, seg: 1 });
+  GK.pin(blade, GK.steel, .0028, .016, 0, 0, 0, 10);     // pim
+  return { held, blade, free };
 };

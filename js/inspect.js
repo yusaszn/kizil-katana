@@ -24,7 +24,10 @@ const INSPECT = {
   knife: { dur: 3.0, keys: [[0, 0, 0, 0, 0, 0, 0], [.16, -.05, .08, .02, .1, .6, -1.15], [.32, -.06, .09, .03, .15, .65, -1.25], [.52, -.05, .2, .02, TAU, .6, -1.2], [.68, -.05, .08, .02, TAU + .1, -.5, 1.0], [.84, -.04, .07, .02, TAU + .12, -.55, 1.1], [1, 0, 0, 0, TAU, 0, 0]] },
   // karambit ve kelebeğin asıl numarası aşağıdaki özel hareketlerde (halkada dönme, sallama)
   karambit: { dur: 2.4, keys: [[0, 0, 0, 0, 0, 0, 0], [.15, -.12, .05, -.12, .2, .15, -.25], [.85, -.12, .05, -.12, .2, .15, -.25], [1, 0, 0, 0, 0, 0, 0]] },
-  butterfly: { dur: 2.6, keys: [[0, 0, 0, 0, 0, 0, 0], [.15, -.12, .06, -.12, .2, .15, -.3], [.85, -.1, .06, -.12, .2, -.15, .3], [1, 0, 0, 0, 0, 0, 0]] },
+  // kelebek: her yarım turda bilek ağırlıkla savrulur (ağız yukarı kalkarken bilek hafif aşağı, yakalarken geri)
+  butterfly: { dur: 3.2, keys: [[0, 0, 0, 0, 0, 0, 0], [.08, -.08, .05, -.08, .15, .12, -.15], [.19, -.08, .07, -.08, .02, .2, -.4], [.29, -.08, .05, -.08, .22, .08, .1],
+    [.4, -.08, .07, -.08, .02, .2, -.42], [.5, -.08, .05, -.08, .2, .1, .08], [.61, -.08, .07, -.08, .04, -.12, .38], [.71, -.08, .05, -.08, .2, .06, -.06],
+    [.82, -.08, .07, -.08, .04, -.12, .36], [.92, -.06, .04, -.06, .14, .05, -.05], [1, 0, 0, 0, 0, 0, 0]] },
 };
 // çekme: silah aşağıdan dönerek gelir, sonra silaha özel kurma hareketi
 const DRAW = {
@@ -75,28 +78,24 @@ function addOffset(w, o) {
   root.position.x += o[0]; root.position.y += o[1]; root.position.z += o[2];
   root.rotation.x += o[3]; root.rotation.y += o[4]; root.rotation.z += o[5];
 }
-// karambit halkadan parmağa takılı gibi döner: dönme ekseni halkanın ortasından geçer
-const RING = new V3(0, -.005, .115);
-function ringSpin(g, a) {
-  const c = Math.cos(a), s = Math.sin(a);
-  g.rotation.set(a, 0, 0);
-  g.position.set(0, RING.y - (RING.y * c - RING.z * s), RING.z - (RING.y * s + RING.z * c));
+// karambit: bıçak işaret parmağının etrafında döner (yerleşimi knives.js knifeAfterHands); dönerken parmak uzanır, diğerleri açılır
+function ringSpin(_, a) { knifeModels.karambit.spin = a; }
+// kelebek: ağız (A) tutulan sapın piminde, serbest sap (B) ağzın piminde döner; 0 = açık, π = kapalı
+function butterflySet(A, B) { const m = knifeModels.butterfly; m.blade.rotation.x = A; m.free.rotation.x = B; }
+// yarım tur: ağız a0'dan a0 + yön·π'ye savrulur; serbest sap gecikmeyle izler, sonda hafifçe sekip oturur
+function bfHalf(u, a0, dir) {
+  const A = a0 + dir * Math.PI * easeInOut(u);
+  const v = clamp((u - .22) / .78, 0, 1);
+  const B = a0 + dir * (Math.PI * easeInOut(v) + Math.sin(clamp((u - .8) / .2, 0, 1) * Math.PI) * .2);
+  return [A, B];
 }
-// kelebek sallama: akıcı, kesintisiz ve organik santrifüj dalgalanması (karelenme ve takılma yapmaz)
-function butterflyFlail(t, turns) {
-  const m = knifeModels.butterfly;
-  if (!m) return;
-  const clampedT = clamp(t, 0, 1);
-  const a = easeInOut(clampedT) * TAU * turns;
-  m.b.rotation.set(a, 0, 0);
-  
-  // Zarf eğrisi: başlarken ve biterken saplar tamamen kapalı konuma (0) yumuşakça oturur
-  const env = Math.sin(clampedT * Math.PI);
-  const wave = Math.sin(clampedT * TAU * turns * 0.5);
-  const spread = Math.PI * 0.88 * env;
-  
-  m.handles[0].rotation.y = spread * Math.max(0, wave);
-  m.handles[1].rotation.y = -spread * Math.max(0, -wave);
+// kelebek gösterisi: kapat → dönerek aç → geri kapat → aç. Sap parmakların önünden geçerken parmaklar açılır
+const BF_SEQ = [[0, 1], [Math.PI, 1], [2 * Math.PI, -1], [Math.PI, -1]];
+function butterflyFlail(t, halves = 4) {
+  const n = Math.min(halves, BF_SEQ.length), x = clamp(t, 0, 1) * n, i = Math.min(n - 1, Math.floor(x)), u = x - i;
+  const [A, B] = bfHalf(u, BF_SEQ[i][0], BF_SEQ[i][1]);
+  butterflySet(A, B);
+  handLife.release = Math.max(handLife.release, Math.sin(u * Math.PI) * .75);
 }
 // uzi incelemesi: önce sol, sonra sağ tabanca yana yatırılıp gösterilir ve tetik korkuluğundan parmakta çevrilir;
 // sonunda ikisi birden içe yatırılıp şarjörler kontrol edilir
@@ -131,8 +130,8 @@ let lastDrawT = 1;
 function applyInspect(dt) {
   // her karede özel parçaları dinlenmeye döndür
   uziRoot.position.set(0, 0, 0); uziRoot.rotation.set(0, 0, 0);
-  const kar = knifeModels.karambit.b; kar.rotation.set(0, 0, 0); kar.position.set(0, 0, 0);
-  knifeModels.butterfly.b.rotation.set(0, 0, 0);
+  const kar = knifeModels.karambit; kar.spin = 0; butterflySet(0, 0);
+  handLife.release = 0; handLife.extend = 0;
   // ---- çekme animasyonu ----
   if (wpn.drawing && DRAW[wpn.cur]) {
     const w = wpn.cur, t = clamp(wpn.dt, 0, 1);
@@ -146,8 +145,10 @@ function applyInspect(dt) {
     if (w === 'pistol') { if (t > .55 && t < .8) pism.slide.position.z = Math.sin((t - .55) / .25 * Math.PI) * .045; if (cross(.6)) sfx.shell(); }
     if (w === 'uzi') { for (let i = 0; i < 2; i++) uzis[i].rotation.z += (1 - smooth(Math.min(1, t * 1.6))) * TAU * uzis[i].userData.side; if (cross(.7)) sfx.shell(); }
     if (w === 'katana') swordRoot.rotation.z += (1 - smooth(Math.min(1, t * 1.4))) * TAU;
-    if (w === 'karambit') ringSpin(kar, (1 - easeInOut(Math.min(1, t * 1.15))) * TAU * 2);
-    if (w === 'butterfly') { if (t < .88) butterflyFlail(t / .88, 2); else { const h = knifeModels.butterfly.handles; h[0].rotation.y = h[1].rotation.y = 0; } }
+    // karambit: parmakta iki tur dönerek gelir, sonra parmaklar kapanır
+    if (w === 'karambit') { const u = Math.min(1, t * 1.15); ringSpin(kar, (1 - easeInOut(u)) * TAU * 2); handLife.extend = handLife.release = 1 - smooth(clamp((u - .7) / .3, 0, 1)); }
+    // kelebek: kapalı gelir, ağız dönerek açılır (tek yarım tur)
+    if (w === 'butterfly') { const u = clamp(t / .8, 0, 1), [A, B] = bfHalf(u, Math.PI, 1); butterflySet(A, B); handLife.release = Math.sin(u * Math.PI) * .7; }
     lastDrawT = t;
   } else lastDrawT = 0;
   // ---- inceleme ----
@@ -185,14 +186,12 @@ function applyInspect(dt) {
   if (insp.w === 'launcher' && t > .56 && t < .84) glm.barrel.rotation.x = -Math.sin((t - .56) / .28 * Math.PI) * .38;
   if (insp.w === 'uzi') uziInspect(t);
   if (insp.w === 'katana') swordModel.userData.bloodMat.opacity = Math.max(0, swordModel.userData.bloodMat.opacity - dt * .2);
-  // karambit: parmakta kesintisiz, akıcı 3.5 tur döner
-  if (insp.w === 'karambit' && t > .12 && t < .88) {
-    const u = clamp((t - .12) / .76, 0, 1);
-    ringSpin(kar, easeInOut(u) * TAU * 3.5);
+  // karambit: işaret parmağı uzanır, diğer parmaklar açılır, bıçak parmağın etrafında 3 tur döner ve yumruk yeniden kapanır
+  if (insp.w === 'karambit' && t > .1 && t < .9) {
+    const u = clamp((t - .1) / .8, 0, 1);
+    ringSpin(kar, easeInOut(u) * TAU * 3);
+    handLife.extend = handLife.release = smooth(clamp(u / .12, 0, 1)) * (1 - smooth(clamp((u - .88) / .12, 0, 1)));
   }
   // kelebek: açılıp kapanarak akıcı ve kesintisiz sallanır
-  if (insp.w === 'butterfly') {
-    if (t > .08 && t < .92) butterflyFlail((t - .08) / .84, 3.5);
-    else { const h = knifeModels.butterfly.handles; h[0].rotation.y = 0; h[1].rotation.y = 0; }
-  }
+  if (insp.w === 'butterfly' && t > .08 && t < .92) butterflyFlail((t - .08) / .84, 4);
 }

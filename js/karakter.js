@@ -65,24 +65,24 @@ function charSource() {
   CHAR_SRC = { scene: src.scene, clips: src.clips, k: CHAR_H / h, minY: box.min.y };
   return CHAR_SRC;
 }
-const CHAR_PANTS = 0x2a2a2e, CHAR_VEST = 0x1c1c1d;
+const CHAR_PANTS = 0x19191c, CHAR_VEST = 0x1c1c1d;
 function charInstance(color) {
   const S = charSource(); if (!S) return null;
   const obj = THREE.SkeletonUtils.clone(S.scene);
   const root = new THREE.Group(); root.add(obj);
   obj.scale.multiplyScalar(S.k); obj.position.y = -S.minY * S.k;
-  const bones = boneMap(obj), mats = {}, upper = [];
+  const bones = boneMap(obj), mats = {}, upper = [], lower = [];
   obj.traverse(o => {
     if (!o.isMesh) return;
     // üst gövde ve baş ağları (1. şahısta gizlenir): düğüm adı ağın kendisinde ya da bir üstündeki grupta
-    if (/Body|Head/.test(o.name + ' ' + (o.parent ? o.parent.name : ''))) upper.push(o);
+    if (/Body|Head/.test(o.name + ' ' + (o.parent ? o.parent.name : ''))) upper.push(o); else lower.push(o);
     o.frustumCulled = false; o.castShadow = false;
     const list = (Array.isArray(o.material) ? o.material : [o.material]).map(m => {
       if (!mats[m.name]) {
         const c = mats[m.name] = m.clone();
         if (m.name === 'Green') c.color.setHex(color);
         if (m.name === 'LightGreen') c.color.setHex(CHAR_VEST);
-        if (m.name === 'Brown' || m.name === 'Brown2') c.color.setHex(m.name === 'Brown' ? CHAR_PANTS : 0x202024);
+        if (m.name === 'Brown' || m.name === 'Brown2') { c.color.setHex(m.name === 'Brown' ? CHAR_PANTS : 0x141416); c.roughness = .95; }
         c.roughness = Math.max(c.roughness, .7);
       }
       return mats[m.name];
@@ -90,9 +90,17 @@ function charInstance(color) {
     o.material = Array.isArray(o.material) ? list : list[0];
   });
   const mixer = new THREE.AnimationMixer(obj);
+  // ayak kemikleri bacak zincirinde değil (ayrı IK hedefi): bağlama pozunda baldıra göre yerleri saklanır.
+  // İki klip karışırken bacak dönmeleri ve ayak hedefi ayrı ayrı harmanlanır, ayak dizden kopabilir; bu yüzden
+  // her karede ayağın yeri baldırın ucundan hesaplanır, yalnız açısı klipten alınır.
+  root.updateMatrixWorld(true);
+  const footRel = {};
+  for (const sd of ['L', 'R']) { const sh = bones['LowerLeg.' + sd], ft = bones['Foot.' + sd]; if (sh && ft) footRel[sd] = sh.worldToLocal(ft.getWorldPosition(new V3())); }
   // her kemiğin dinlenme dönüşümü: her karede önce buna dönülür, sonra klip ve pozlar uygulanır (pozlar birikmesin)
   const rest = []; obj.traverse(o => { if (o.isBone) rest.push([o, o.position.clone(), o.quaternion.clone(), o.scale.clone()]); });
-  return { root, obj, bones, mats, mixer, rest, upper, clips: S.clips, actions: {}, cur: null, curName: '', oneShot: null, oneT: 0 };
+  // 1. şahısta bacaklar kameraya yapışık oyuncu ışığıyla çok yakından aydınlanır: koyu kopyalar kullanılır
+  for (const m of lower) { m.userData.mat3 = m.material; const list = (Array.isArray(m.material) ? m.material : [m.material]).map(x => { const c = x.clone(); c.color.multiplyScalar(.45); c.roughness = 1; c.envMapIntensity = 0; return c; }); m.userData.mat1 = Array.isArray(m.material) ? list : list[0]; }
+  return { root, obj, bones, mats, mixer, rest, upper, lower, footRel, clips: S.clips, actions: {}, cur: null, curName: '', oneShot: null, oneT: 0 };
 }
 
 /* ================= SİLAHLAR (3. şahıs) ================= */
@@ -197,16 +205,19 @@ function animateCharAvatar(av, dt, s) {
   const fx = -Math.sin(s.yaw), fz = -Math.cos(s.yaw), rx = Math.cos(s.yaw), rz = -Math.sin(s.yaw);
   const vf = av.vel.x * fx + av.vel.z * fz, vs = av.vel.x * rx + av.vel.z * rz, hs = Math.hypot(vf, vs);
   const air = s.air !== undefined ? s.air : Math.abs(av.vel.y) > 2.2;
-  av.airK += ((air && !s.slide ? 1 : 0) - av.airK) * k(8);
+  // kayma değeri sayıdır (oyuncuda yavaşça sıfıra iner, tam 0 olmaz): eşikle karar ver, sayı olarak yumuşat
+  const slideIn = Math.min(1, +s.slide || 0);
+  av.airK += ((air && slideIn < .3 ? 1 : 0) - av.airK) * k(8);
   av.crouchK += ((s.crouch || 0) - av.crouchK) * k(12);
-  av.slideK += ((s.slide ? 1 : 0) - av.slideK) * k(14);
+  av.slideK += ((slideIn > .05 ? slideIn : 0) - av.slideK) * k(14);
+  if (av.slideK < .002) av.slideK = 0;
   const w = s.w, melee = w === 'katana' || isKnife(w), gun = GUN_W(w);
   // ---- temel animasyon (bacaklar ve yürüyüş) ----
   if (!s.alive) { /* ölüm: ragdoll ayrı kopyada */ }
   else if (C.oneShot && C.oneT > 0) { C.oneT -= dt; if (C.oneT <= 0) C.oneShot = null; }
   else if (s.kick && !s.legsOnly) { charPlay(C, 'Kick_Right', { once: true, fade: .08, speed: 1.6 }); C.oneShot = 'kick'; C.oneT = .45; }
   else if (s.swing && melee && !av.swung) { charPlay(C, 'Sword_Slash', { once: true, fade: .06, speed: 1.9 }); C.oneShot = 'swing'; C.oneT = .38; }
-  else if (hs > .6 && !av.slideK) {
+  else if (hs > .6 && av.slideK < .2) {
     const back = vf < -Math.abs(vs) * .8, side = Math.abs(vs) > Math.abs(vf) * 1.2;
     const name = back ? 'Run_Back' : side ? (vs > 0 ? 'Run_Right' : 'Run_Left') : hs < 3.2 || av.crouchK > .5 ? 'Walk' : 'Run';
     charPlay(C, name, { speed: clamp(hs / (name === 'Walk' ? 1.8 : 5.5), .5, 1.9) });
@@ -219,7 +230,8 @@ function animateCharAvatar(av, dt, s) {
   const feet = ['L', 'R'].map(sd => {
     const shin = B['LowerLeg.' + sd], foot = B['Foot.' + sd];
     shin.updateMatrixWorld(true); foot.updateMatrixWorld(true);
-    return { shin, foot, rel: _cm.copy(shin.matrixWorld).invert().multiply(foot.matrixWorld).clone() };
+    const qs = shin.getWorldQuaternion(new THREE.Quaternion()), qf = foot.getWorldQuaternion(new THREE.Quaternion());
+    return { shin, foot, relPos: C.footRel[sd], relQ: qs.invert().multiply(qf) };
   });
   const gq = av.g.getWorldQuaternion(new THREE.Quaternion());
   const RIGHT = new V3(1, 0, 0).applyQuaternion(gq).negate(), UPW = new V3(0, 1, 0), FWD = new V3(fx, 0, fz);   // model +z ileri bakar, grup π döndü
@@ -235,7 +247,14 @@ function animateCharAvatar(av, dt, s) {
     rotW(up, RIGHT, hip); rotW(lo, RIGHT, -knee);
   }
   // ayaklar yeniden baldıra bağlanır
-  for (const f of feet) { f.shin.updateMatrixWorld(true); const m = f.shin.matrixWorld.clone().multiply(f.rel); const p = new V3(), q = new THREE.Quaternion(), sc = new V3(); m.decompose(p, q, sc); f.foot.parent.updateMatrixWorld(true); const inv = f.foot.parent.matrixWorld.clone().invert(); p.applyMatrix4(inv); f.foot.position.copy(p); f.foot.parent.getWorldQuaternion(_cq2); f.foot.quaternion.copy(_cq2.invert().multiply(q)); f.foot.updateMatrixWorld(true); }
+  for (const f of feet) {
+    if (!f.relPos) continue;
+    f.shin.updateMatrixWorld(true);
+    const p = f.shin.localToWorld(f.relPos.clone()), q = f.shin.getWorldQuaternion(new THREE.Quaternion()).multiply(f.relQ);
+    f.foot.parent.updateMatrixWorld(true);
+    f.foot.position.copy(f.foot.parent.worldToLocal(p));
+    f.foot.parent.getWorldQuaternion(_cq2); f.foot.quaternion.copy(_cq2.invert().multiply(q)); f.foot.updateMatrixWorld(true);
+  }
   // ---- gövde: kayarken geriye yaslanır, eğilince öne; bakış yönüne eğilir ----
   const pitch = s.pitch || 0;
   rotW(B.Abdomen, RIGHT, -cr * .25 + sl * .45);   // + geriye yaslanma
@@ -261,6 +280,7 @@ function animateCharAvatar(av, dt, s) {
 // 1. şahısta yalnız bacaklar görünür: üst gövde ve baş ağları gizlenir (kamera içlerinden görünmesin)
 function legsOnlyMode(C, on) {
   for (const m of C.upper) m.visible = !on;
+  for (const m of C.lower) m.material = on ? m.userData.mat1 : m.userData.mat3;
 }
 // parmakları kavrama pozuna kıvır. Bu iskelette "1" kemikleri avuç içi (hepsi bilekten çıkar); boğumlar 2-3-4
 function curlFingers(B, sd, amt, thumb = .5) {

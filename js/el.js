@@ -249,12 +249,13 @@ function createTacticalHand(isLeft = false, opts = {}) {
 // Elin temel kavrayışına küçük, sürekli hareketler eklenir:
 //   nefes gibi hafif parmak oynaması, ara sıra kabzayı gevşetip yeniden kavrama, başparmak kıpırtısı,
 //   atışta tetik parmağının tetiği çekip bırakması, geri tepmede kabzayı sıkma.
-// st: { pull: 0..1 tetik çekme, squeeze: 0..1 sıkma, relax: 0..1 gevşeklik (koşarken) }
+// st: { pull: 0..1 tetik çekme, squeeze: 0..1 sıkma, relax: 0..1 gevşeklik (koşarken),
+//       release: 0..1 parmakları aç (bıçak çevirirken sap geçsin), extend: 0..1 işaret parmağını uzat (karambit halkası) }
 const _ops = [[1, H_X, 0], [2, H_X, 0], [3, H_X, 0]];
 function animateHand(h, dt, t, st) {
   h.acc = (h.acc || 0) + dt;
   // boştayken 30 Hz yeter; tetik çekilirken / sıkarken her kare
-  if (st.pull < .01 && st.squeeze < .01 && h.regrip <= 0 && h.acc < 1 / 30) return;
+  if (st.pull < .01 && st.squeeze < .01 && !st.release && !st.extend && h.regrip <= 0 && h.acc < 1 / 30) return;
   dt = h.acc; h.acc = 0;
   h.regripT -= dt;
   if (h.regripT <= 0) { h.regrip = 1; h.regripT = rand(4, 10); }
@@ -266,12 +267,16 @@ function animateHand(h, dt, t, st) {
     const trig = i === 0 && h.trigger;
     const idle = Math.sin(t * (1.1 + i * .23) + h.phase + i * 1.7) * .022 + Math.sin(t * .37 + h.phase * 2 + i) * .015;
     let d;
+    const rel = st.release || 0, ext = i === 0 ? st.extend || 0 : 0;
     if (trig) {
       // tetik parmağı: çekince orta ve uç boğum kıvrılır, kök biraz iner
       const p = st.pull;
       d = [p * .16 + idle * .5, p * .42 + idle, p * .3];
+    } else if (ext > 0) {
+      // işaret parmağı öne uzanır (karambit halkası parmakta döner)
+      d = [-ext * .9 + idle * .3, -ext * 1.25, -ext * .7];
     } else {
-      const s = st.squeeze * .05 - open * .2 - st.relax * .1 + idle;
+      const s = st.squeeze * .05 - open * .2 - st.relax * .1 - rel * .85 + idle;
       d = [s, s * 1.2, s * .8];
     }
     if (Math.abs(d[0]) + Math.abs(d[1]) + Math.abs(d[2]) < 1e-4) return;
@@ -280,7 +285,7 @@ function animateHand(h, dt, t, st) {
   });
   // başparmak: hafif kıpırtı, yeniden kavrarken biraz açılır
   {
-    const th = Math.sin(t * .9 + h.phase * 3) * .03 - open * .12 + st.squeeze * .03;
+    const th = Math.sin(t * .9 + h.phase * 3) * .03 - open * .12 + st.squeeze * .03 - (st.release || 0) * .45;
     const P = H_THUMB.map(j => w.P[j]), Q = H_THUMB.map(j => w.Q[j]);
     chainRotate(P, Q, 1, H_X, -th); chainRotate(P, Q, 2, H_X, -th * .8);
   }

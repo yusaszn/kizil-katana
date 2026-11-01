@@ -25,7 +25,7 @@ function gunKickFor(w) { const k = GUN_KICK[w]; if (k) gunKick(k[0], k[1], k[2])
 
 /* ================= CANLI ELLER ================= */
 // elde tutulan silahın elleri her karede hafifçe canlandırılır (el.js animateHand)
-const handLife = { pull: 0, squeeze: 0, relax: 0 };
+const handLife = { pull: 0, squeeze: 0, relax: 0, release: 0, extend: 0 };   // release / extend: bıçak hareketleri her karede ayarlar
 const AUTO_FIRE = { uzi: 1, m4: 1, ak47: 1 };
 function shownIn(o, root) { for (let p = o; p && p !== root; p = p.parent) if (!p.visible) return false; return root.visible; }
 function updateHands(dt) {
@@ -37,6 +37,7 @@ function updateHands(dt) {
   const t = performance.now() / 1000;
   root.updateMatrixWorld(true);
   for (const o of handsOf(root)) if (shownIn(o, root)) { animateHand(o.userData.hand, dt, t, handLife); aimArm(o, dt); }
+  if (isKnife(wpn.cur)) knifeAfterHands();   // karambit halkası parmağın son pozuna göre yerleşir (knives.js)
 }
 function stepSpring(x, v, k, c, dt) { for (const a of ['x', 'y', 'z']) { v[a] += (-k * x[a] - c * v[a]) * dt; x[a] += v[a] * dt; } }
 function updateGunSpring(dt) {

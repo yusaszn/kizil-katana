@@ -22,17 +22,34 @@ const knifeModels = {};
   const g = GM.knife().g;
   handPart(g); knifeRoot.add(g); knifeModels.knife = { g };
 }
-{ // karambit: ters tutuş. Halka üstte (işaret parmağı içinde), hilal ağız yumruğun altından öne kıvrılır.
-  // Bıçak (b) elden ayrı döner, el yerinde kalır; o: b'yi dik tutar (sap ekseni yukarı, ağız aşağı ve öne)
-  const g = new THREE.Group(), o = new THREE.Group(), b = GM.karambit().b;
-  o.rotation.set(-Math.PI / 2, Math.PI, 0, 'YXZ'); o.position.y = -.06; g.add(o); o.add(b);
-  if (typeof createTacticalHand === 'function') { const h = createTacticalHand(false, { grip: 'v', r: .015, trigger: false }); h.position.y = -.01; g.add(h); }
+{ // karambit: ters tutuş. İşaret parmağı halkanın içinde: halka parmağın orta boğumunda, sap yumruktan aşağı iner,
+  // hilal ağız yumruğun altından öne kıvrılır. Bıçak (kr) her karede parmağın son pozuna göre yerleşir (knifeAfterHands);
+  // çevirirken işaret parmağı uzanır, diğer parmaklar açılır ve bıçak parmağın etrafında elin önünde döner.
+  const g = new THREE.Group(), kr = new THREE.Group(), b = GM.karambit().b;
+  b.position.set(0, .005, -.115); kr.add(b); g.add(kr);   // halka merkezi kr'nin kökünde
+  const hand = createTacticalHand(false, { grip: 'v', r: .015, trigger: false }); hand.position.y = -.01; g.add(hand);
   g.position.set(-.03, .04, -.08); g.rotation.set(.35, .55, -.15);   // yumruk dik, ağız öne-sola kıvrık görünsün
-  knifeRoot.add(g); knifeModels.karambit = { g, b };
+  knifeRoot.add(g); knifeModels.karambit = { g, b, kr, hand, spin: 0 };
 }
-{ // kelebek: ince ağız, açılıp kapanan iki iskelet sap. Bıçak (b) elden ayrı sallanır
-  const g = new THREE.Group(), m = GM.butterfly(); g.add(m.b);
-  handPart(g); knifeRoot.add(g); knifeModels.butterfly = { g, b: m.b, handles: m.handles };
+{ // kelebek: el tutulan sapı kavrar; ağız ve serbest sap pimlerde döner (butterflySet)
+  const g = new THREE.Group(), m = GM.butterfly(); g.add(m.held);
+  handPart(g); knifeRoot.add(g); knifeModels.butterfly = { g, blade: m.blade, free: m.free };
+}
+// karambit halkasını işaret parmağına oturt: halka merkezi parmağın orta boğumu, delik ekseni parmak yönü,
+// sap aşağı (yumruğun içinden). Çevirme açısı (spin) parmak ekseni etrafında
+const _kx = new V3(1, 0, 0);
+function knifeAfterHands() {
+  const m = knifeModels.karambit; if (wpn.cur !== 'karambit' || !m.hand.userData.hand) return;
+  const hd = m.hand.userData.hand, gIn = m.hand.children[0], ch = H_FINGERS[0];
+  m.g.updateMatrixWorld(true);
+  const a = gIn.localToWorld(hd.work.P[ch[2]].clone()), b = gIn.localToWorld(hd.work.P[ch[3]].clone());
+  const o = gIn.localToWorld(new V3()), dn = gIn.localToWorld(new V3(0, -1, 0)).sub(o);
+  const inv = m.g.matrixWorld.clone().invert(), qi = m.g.getWorldQuaternion(new THREE.Quaternion()).invert();
+  const dir = b.sub(a).applyQuaternion(qi).normalize(), down = dn.applyQuaternion(qi).normalize();
+  const U = down.clone().negate(), up = U.clone().addScaledVector(dir, -dir.dot(U)).normalize();   // sap yukarısı: parmağa dik
+  const yAx = up.clone().cross(dir).normalize();
+  m.kr.position.copy(a.applyMatrix4(inv));
+  m.kr.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(dir, yAx, up)).multiply(new THREE.Quaternion().setFromAxisAngle(_kx, m.spin));
 }
 const KN_REST = P([.2, -.19, -.4], [.3, .35, .35]);
 knifeRoot.scale.setScalar(1.35);
@@ -102,15 +119,7 @@ function updateKnife(dt) {
   if (d > 0) {
     const e = easeOut(1 - d);
     knPose.p.y -= (1 - e) * .35;
-    if (kn.type === 'karambit') knPose.r.z += (1 - e) * Math.PI * 4;          // parmakta iki tur döner
-    else if (kn.type === 'butterfly') knPose.r.y += Math.sin(d * Math.PI) * 1.2;
-    else knPose.r.x += (1 - e) * 1.2;
-  }
-  if (kn.type === 'butterfly') {
-    // kapalıyken saplar ağzın üstüne kapanır, çekerken sırayla açılır
-    const h = knifeModels.butterfly.handles;
-    h[0].rotation.y = d > .5 ? Math.PI * Math.min(1, (d - .5) * 4) : 0;
-    h[1].rotation.y = d > 0 ? -Math.PI * Math.min(1, d * 2.5) : 0;
+    if (kn.type === 'knife') knPose.r.x += (1 - e) * 1.2;   // karambit ve kelebeğin çekme hareketi inspect.js'de (parmakta dönme / açılma)
   }
   const bob = viewBob();
   knifeRoot.position.set(knPose.p.x + sword.swayX + bob.x, knPose.p.y + sword.swayY + bob.y - lowerOffset(), knPose.p.z);
