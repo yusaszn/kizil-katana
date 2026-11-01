@@ -49,7 +49,7 @@ function updateShotgun(dt) {
     if (before > .3 && shells.pumpT <= .3) {
       sfx.pump();
       // boş kovan çıkış penceresinden dışarı fırlar
-      if (wpn.cur === 'shotgun') ejectCasing(sg, 'shotgun', .85);
+      if (wpn.cur === 'shotgun') { ejectCasing(sg, 'shotgun', .85); playerCasing('shotgun'); }
     }
   }
   if (shells.loading) {

@@ -415,8 +415,9 @@ function remoteShots(pr, n, focused) {
     rsFrom.set(pr.pos.x, pr.pos.y + 1.1, pr.pos.z).addScaledVector(rsDir, .6);
     const t = rayStatic(rsFrom, rsDir, 40);
     rsTo.copy(rsFrom).addScaledVector(rsDir, t);
-    addTracer(rsFrom, rsTo);
+    addTracer(rsFrom, rsTo, { chance: sgShot ? .05 : pr.w === 'usps' ? 0 : .5 });
   }
+  remoteCasing(pr);   // kovan oyuncunun silahından düşer (mermiler.js)
   // her silahın kendi sesi; susturuculu USP-S yakından bile zor duyulur
   const d = pr.pos.distanceTo(camera.position), snd = sfx[pr.w] && pr.w !== 'rocket' && pr.w !== 'launcher' ? sfx[pr.w] : sfx.uzi;
   if (d < (pr.w === 'usps' ? 10 : 34)) snd();

@@ -23,27 +23,7 @@ function startReload() {
   ammo.reloadT = ST.reloadTime; sfx.reload();
 }
 
-// mermi izleri
-const TRMAX = 40;
-const trPos = new Float32Array(TRMAX * 6), trCol = new Float32Array(TRMAX * 6), trLife = new Float32Array(TRMAX);
-const trGeo = new THREE.BufferGeometry();
-trGeo.setAttribute('position', new THREE.BufferAttribute(trPos, 3).setUsage(THREE.DynamicDrawUsage));
-trGeo.setAttribute('color', new THREE.BufferAttribute(trCol, 3).setUsage(THREE.DynamicDrawUsage));
-const tracers = new THREE.LineSegments(trGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));   // sis kapalı: sönen iz sis rengine boyanıp ekranda kalmasın
-tracers.frustumCulled = false; scene.add(tracers);
-let trIdx = 0;
-function addTracer(a, b) {
-  const i = trIdx; trIdx = (trIdx + 1) % TRMAX;
-  trPos.set([a.x, a.y, a.z, b.x, b.y, b.z], i * 6); trLife[i] = .07;
-}
-function updateTracers(dt) {
-  for (let i = 0; i < TRMAX; i++) {
-    if (trLife[i] > 0) trLife[i] -= dt;
-    const f = Math.max(0, trLife[i] / .07);
-    trCol.set([f * .9, f * .6, f * .25, f * 1, f * .85, f * .5], i * 6);
-  }
-  trGeo.attributes.position.needsUpdate = true; trGeo.attributes.color.needsUpdate = true;
-}
+// mermi izleri ve dünyadaki kovanlar: mermiler.js
 
 function rayEnemy(e, o, d) {
   const b = e.body.position, sc = e.T.scale;
@@ -76,6 +56,7 @@ function fireUzi() {
   camVectors();
   // boş kovan çıkış penceresinden fırlar, silah yaylı geri teper
   ejectCasing({ g: uzis[gi], port: ud.port }, 'pistol', .9);
+  playerCasing('uzi', gi ? 1 : -1);
   gunKickFor('uzi');
   for (let k = 0; k < (ST.twin ? 2 : 1); k++) shootRay(gi, k);
 }
@@ -97,7 +78,7 @@ function castShot(dir, muzzle, baseDmg, power, splitChance, falloff, pvpDmg) {
   if (vs) for (const [id, pr] of enemyProxies()) { const r = rayPlayer(pr, o, dir); if (r && r.t < best) { best = r.t; kind = 'player'; hitObj = id; head = r.head; } }
   else for (const p of pieces) { const t = raySphere(o, dir, p.body.position, (p.he.x + p.he.y + p.he.z) / 3 * 1.2); if (t >= 0 && t < best) { best = t; kind = 'piece'; hitObj = p; } }
   hitAt.copy(o).addScaledVector(dir, best);
-  addTracer(muzzle, hitAt);
+  addTracer(muzzle, hitAt, { chance: TRACER_CHANCE[wpn.cur] !== undefined ? TRACER_CHANCE[wpn.cur] : .3 });
   const fall = falloff ? clamp(1 - (best - falloff) / 14, .3, 1) : 1;
   if (kind === 'player') {
     pvpHit(hitObj, (pvpDmg || 10) * fall * (head ? (castHeadMul || 2) : 1), dir, { head, w: wpn.cur, at: hitAt.clone() });

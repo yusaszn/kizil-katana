@@ -66,7 +66,7 @@ function fireGun(id) {
   m.flash.material.rotation = rand(0, 6.28); m.flash.scale.setScalar(G.silenced ? rand(.08, .12) : rand(.22, .34) * (G.heavy ? 1.4 : 1));
   muzzleGlow = G.silenced ? .25 : G.heavy ? 1.6 : 1;
   sfx[id](); shake(G.shake);
-  ejectCasing(m, id === 'ak47' ? 'rifle' : 'pistol'); gunKickFor(id);
+  ejectCasing(m, id === 'ak47' ? 'rifle' : 'pistol'); playerCasing(id); gunKickFor(id);
   if (!G.silenced && typeof flashWorld === 'function') flashWorld(G.heavy ? 3 : 2, 0xffa850, .05);
   const ads = s.adsK > .6;
   player.pitch = Math.min(1.45, player.pitch + G.recoil * (ads ? .75 : 1)); player.yaw += rand(-1, 1) * G.recoilYaw;
@@ -79,9 +79,6 @@ function fireGun(id) {
   castHeadMul = G.head;
   castShot(spreadDir(spr), muzzleW.clone(), G.dmg, 1.2, .2, G.falloff, G.pvp);
   castHeadMul = 0;
-  // boş kovan sağa fırlar
-  const p = eyePos.clone().addScaledVector(rightV, .18).addScaledVector(camFwd, .4); p.y -= .08;
-  emit(p.x, p.y, p.z, rightV.x * rand(2, 3.5), rand(2, 3), rightV.z * rand(2, 3.5), 2, .85, .65, .15, 1);
 }
 function updateGuns(dt) {
   const bob = viewBob(), low = lowerOffset(), t = performance.now() / 1000;

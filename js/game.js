@@ -676,7 +676,7 @@ function frame(now) {
     applyInspect(rdt);
     updateGunSpring(dt); applyGunSpring(); updateCasings(dt); updateHands(rdt);   // yaylı tepme, atalet, kovanlar, canlı eller (gunanim.js)
     updateKickLeg(dt);
-    updateTracers(rdt);
+    updateTracers(rdt); updateBullets(dt);   // izler ve kovanlar (mermiler.js)
     updateShop(dt, rdt);
     updateBomb(rdt);
     updateMinimap(rdt);

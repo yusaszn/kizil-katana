@@ -25,7 +25,7 @@ function firePistol() {
   pis.mag--; netFx.sh++; netFx.ft = 0;
   pis.kick = 1; pis.slide = 1; pis.flashT = .04; pism.flash.scale.setScalar(rand(.18, .26));
   muzzleGlow = .9; sfx.pistol(); shake(.04);
-  ejectCasing(pism, 'pistol'); gunKickFor('pistol');
+  ejectCasing(pism, 'pistol'); playerCasing('pistol'); gunKickFor('pistol');
   if (typeof flashWorld === 'function') flashWorld(1.8, 0xffa850, 0.05);
   const ads = pis.adsK > .6;
   player.pitch = Math.min(1.45, player.pitch + .02); kickView(rand(-.01, .01), .012);
@@ -91,7 +91,7 @@ function fireM4() {
   m4.mag--; netFx.sh++; netFx.ft = 0;
   m4.kick = 1; m4.flashT = .04; m4m.flash.material.rotation = rand(0, 6.28); m4m.flash.scale.setScalar(rand(.25, .36));
   muzzleGlow = 1; sfx.m4(); shake(.03);
-  ejectCasing(m4m, 'rifle'); gunKickFor('m4');
+  ejectCasing(m4m, 'rifle'); playerCasing('m4'); gunKickFor('m4');
   if (typeof flashWorld === 'function') flashWorld(2.4, 0xffa040, 0.05);
   const ads = m4.adsK > .6;
   player.pitch = Math.min(1.45, player.pitch + (ads ? .006 : .009)); player.yaw += rand(-.003, .003);
@@ -134,7 +134,7 @@ function pierceShot(dir, muzzle) {
   }
   for (const p of pieces) { const t = raySphere(o, dir, p.body.position, (p.he.x + p.he.y + p.he.z) / 3 * 1.2); if (t >= 0 && t < wallT) { p.body.wakeUp(); if (p.he.x + p.he.y + p.he.z > .15) splitPiece(p, randomNormal(), dir, 8); } }
   const end = o.clone().addScaledVector(dir, wallT);
-  addTracer(muzzle, end); addTracer(muzzle, end);
+  addTracer(muzzle, end, { chance: 1, w: .06, bright: 1.2 });
   chips(end, 12, 1, .8, .4, 4);
   if (typeof sparks === 'function') sparks(end, rand(12, 22), 9);
   if (any) hitMarker(hits.some(h => h[2]));
@@ -196,7 +196,7 @@ function updateRifles(dt) {
   m4.cd -= dt; awp.cd -= dt; m4.grenCd -= dt;
   if (m4.reloadT > 0) { m4.reloadT -= dt; if (m4.reloadT <= 0) { m4.reloadT = 0; m4.reserve--; m4.mag = ST.m4Mag; } }
   if (awp.reloadT > 0) { awp.reloadT -= dt; if (awp.reloadT <= 0) { awp.reloadT = 0; const n = Math.min(ST.awpMag - awp.mag, awp.reserve); awp.mag += n; awp.reserve -= n; } }
-  if (awp.boltT > 0) { const b0 = awp.boltT; awp.boltT -= dt; if (b0 > ST.awpBolt * .55 && awp.boltT <= ST.awpBolt * .55) { sfx.bolt(); ejectCasing(awpm, 'rifle', .8); } }
+  if (awp.boltT > 0) { const b0 = awp.boltT; awp.boltT -= dt; if (b0 > ST.awpBolt * .55 && awp.boltT <= ST.awpBolt * .55) { sfx.bolt(); ejectCasing(awpm, 'rifle', .8); playerCasing('awp'); } }
   const playing = player.alive && state === 'play' && !wpn.next && !vsFrozen();
   if (playing && wpn.cur === 'm4' && m4.reloadT <= 0) {
     if (mouse.left || rifClick) {
