@@ -279,7 +279,7 @@ let kickAnim = 0;
 const KICK_T = .38;
 function updateKickLeg(dt) {
   kickAnim = Math.max(0, kickAnim - dt);
-  const slideLeg = player.slideK > .05 && kickAnim <= 0;
+  const slideLeg = player.slideK > .05 && kickAnim <= 0 && !(SETTINGS.thirdPerson === false && charSource());   // gövdeli 1. şahısta kayan bacak karakterin kendi bacağı
   kickLeg.visible = (kickAnim > 0 || slideLeg) && !SETTINGS.thirdPerson && player.alive;
   if (!kickLeg.visible) return;
   if (slideLeg) {
@@ -522,17 +522,19 @@ function syncCamera(dt, rdt) {
 /* ================= 3. ŞAHIS: KENDİ KARAKTERİN ================= */
 let myAvatar = null;
 function updateMyAvatar(dt) {
-  const tp = SETTINGS.thirdPerson;
-  if (!tp) { if (myAvatar) myAvatar.g.visible = false; return; }
+  const tp = SETTINGS.thirdPerson, legs = !tp && !!charSource();   // 1. şahısta aşağı bakınca kendi bacakların görünür
+  if (!tp && !legs) { if (myAvatar) myAvatar.g.visible = false; return; }
   if (!myAvatar) myAvatar = buildAvatar(0xb3110d, '');
   myAvatar.cloth.color.setHex(isVS() ? TEAMS[myTeam()].color : 0xb3110d);
-  myAvatar.g.visible = !(isVS() && !player.alive);
+  myAvatar.g.visible = !(isVS() && !player.alive) && (tp || player.alive);
   const b = player.body.position, v = player.body.velocity;
   animateAvatar(myAvatar, dt, {
     x: b.x, y: b.y, z: b.z, yaw: player.yaw, pitch: player.pitch, speed: Math.hypot(v.x, v.z),
     w: wpn.cur, block: block.on, alive: player.alive, crouch: player.crouchK, slide: player.slideK,
-    swing: sword.phase === 'wind' || sword.phase === 'swing', kick: kickAnim > 0,
+    swing: sword.phase === 'wind' || sword.phase === 'swing', kick: kickAnim > 0, air: !player.grounded, legsOnly: legs,
   });
+  // 1. şahısta beden biraz geride durur: kamera kalçanın içinden görünmesin, aşağı bakınca bacaklar önde kalsın
+  if (legs && myAvatar.char) { myAvatar.g.position.x -= flatF.x * .17; myAvatar.g.position.z -= flatF.z * .17; }
 }
 
 /* ================= KATANA ANİMASYONU ================= */

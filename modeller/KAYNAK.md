@@ -21,3 +21,9 @@ Poly Pizza üzerinden indirildi; `araclar/modelleri-kucult.mjs` kullanılmayan a
 ## El modeli
 
 `el/sag.glb`: WebXR Input Profiles "generic-hand" (MIT Lisansı, © 2019 Amazon). Lisans metni ve ayrıntılar: [el/LISANS.md](el/LISANS.md).
+
+## Oyuncu karakteri
+
+`karakter.glb`: Quaternius "Adventurer" (CC0 1.0, kamu malı), `@netforge/asset-library-files` npm paketindeki
+`library/lowpoly/adventurer.glb` kopyasından. `araclar/karakteri-hazirla.mjs` sıkıştırmayı açar, sırt çantasını ve
+kullanılmayan animasyonları atar. Gömlek takım rengine boyanır, kollar ters kinematikle silahları tutar (js/karakter.js).

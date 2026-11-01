@@ -94,6 +94,14 @@ function pvpMelee(range, arc, dmg, opts) {
 
 /* ================= ÖLÜM ================= */
 function avatarGore(av, push) {
+  if (av.char) {
+    // yeni karakter: ceset ragdoll olarak gerçek fizikle yığılır (karakter.js)
+    spawnRagdoll(av, push);
+    const c = av.g.position.clone(); c.y += 1.1;
+    bloodBurst(c, push, 140, 8, 4); floorDecal(c.x, c.z, rand(1.2, 1.9));
+    av.g.visible = false; sfx.kill();
+    return;
+  }
   av.g.updateMatrixWorld(true);
   const wp = new V3(), wq = new THREE.Quaternion();
   for (const m of av.parts) {

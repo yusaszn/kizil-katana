@@ -25,7 +25,7 @@ const AV_MAT = {
 };
 function mesh(geo, mat, x = 0, y = 0, z = 0, parent) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (parent) parent.add(m); return m; }
 
-function buildAvatar(color, name) {
+function buildBlockyAvatar(color, name) {
   const M = AV_MAT;
   const cloth = new THREE.MeshStandardMaterial({ color, roughness: .8 });
   const g = new THREE.Group();          // ayak hizası
@@ -114,7 +114,7 @@ function buildAvatar(color, name) {
 }
 
 // s: { x,y,z, yaw, pitch, speed, w, block, alive, crouch, swing, kick }
-function animateAvatar(av, dt, s) {
+function animateBlockyAvatar(av, dt, s) {
   const k = (rate) => Math.min(1, dt * rate);
   av.g.position.set(s.x, s.y - .5, s.z);
   av.g.rotation.y = s.yaw + Math.PI;
