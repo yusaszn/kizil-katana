@@ -218,13 +218,23 @@ function animateCharAvatar(av, dt, s) {
   else if (s.kick && !s.legsOnly) { charPlay(C, 'Kick_Right', { once: true, fade: .08, speed: 1.6 }); C.oneShot = 'kick'; C.oneT = .45; }
   else if (s.swing && melee && !av.swung) { charPlay(C, 'Sword_Slash', { once: true, fade: .06, speed: 1.9 }); C.oneShot = 'swing'; C.oneT = .38; }
   else if (hs > .6 && av.slideK < .2) {
-    const back = vf < -Math.abs(vs) * .8, side = Math.abs(vs) > Math.abs(vf) * 1.2;
-    const name = back ? 'Run_Back' : side ? (vs > 0 ? 'Run_Right' : 'Run_Left') : hs < 3.2 || av.crouchK > .5 ? 'Walk' : 'Run';
+    // yan ve çapraz hareket: modeldeki yan koşu klipleri gövdeyi tamamen yana çevirir; onun yerine ileri / geri koşu
+    // oynatılır, bacaklar hareket yönüne döner (en fazla ~75°), gövde nişan yönünde kalır (aşağıda)
+    const back = vf < -Math.abs(vs) * .35;
+    const name = back ? 'Run_Back' : hs < 3.2 || av.crouchK > .5 ? 'Walk' : 'Run';
     charPlay(C, name, { speed: clamp(hs / (name === 'Walk' ? 1.8 : 5.5), .5, 1.9) });
   } else charPlay(C, melee ? 'Idle_Sword' : 'Idle', { fade: .3 });
+  // bacak yönü: hareket yönünün bakış yönüne açısı (geri giderken arkaya göre)
+  let legYaw = 0;
+  if (hs > .6 && av.slideK < .2) { const ang = Math.atan2(vs, vf); legYaw = clamp(Math.abs(ang) > Math.PI * .6 ? (ang > 0 ? ang - Math.PI : ang + Math.PI) : ang, -1.3, 1.3); }
+  av.legYaw = (av.legYaw || 0) + (legYaw - (av.legYaw || 0)) * k(8);
   av.swung = !!s.swing;
-  for (const [b, p, q, sc] of C.rest) { b.position.copy(p); b.quaternion.copy(q); b.scale.copy(sc); }
+  // pozlar birikmesin diye her karede önce bir önceki karenin klip pozuna dönülür (dinlenme pozuna değil: three'nin
+  // karıştırıcısı değeri değişmeyen izi kemiğe yeniden yazmaz, sabit izli kemik dinlenmede takılı kalırdı)
+  for (const [b, p, q, sc] of C.snap || C.rest) { b.position.copy(p); b.quaternion.copy(q); b.scale.copy(sc); }
   C.mixer.update(dt);
+  if (!C.snap) C.snap = C.rest.map(([b]) => [b, new V3(), new THREE.Quaternion(), new V3()]);
+  for (const e of C.snap) { e[1].copy(e[0].position); e[2].copy(e[0].quaternion); e[3].copy(e[0].scale); }
   C.root.updateMatrixWorld(true);
   // ---- ayakların baldıra göre yeri (pozdan önce) ----
   const feet = ['L', 'R'].map(sd => {
@@ -236,6 +246,8 @@ function animateCharAvatar(av, dt, s) {
   const gq = av.g.getWorldQuaternion(new THREE.Quaternion());
   const RIGHT = new V3(1, 0, 0).applyQuaternion(gq).negate(), UPW = new V3(0, 1, 0), FWD = new V3(fx, 0, fz);   // model +z ileri bakar, grup π döndü
   const rotW = (b, axis, a) => { if (b && Math.abs(a) > 1e-4) boneRotateWorld(b, new THREE.Quaternion().setFromAxisAngle(axis, a)); };
+  // ---- yan / çapraz koşu: kalça ve bacaklar hareket yönüne döner, gövde karşı dönüşle nişan yönünde kalır ----
+  if (Math.abs(av.legYaw) > .01) { rotW(B.Body, UPW, -av.legYaw); rotW(B.Abdomen, UPW, av.legYaw * .85); rotW(B.Chest, UPW, av.legYaw * .15); }
   // ---- eğilme / kayma / havada: kalça iner, dizler bükülür ----
   const cr = av.crouchK * (1 - av.slideK), sl = av.slideK, ai = av.airK * (1 - sl);
   C.obj.position.y = -CHAR_SRC.minY * CHAR_SRC.k - cr * .34 - sl * .55 + ai * .05;

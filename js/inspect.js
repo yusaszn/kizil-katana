@@ -23,7 +23,10 @@ const INSPECT = {
   // bıçak: yan yüzü göster, avuçta tam tur çevir, ağzı kameraya döndür, ters yüzü göster, dinlen
   knife: { dur: 3.0, keys: [[0, 0, 0, 0, 0, 0, 0], [.16, -.05, .08, .02, .1, .6, -1.15], [.32, -.06, .09, .03, .15, .65, -1.25], [.52, -.05, .2, .02, TAU, .6, -1.2], [.68, -.05, .08, .02, TAU + .1, -.5, 1.0], [.84, -.04, .07, .02, TAU + .12, -.55, 1.1], [1, 0, 0, 0, TAU, 0, 0]] },
   // karambit ve kelebeğin asıl numarası aşağıdaki özel hareketlerde (halkada dönme, sallama)
-  karambit: { dur: 2.4, keys: [[0, 0, 0, 0, 0, 0, 0], [.15, -.12, .05, -.12, .2, .15, -.25], [.85, -.12, .05, -.12, .2, .15, -.25], [1, 0, 0, 0, 0, 0, 0]] },
+  // karambit: bileği kaldırıp ağzı göster → öbür yüzü → parmakta hızlı 3 tur → yakala → ters yöne tek tur → son gösteriş → dinlen
+  karambit: { dur: 4.4, keys: [[0, 0, 0, 0, 0, 0, 0], [.1, -.06, .07, -.05, .25, .35, -.5], [.2, -.07, .08, -.05, .28, .42, -.58], [.32, -.04, .08, -.04, .2, -.3, .5],
+    [.4, -.05, .06, -.06, .14, .02, -.08], [.58, -.05, .07, -.06, .16, .08, -.14], [.68, -.05, .06, -.06, .12, -.04, .02], [.76, -.06, .07, -.05, .2, .12, -.18],
+    [.86, -.06, .08, -.05, .3, .45, -.48], [.94, -.02, .03, -.02, .1, .12, -.12], [1, 0, 0, 0, 0, 0, 0]] },
   // kelebek: her yarım turda bilek ağırlıkla savrulur (ağız yukarı kalkarken bilek hafif aşağı, yakalarken geri)
   butterfly: { dur: 3.2, keys: [[0, 0, 0, 0, 0, 0, 0], [.08, -.08, .05, -.08, .15, .12, -.15], [.19, -.08, .07, -.08, .02, .2, -.4], [.29, -.08, .05, -.08, .22, .08, .1],
     [.4, -.08, .07, -.08, .02, .2, -.42], [.5, -.08, .05, -.08, .2, .1, .08], [.61, -.08, .07, -.08, .04, -.12, .38], [.71, -.08, .05, -.08, .2, .06, -.06],
@@ -186,11 +189,12 @@ function applyInspect(dt) {
   if (insp.w === 'launcher' && t > .56 && t < .84) glm.barrel.rotation.x = -Math.sin((t - .56) / .28 * Math.PI) * .38;
   if (insp.w === 'uzi') uziInspect(t);
   if (insp.w === 'katana') swordModel.userData.bloodMat.opacity = Math.max(0, swordModel.userData.bloodMat.opacity - dt * .2);
-  // karambit: işaret parmağı uzanır, diğer parmaklar açılır, bıçak parmağın etrafında 3 tur döner ve yumruk yeniden kapanır
-  if (insp.w === 'karambit' && t > .1 && t < .9) {
-    const u = clamp((t - .1) / .8, 0, 1);
-    ringSpin(kar, easeInOut(u) * TAU * 3);
-    handLife.extend = handLife.release = smooth(clamp(u / .12, 0, 1)) * (1 - smooth(clamp((u - .88) / .12, 0, 1)));
+  // karambit: işaret parmağı uzanır, diğer parmaklar açılır; bıçak parmakta önce hızlı 3 tur, sonra ters yöne tek tur döner
+  if (insp.w === 'karambit') {
+    const seg = (a, b) => clamp((t - a) / (b - a), 0, 1), env = (a, b) => smooth(seg(a - .03, a + .02)) * (1 - smooth(seg(b - .02, b + .03)));
+    const fwd = seg(.4, .66), back = seg(.76, .85);
+    ringSpin(kar, easeInOut(fwd) * TAU * 3 - easeInOut(back) * TAU);
+    handLife.extend = handLife.release = Math.max(env(.4, .66), env(.76, .85));
   }
   // kelebek: açılıp kapanarak akıcı ve kesintisiz sallanır
   if (insp.w === 'butterfly' && t > .08 && t < .92) butterflyFlail((t - .08) / .84, 4);

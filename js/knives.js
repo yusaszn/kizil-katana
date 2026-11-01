@@ -35,20 +35,23 @@ const knifeModels = {};
   const g = new THREE.Group(), m = GM.butterfly(); g.add(m.held);
   handPart(g); knifeRoot.add(g); knifeModels.butterfly = { g, blade: m.blade, free: m.free };
 }
-// karambit halkasını işaret parmağına oturt: halka merkezi parmağın orta boğumu, delik ekseni parmak yönü,
-// sap aşağı (yumruğun içinden). Çevirme açısı (spin) parmak ekseni etrafında
+// karambit halkasını işaret parmağına oturt: halka parmağın kök boğumunu (proksimal) sarar, delik ekseni o boğumun yönü.
+// Sap halkadan aşağı-geriye yumruğun ortasına iner (orta, yüzük ve serçe parmak sarar). Çevirme açısı (spin) halka ekseni etrafında
 const _kx = new V3(1, 0, 0);
 function knifeAfterHands() {
   const m = knifeModels.karambit; if (wpn.cur !== 'karambit' || !m.hand.userData.hand) return;
-  const hd = m.hand.userData.hand, gIn = m.hand.children[0], ch = H_FINGERS[0];
+  const hd = m.hand.userData.hand, gIn = m.hand.children[0], ch = H_FINGERS[0], P = hd.work.P;
   m.g.updateMatrixWorld(true);
-  const a = gIn.localToWorld(hd.work.P[ch[2]].clone()), b = gIn.localToWorld(hd.work.P[ch[3]].clone());
-  const o = gIn.localToWorld(new V3()), dn = gIn.localToWorld(new V3(0, -1, 0)).sub(o);
+  const W = v => gIn.localToWorld(v.clone());
+  const k0 = W(P[ch[1]]), k1 = W(P[ch[2]]);                 // kök boğum: boğum eklemi → orta eklem
+  const ring = k0.clone().lerp(k1, .55);
+  const fist = W(new V3(0, -.034, .002));                   // yumruğun alt ortası (kabza ekseni, serçe hizası)
   const inv = m.g.matrixWorld.clone().invert(), qi = m.g.getWorldQuaternion(new THREE.Quaternion()).invert();
-  const dir = b.sub(a).applyQuaternion(qi).normalize(), down = dn.applyQuaternion(qi).normalize();
-  const U = down.clone().negate(), up = U.clone().addScaledVector(dir, -dir.dot(U)).normalize();   // sap yukarısı: parmağa dik
+  const dir = k1.clone().sub(k0).applyQuaternion(qi).normalize();
+  const down = fist.clone().sub(ring).applyQuaternion(qi);
+  const up = down.negate().addScaledVector(dir, -dir.dot(down)).normalize();   // halkadan yukarı (sapın tersi), boğuma dik
   const yAx = up.clone().cross(dir).normalize();
-  m.kr.position.copy(a.applyMatrix4(inv));
+  m.kr.position.copy(ring.applyMatrix4(inv));
   m.kr.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(dir, yAx, up)).multiply(new THREE.Quaternion().setFromAxisAngle(_kx, m.spin));
 }
 const KN_REST = P([.2, -.19, -.4], [.3, .35, .35]);
