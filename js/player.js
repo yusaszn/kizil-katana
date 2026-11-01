@@ -442,12 +442,17 @@ function applyKick(e, dir, kp, by) {
   e.stun = e.kind === 'brute' ? .4 : 1.1; e.kicked = 1.1; e.kickBy = by; e.windup = 0; e.charge = 0;
 }
 
+// VS'de hız sınırı: koşu hızının biraz üstü. Kayma ve zıplama zinciriyle hız birikmesin (rekabet dengesi)
+const vsSpeedCap = () => ST.moveSpeed * .85 * 1.45 * 1.1;
 function crouchInput(landing) {
+  const vs = isVS();
+  if (vs && landing) return;   // VS: havadan inerken otomatik kayma zinciri yok
   if (!player.alive || state !== 'play' || player.slideT > 0 || (player.slideCd > 0 && !landing) || player.dashT > 0 || vsFrozen()) return;
   const v = player.body.velocity, hs = Math.hypot(v.x, v.z);
-  if (!player.grounded || hs < (landing ? 6 : 11.5)) return;
+  if (!player.grounded || hs < (landing ? 6 : vs ? 8.5 : 11.5)) return;
   player.slideDir.set(v.x / hs, 0, v.z / hs);
-  player.slideV = hs + 4; player.slideT = SLIDE_T; player.slideHit.clear();
+  // VS: kayma hız kazandırmaz, sadece eğilerek kısa bir kayıştır
+  player.slideV = vs ? Math.min(hs + 1, vsSpeedCap()) : hs + 4; player.slideT = SLIDE_T; player.slideHit.clear();
   sfx.slide(); shake(.08);
 }
 
@@ -514,7 +519,7 @@ function updatePlayer(dt) {
     // kayma: hızla ileri kayar, değdiği düşmanları devirir; zıplarsan hızını koruyarak fırlarsın
     player.slideT -= dt;
     const f = Math.max(0, player.slideT / SLIDE_T), d = player.slideDir;
-    const sp = 8 + (player.slideV - 8) * f;
+    const sp = isVS() ? 5 + (player.slideV - 5) * f : 8 + (player.slideV - 8) * f;
     v.x = d.x * sp; v.z = d.z * sp;
     const pb = b.position;
     for (const e of enemies) {
@@ -526,14 +531,18 @@ function updatePlayer(dt) {
     if (Math.random() < .7) emit(pb.x + rand(-.3, .3), .05, pb.z + rand(-.3, .3), -d.x * 3 + rand(-1, 1), rand(.5, 2), -d.z * 3 + rand(-1, 1), 2, .5, .42, .36, .4);
     if (player.jumpBuf > 0 && player.coyote > 0) {
       player.slideT = 0; player.jumpBuf = 0; player.coyote = 0;
-      if (isVS()) { v.y = 9.5; }   // VS: kayarken zıplama sadece zıplama, öne fırlatmaz
+      if (isVS()) {   // VS: kayarken zıplama sadece zıplama, öne fırlatmaz ve hızı sınırın üstüne çıkamaz
+        v.y = 9.5;
+        const hs = Math.hypot(v.x, v.z), cap = vsSpeedCap();
+        if (hs > cap) { v.x *= cap / hs; v.z *= cap / hs; }
+      }
       else {
         // kayarken zıplama: öne doğru kısa bir atılma
         v.x = d.x * (sp + 7); v.z = d.z * (sp + 7); v.y = 8.5;
         dashFlash = .6; sfx.dash(); shake(.08);
       }
     }
-    if (player.slideT <= 0) player.slideCd = .35;
+    if (player.slideT <= 0) player.slideCd = isVS() ? 1.2 : .35;
   } else if (player.alive && state === 'play' && vsFrozen()) {
     // raunt hazırlığında herkes yerinde bekler
     v.x *= .8; v.z *= .8; player.jumpBuf = 0; player.sprinting = false;
@@ -555,8 +564,10 @@ function updatePlayer(dt) {
     if (player.grounded) { v.x += (wish.x * sp - v.x) * k; v.z += (wish.z * sp - v.z) * k; }
     else {
       // havada momentum korunur: tuşa basmazsan hızın düşmez, basarsan yön değiştirirsin
-      const hs0 = Math.hypot(v.x, v.z), tgt = Math.max(sp, hs0);
+      // VS'de havada hız birikmez: hedef hız normal koşu hızıdır ve sınırın üstü kırpılır
+      const hs0 = Math.hypot(v.x, v.z), tgt = isVS() ? sp : Math.max(sp, hs0);
       if (wish.lengthSq() > 0) { v.x += (wish.x * tgt - v.x) * k; v.z += (wish.z * tgt - v.z) * k; }
+      if (isVS()) { const hs = Math.hypot(v.x, v.z), cap = vsSpeedCap(); if (hs > cap) { v.x *= cap / hs; v.z *= cap / hs; } }
     }
     if (player.grounded) player.airJumps = ST.airJumps;
     if (player.jumpBuf > 0) {
