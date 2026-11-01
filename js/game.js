@@ -674,6 +674,7 @@ function frame(now) {
     updatePistol(dt);
     updateKnife(dt);
     applyInspect(rdt);
+    updateGunSpring(dt); applyGunSpring(); updateCasings(dt);   // yaylı tepme, atalet, kovanlar (gunanim.js)
     updateKickLeg(dt);
     updateTracers(rdt);
     updateShop(dt, rdt);

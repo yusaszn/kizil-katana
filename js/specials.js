@@ -67,7 +67,7 @@ function fireSpecial() {
     specialShots.push({ kind, m, pos: m.position, vel: camFwd.clone().multiplyScalar(22).add(new V3(0, 4, 0)), life: 1.6, bounces: 0 });
   }
   if (typeof flashWorld === 'function') flashWorld(3, 0xffa040, .08);
-  muzzleGlow = 1.4;
+  muzzleGlow = 1.4; gunKickFor(kind);
 }
 function specialHitsEnemy(pos, extra) {
   for (const e of enemies) if (e.hp > 0 && enemyCenter(e, tmp).distanceTo(pos) < e.r + extra * e.T.scale) return true;

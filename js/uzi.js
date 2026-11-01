@@ -74,9 +74,9 @@ function fireUzi() {
   player.pitch = Math.min(1.45, player.pitch + .0035); player.yaw += rand(-.0018, .0018);
   kickView((gi ? -1 : 1) * .006, .004);
   camVectors();
-  // boş kovan yana fırlar
-  { const side = gi ? 1 : -1; const p = eyePos.clone().addScaledVector(rightV, .22 * side).addScaledVector(camFwd, .45); p.y -= .12;
-    emit(p.x, p.y, p.z, rightV.x * side * rand(2, 3.5) + rand(-.4, .4), rand(2, 3.5), rightV.z * side * rand(2, 3.5) + rand(-.4, .4), 2, .85, .65, .15, 1.1); }
+  // boş kovan çıkış penceresinden fırlar, silah yaylı geri teper
+  ejectCasing({ g: uzis[gi], port: ud.port }, 'pistol', .9);
+  gunKickFor('uzi');
   for (let k = 0; k < (ST.twin ? 2 : 1); k++) shootRay(gi, k);
 }
 function shootRay(gi, k) {

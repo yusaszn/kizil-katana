@@ -20,6 +20,11 @@ function gmBarHand(parent, { left = true, r = .036, x = 0, y = 0, z = 0, rx = 0,
   h.position.set(x, y, z); h.rotation.set(rx, ry, rz);
   parent.add(h); return h;
 }
+// şarjör değiştirirken şarjörü kavrayan destek eli: şarjör grubunun çocuğu (şarjörle birlikte hareket eder), başta gizli
+function gmMagHand(mag, { r = .021, y = -.03, z = 0, rake = 0 } = {}) {
+  const h = gmGripHand(mag, { left: true, r, rake, y, z, trigger: false, arm: [-.25, -.5, .9] });
+  h.visible = false; return h;
+}
 // fişek kovanı (tüfek / tabanca): z ekseninde, ağzı -z
 function gmCasing(len = .03, r = .0042, neck = .7) {
   return GK.latheGeo([[0, len / 2], [r, len / 2], [r, len / 2 - .002], [r * .92, len / 2 - .003], [r, len / 2 - .004], [r, -len * .15], [r * neck, -len * .3], [r * neck, -len / 2], [0, -len / 2]], 10);
@@ -98,12 +103,14 @@ GM.m4 = ({ hands = true } = {}) => {
   GK.rbox(gl, GK.black, .03, .014, .19, 0, -.032, -.33, .003);                          // ray kelepçesi
   GK.box(gl, GK.dark, .003, .03, .02, -.03, -.04, -.3);                                 // kadran nişangahı
   // ---- eller ----
+  let lh = null, magHand = null;
   if (hands) {
     gmGripHand(g, { r: .021, rake: .38, y: -.088, z: .093, trigger: true });
-    gmBarHand(g, { r: .038, y: Y, z: -.3 });
+    lh = gmBarHand(g, { r: .038, y: Y, z: -.3 });
+    magHand = gmMagHand(mag, { r: .024, y: -.045, z: -.01, rake: -.08 });
   }
   const flash = GK.flash(g, Y, -.785);
-  return { g, mag, gl, flash, ch, port: new V3(.025, Y + .002, .006), sight: SL, muzzleZ: -.76 };
+  return { g, mag, gl, flash, ch, lh, magHand, port: new V3(.025, Y + .002, .006), sight: SL, muzzleZ: -.76 };
 };
 
 /* ================= AWP (AW tipi, başparmak delikli dipçik) ================= */
@@ -153,11 +160,13 @@ GM.awp = ({ hands = true } = {}) => {
   const mag = new THREE.Group(); mag.position.set(0, -.08, -.045); g.add(mag);
   GK.rbox(mag, GK.black, .034, .055, .07, 0, .0025, 0, .004);
   GK.rbox(mag, GK.dark, .037, .008, .074, 0, -.026, 0, .003);
+  let lh = null, magHand = null;
   if (hands) {
     gmGripHand(g, { r: .022, rake: .21, y: -.07, z: .118, trigger: true });
-    gmBarHand(g, { r: .028, y: -.022, z: -.23 });
+    lh = gmBarHand(g, { r: .028, y: -.022, z: -.23 });
+    magHand = gmMagHand(mag, { r: .022, y: -.012, z: 0 });
   }
-  return { g, mag, bolt, flash: GK.flash(g, Y, -1.02, 0xffd080), port: new V3(.022, Y + .005, .02), muzzleZ: -.99 };
+  return { g, mag, bolt, lh, magHand, flash: GK.flash(g, Y, -1.02, 0xffd080), port: new V3(.022, Y + .005, .02), muzzleZ: -.99 };
 };
 
 /* ================= TABANCA (Beretta tipi, üstü açık kızak) ================= */
@@ -181,8 +190,13 @@ GM.beretta = ({ hands = true } = {}) => {
   const mag = new THREE.Group(); mag.position.set(0, -.075, .083); mag.rotation.x = -.25; g.add(mag);
   GK.rbox(mag, GK.steel, .02, .09, .034, 0, .012, 0, .004);
   GK.rbox(mag, GK.poly, .027, .009, .042, 0, -.038, .002, .003);
-  if (hands) gmGripHand(g, { r: .02, rake: .25, y: -.055, z: .075, trigger: true });
-  return { g, slide, mag, flash: GK.flash(g, Y, -.135), port: new V3(.016, .031, -.03), sight: SL, muzzleZ: -.122 };
+  let lh = null, magHand = null;
+  if (hands) {
+    gmGripHand(g, { r: .02, rake: .25, y: -.055, z: .075, trigger: true });
+    lh = gmGripHand(g, { left: true, r: .026, rake: .25, x: -.02, y: -.073, z: .068, trigger: false, ry: .45 });
+    magHand = gmMagHand(mag, { r: .018, y: -.03, z: .002 });
+  }
+  return { g, slide, mag, lh, magHand, flash: GK.flash(g, Y, -.135), port: new V3(.016, .031, -.03), sight: SL, muzzleZ: -.122, pistol: true };
 };
 
 /* ================= AK-47 ================= */
@@ -236,11 +250,13 @@ GM.ak = ({ hands = true } = {}) => {
   GK.prof(g, GK.wood, [[.163, .014, .003], [.442, -.004, .006], [.442, -.118, .006], [.2, -.042, .03], [.163, -.036, .003]], .04);
   GK.prof(g, GK.blued, [[.44, -.002, .004], [.452, -.002, .004], [.452, -.12, .004], [.44, -.12, .004]], .043);
   GK.prof(g, GK.blued, [[.16, .016], [.215, .008], [.215, 0], [.16, .004]], .042);
+  let lh = null, magHand = null;
   if (hands) {
     gmGripHand(g, { r: .021, rake: .24, y: -.075, z: .135, trigger: true });
-    gmBarHand(g, { r: .033, y: -.006, z: -.28 });
+    lh = gmBarHand(g, { r: .033, y: -.006, z: -.28 });
+    magHand = gmMagHand(mag, { r: .022, y: -.07, z: -.016, rake: -.32 });
   }
-  return { g, mag, slide, flash: GK.flash(g, Y, -.785), port: new V3(.024, .006, .01), sight: SL, muzzleZ: -.76 };
+  return { g, mag, slide, lh, magHand, flash: GK.flash(g, Y, -.785), port: new V3(.024, .006, .01), sight: SL, muzzleZ: -.76 };
 };
 
 /* ================= DEAGLE ================= */
@@ -265,11 +281,13 @@ GM.deagle = ({ hands = true } = {}) => {
   const mag = new THREE.Group(); mag.position.set(0, -.075, .093); mag.rotation.x = -.24; g.add(mag);
   GK.rbox(mag, M, .022, .09, .036, 0, .015, 0, .004);
   GK.rbox(mag, GK.dark, .03, .01, .05, 0, -.036, .002, .004);
+  let lh = null, magHand = null;
   if (hands) {
     gmGripHand(g, { r: .021, rake: .24, y: -.06, z: .09, trigger: true });
-    gmGripHand(g, { left: true, r: .027, rake: .24, x: -.02, y: -.078, z: .082, trigger: false, ry: .45 });
+    lh = gmGripHand(g, { left: true, r: .027, rake: .24, x: -.02, y: -.078, z: .082, trigger: false, ry: .45 });
+    magHand = gmMagHand(mag, { r: .02, y: -.03, z: .002 });
   }
-  return { g, slide, mag, flash: GK.flash(g, Y, -.178), port: new V3(.019, .035, .006), sight: SL, muzzleZ: -.162 };
+  return { g, slide, mag, lh, magHand, flash: GK.flash(g, Y, -.178), port: new V3(.019, .035, .006), sight: SL, muzzleZ: -.162, pistol: true };
 };
 
 /* ================= USP-S (susturuculu) ================= */
@@ -295,11 +313,13 @@ GM.usps = ({ hands = true } = {}) => {
   const mag = new THREE.Group(); mag.position.set(0, -.075, .083); mag.rotation.x = -.25; g.add(mag);
   GK.rbox(mag, GK.steel, .02, .088, .034, 0, .014, 0, .004);
   GK.rbox(mag, GK.poly, .026, .009, .042, 0, -.035, .002, .003);
+  let lh = null, magHand = null;
   if (hands) {
     gmGripHand(g, { r: .02, rake: .25, y: -.055, z: .075, trigger: true });
-    gmGripHand(g, { left: true, r: .026, rake: .25, x: -.02, y: -.073, z: .068, trigger: false, ry: .45 });
+    lh = gmGripHand(g, { left: true, r: .026, rake: .25, x: -.02, y: -.073, z: .068, trigger: false, ry: .45 });
+    magHand = gmMagHand(mag, { r: .018, y: -.03, z: .002 });
   }
-  return { g, slide, mag, flash: GK.flash(g, Y, -.31, 0xffe0a0), port: new V3(.016, .021, 0), sight: SL, muzzleZ: -.302 };
+  return { g, slide, mag, lh, magHand, flash: GK.flash(g, Y, -.31, 0xffe0a0), port: new V3(.016, .021, 0), sight: SL, muzzleZ: -.302, pistol: true };
 };
 
 /* ================= GLOCK ================= */
@@ -323,11 +343,13 @@ GM.glock = ({ hands = true } = {}) => {
   const mag = new THREE.Group(); mag.position.set(0, -.075, .085); mag.rotation.x = -.26; g.add(mag);
   GK.rbox(mag, GK.poly, .021, .088, .034, 0, .014, 0, .005);
   GK.rbox(mag, GK.poly, .026, .008, .04, 0, -.034, .002, .003);
+  let lh = null, magHand = null;
   if (hands) {
     gmGripHand(g, { r: .02, rake: .27, y: -.055, z: .077, trigger: true });
-    gmGripHand(g, { left: true, r: .026, rake: .27, x: -.02, y: -.073, z: .07, trigger: false, ry: .45 });
+    lh = gmGripHand(g, { left: true, r: .026, rake: .27, x: -.02, y: -.073, z: .07, trigger: false, ry: .45 });
+    magHand = gmMagHand(mag, { r: .018, y: -.03, z: .002 });
   }
-  return { g, slide, mag, flash: GK.flash(g, Y, -.12), port: new V3(.016, .022, -.005), sight: SL, muzzleZ: -.105 };
+  return { g, slide, mag, lh, magHand, flash: GK.flash(g, Y, -.12), port: new V3(.016, .022, -.005), sight: SL, muzzleZ: -.105, pistol: true };
 };
 
 /* ================= POMPALI (870 tipi) ================= */

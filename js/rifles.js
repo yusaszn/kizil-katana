@@ -25,6 +25,7 @@ function firePistol() {
   pis.mag--; netFx.sh++; netFx.ft = 0;
   pis.kick = 1; pis.slide = 1; pis.flashT = .04; pism.flash.scale.setScalar(rand(.18, .26));
   muzzleGlow = .9; sfx.pistol(); shake(.04);
+  ejectCasing(pism, 'pistol'); gunKickFor('pistol');
   if (typeof flashWorld === 'function') flashWorld(1.8, 0xffa850, 0.05);
   const ads = pis.adsK > .6;
   player.pitch = Math.min(1.45, player.pitch + .02); kickView(rand(-.01, .01), .012);
@@ -48,14 +49,13 @@ function updatePistol(dt) {
   pis.adsK += ((pisAds() ? 1 : 0) - pis.adsK) * Math.min(1, dt * 14);
   pis.kick = Math.max(0, pis.kick - dt * 10); pis.slide = Math.max(0, pis.slide - dt * 16);
   pis.flashT -= dt; pism.flash.visible = pis.flashT > 0;
-  pism.slide.position.z = pis.slide * .04;
   const rp = pis.reloadT > 0 ? 1 - pis.reloadT / RIF.pistol.reload : -1;
-  let tilt = 0, drop = 0;
-  if (rp >= 0) { tilt = Math.sin(rp * Math.PI); drop = rp < .35 ? easeOut(rp / .35) * .35 : rp < .7 ? .35 - easeOut((rp - .35) / .35) * .35 : 0; }
-  pism.mag.position.y = -.075 - drop; pism.mag.visible = drop < .3;
+  // boş tabancanın kızağı geride kilitli kalır; yeni şarjör takılınca bırakılır
+  pism.slide.position.z = pis.mag <= 0 && (rp < 0 || rp < .7) ? .04 : pis.slide * .04;
+  const tilt = 0, slap = applyMagSwap(pism, rp);   // yana yatma: gunanim.js şarjör duruşu
   lerpPose(PIS_REST, PIS_ADS, pis.adsK, rifPose);
   const bob = viewBob(), sprint = player.sprinting && player.grounded ? 1 - pis.adsK : 0;
-  pisRoot.position.set(rifPose.p.x + sword.swayX + bob.x, rifPose.p.y + sword.swayY + bob.y - lowerOffset() - tilt * .05 - sprint * .06, rifPose.p.z + pis.kick * .05);
+  pisRoot.position.set(rifPose.p.x + sword.swayX + bob.x, rifPose.p.y + sword.swayY + bob.y - lowerOffset() - tilt * .05 - sprint * .06 + slap * .012, rifPose.p.z + pis.kick * .05);
   pisRoot.rotation.set(rifPose.r.x + pis.kick * .3 - wpn.off * .8 + tilt * .4 - sprint * .5, rifPose.r.y + sprint * .4, rifPose.r.z - tilt * .7, 'YXZ');
 }
 function pistolReload() { if (wpn.cur === 'pistol' && pis.reloadT <= 0 && pis.mag < RIF.pistol.mag && pis.reserve > 0) { pis.reloadT = RIF.pistol.reload; sfx.reload(); } }
@@ -91,6 +91,7 @@ function fireM4() {
   m4.mag--; netFx.sh++; netFx.ft = 0;
   m4.kick = 1; m4.flashT = .04; m4m.flash.material.rotation = rand(0, 6.28); m4m.flash.scale.setScalar(rand(.25, .36));
   muzzleGlow = 1; sfx.m4(); shake(.03);
+  ejectCasing(m4m, 'rifle'); gunKickFor('m4');
   if (typeof flashWorld === 'function') flashWorld(2.4, 0xffa040, 0.05);
   const ads = m4.adsK > .6;
   player.pitch = Math.min(1.45, player.pitch + (ads ? .006 : .009)); player.yaw += rand(-.003, .003);
@@ -100,13 +101,11 @@ function fireM4() {
   const spr = (ads ? RIF.m4.ads : RIF.m4.spread) * (moving ? 1.8 : 1) * (player.grounded ? 1 : 2);
   muzzleW.copy(eyePos).addScaledVector(rightV, ads ? 0 : .2).addScaledVector(upV, -.12).addScaledVector(camFwd, .8);
   castShot(spreadDir(spr), muzzleW.clone(), RIF.m4.dmg * (isVS() ? 1 : ST.m4Dmg), 1.3, .25, 30, RIF.m4.pvp);
-  const p = eyePos.clone().addScaledVector(rightV, .2).addScaledVector(camFwd, .4); p.y -= .1;
-  emit(p.x, p.y, p.z, rightV.x * rand(2, 3.5), rand(2, 3), rightV.z * rand(2, 3.5), 2, .85, .65, .15, 1.1);
 }
 function fireAWP() {
   awp.mag--; netFx.sh++; netFx.ft = 1;
   awp.kick = 1; awp.flashT = .07; awpm.flash.scale.setScalar(rand(.5, .65));
-  muzzleGlow = 1.8; sfx.awp(); shake(.3);
+  muzzleGlow = 1.8; sfx.awp(); shake(.3); gunKickFor('awp');
   if (typeof flashWorld === 'function') flashWorld(4.5, 0xffe8a0, 0.09);
   const scoped = awp.scopeK > .6;
   camVectors();
@@ -197,7 +196,7 @@ function updateRifles(dt) {
   m4.cd -= dt; awp.cd -= dt; m4.grenCd -= dt;
   if (m4.reloadT > 0) { m4.reloadT -= dt; if (m4.reloadT <= 0) { m4.reloadT = 0; m4.reserve--; m4.mag = ST.m4Mag; } }
   if (awp.reloadT > 0) { awp.reloadT -= dt; if (awp.reloadT <= 0) { awp.reloadT = 0; const n = Math.min(ST.awpMag - awp.mag, awp.reserve); awp.mag += n; awp.reserve -= n; } }
-  if (awp.boltT > 0) { const b0 = awp.boltT; awp.boltT -= dt; if (b0 > ST.awpBolt * .55 && awp.boltT <= ST.awpBolt * .55) sfx.bolt(); }
+  if (awp.boltT > 0) { const b0 = awp.boltT; awp.boltT -= dt; if (b0 > ST.awpBolt * .55 && awp.boltT <= ST.awpBolt * .55) { sfx.bolt(); ejectCasing(awpm, 'rifle', .8); } }
   const playing = player.alive && state === 'play' && !wpn.next && !vsFrozen();
   if (playing && wpn.cur === 'm4' && m4.reloadT <= 0) {
     if (mouse.left || rifClick) {
@@ -229,28 +228,26 @@ function updateRifles(dt) {
   m4.kick = Math.max(0, m4.kick - dt * 12); m4.flashT -= dt; m4m.flash.visible = m4.flashT > 0;
   {
     const rp = m4.reloadT > 0 ? 1 - m4.reloadT / RIF.m4.reload : -1;
-    let tilt = 0, drop = 0, cock = 0;
-    if (rp >= 0) { tilt = Math.sin(rp * Math.PI); drop = rp < .35 ? easeOut(rp / .35) * .45 : rp < .7 ? .45 - easeOut((rp - .35) / .35) * .45 : 0; if (rp > .75 && rp < .95) cock = Math.sin((rp - .75) / .2 * Math.PI); }
-    m4m.mag.position.y = -.12 - drop; m4m.mag.visible = drop < .4;
+    let tilt = 0, cock = 0;
+    if (rp > .75 && rp < .95) cock = Math.sin((rp - .75) / .2 * Math.PI);   // yana yatma: gunanim.js şarjör duruşu
+    const slap = applyMagSwap(m4m, rp);   // destek eli eski şarjörü çeker, yenisini takar (gunanim.js)
     lerpPose(M4_REST, M4_ADS, m4.adsK, rifPose);
     const sp = sprint * (1 - m4.adsK);
-    m4Root.position.set(rifPose.p.x + sword.swayX + bob.x * (1 - m4.adsK * .8), rifPose.p.y + sword.swayY + bob.y * (1 - m4.adsK * .8) - low - tilt * .08 - sp * .06 + Math.sin(t * 1.4) * .002, rifPose.p.z + m4.kick * .05 - cock * .04);
+    m4Root.position.set(rifPose.p.x + sword.swayX + bob.x * (1 - m4.adsK * .8), rifPose.p.y + sword.swayY + bob.y * (1 - m4.adsK * .8) - low - tilt * .08 - sp * .06 + Math.sin(t * 1.4) * .002 + slap * .014, rifPose.p.z + m4.kick * .05 - cock * .04);
     m4Root.rotation.set(rifPose.r.x + m4.kick * .06 - wpn.off * .8 + tilt * .3 - sp * .5, rifPose.r.y + sp * .45, rifPose.r.z - tilt * .9 + sp * .3, 'YXZ');
   }
   // AWP
   awp.kick = Math.max(0, awp.kick - dt * 5); awp.flashT -= dt; awpm.flash.visible = awp.flashT > 0;
   {
     const rp = awp.reloadT > 0 ? 1 - awp.reloadT / RIF.awp.reload : -1;
-    let tilt = 0, drop = 0;
-    if (rp >= 0) { tilt = Math.sin(rp * Math.PI); drop = rp < .35 ? easeOut(rp / .35) * .4 : rp < .7 ? .4 - easeOut((rp - .35) / .35) * .4 : 0; }
-    awpm.mag.position.y = -.08 - drop; awpm.mag.visible = drop < .35;
+    const tilt = 0, slap = applyMagSwap(awpm, rp);   // yana yatma: gunanim.js şarjör duruşu
     // sürgü: yukarı kalkar, geri çekilir, ileri itilir, iner
     const bp = awp.boltT > 0 ? 1 - awp.boltT / ST.awpBolt : 1;
     const up = bp < .2 ? bp / .2 : bp < .8 ? 1 : 1 - (bp - .8) / .2, back = bp < .2 ? 0 : bp < .5 ? (bp - .2) / .3 : bp < .8 ? 1 - (bp - .5) / .3 : 0;
     awpm.bolt.rotation.z = up * 1.2; awpm.bolt.position.z = .1 + back * .1;
     const boltTilt = awp.boltT > 0 ? Math.sin(bp * Math.PI) : 0;
     awpRoot.visible = wpn.cur === 'awp' && awp.scopeK < .6;
-    awpRoot.position.set(AWP_REST.p.x + sword.swayX + bob.x - awp.scopeK * .2, AWP_REST.p.y + sword.swayY + bob.y - low - tilt * .08 - sprint * .07 + awp.scopeK * .08, AWP_REST.p.z + awp.kick * .12);
+    awpRoot.position.set(AWP_REST.p.x + sword.swayX + bob.x - awp.scopeK * .2, AWP_REST.p.y + sword.swayY + bob.y - low - tilt * .08 - sprint * .07 + awp.scopeK * .08 + slap * .012, AWP_REST.p.z + awp.kick * .12);
     awpRoot.rotation.set(AWP_REST.r.x + awp.kick * .3 - wpn.off * .8 + tilt * .3 - sprint * .5 + boltTilt * .12, AWP_REST.r.y + sprint * .45, AWP_REST.r.z - tilt * .8 - boltTilt * .35, 'YXZ');
   }
   $('scope').hidden = !(wpn.cur === 'awp' && awp.scopeK > .6);

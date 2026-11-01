@@ -26,7 +26,7 @@ function fireShotgun(focused) {
   shells.loading = false;
   sg.kick = 1; sg.flashT = .06; sg.flash.material.rotation = rand(0, 6.28); sg.flash.scale.setScalar(focused ? rand(.35, .45) : rand(.5, .7));
   muzzleGlow = 1.6;
-  sfx.shotgun(); shake(.22);
+  sfx.shotgun(); shake(.22); gunKickFor('shotgun');
   if (typeof flashWorld === 'function') flashWorld(3.2, 0xff8530, 0.08);
   player.pitch = Math.min(1.45, player.pitch + (focused ? .06 : .045));
   kickView(rand(-.03, .03), .035);
@@ -48,8 +48,8 @@ function updateShotgun(dt) {
     const before = shells.pumpT; shells.pumpT -= dt;
     if (before > .3 && shells.pumpT <= .3) {
       sfx.pump();
-      // boş kovan dışarı fırlar
-      if (wpn.cur === 'shotgun') { camVectors(); const p = eyePos.clone().addScaledVector(rightV, .25).addScaledVector(camFwd, .5); p.y -= .15; emit(p.x, p.y, p.z, rightV.x * 3 + rand(-.5, .5), 2.5, rightV.z * 3 + rand(-.5, .5), 2, .65, .08, .05, 1.2); }
+      // boş kovan çıkış penceresinden dışarı fırlar
+      if (wpn.cur === 'shotgun') ejectCasing(sg, 'shotgun', .85);
     }
   }
   if (shells.loading) {

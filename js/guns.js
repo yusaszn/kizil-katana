@@ -66,6 +66,7 @@ function fireGun(id) {
   m.flash.material.rotation = rand(0, 6.28); m.flash.scale.setScalar(G.silenced ? rand(.08, .12) : rand(.22, .34) * (G.heavy ? 1.4 : 1));
   muzzleGlow = G.silenced ? .25 : G.heavy ? 1.6 : 1;
   sfx[id](); shake(G.shake);
+  ejectCasing(m, id === 'ak47' ? 'rifle' : 'pistol'); gunKickFor(id);
   if (!G.silenced && typeof flashWorld === 'function') flashWorld(G.heavy ? 3 : 2, 0xffa850, .05);
   const ads = s.adsK > .6;
   player.pitch = Math.min(1.45, player.pitch + G.recoil * (ads ? .75 : 1)); player.yaw += rand(-1, 1) * G.recoilYaw;
@@ -105,20 +106,18 @@ function updateGuns(dt) {
     s.adsK += (((mouse.right && playing) ? 1 : 0) - s.adsK) * Math.min(1, dt * 14);
     s.kick = Math.max(0, s.kick - dt * (G.heavy ? 6 : 11)); s.slide = Math.max(0, s.slide - dt * 15);
     s.flashT -= dt; m.flash.visible = s.flashT > 0;
-    if (m.slide) m.slide.position.z = s.slide * G.slideBack;
     const rp = s.reloadT > 0 ? 1 - s.reloadT / G.reload : -1;
-    let tilt = 0, drop = 0, cock = 0;
+    // tabancada boş şarjörde kızak geride kilitli kalır; yeni şarjör takılınca bırakılır
+    if (m.slide) m.slide.position.z = (G.slot === 'pistol' && s.mag <= 0 && (rp < 0 || rp < .7) ? 1 : s.slide) * G.slideBack;
+    let tilt = 0, cock = 0;
     if (rp >= 0) {
-      tilt = Math.sin(rp * Math.PI);
-      drop = rp < .3 ? easeOut(rp / .3) * .4 : rp < .68 ? .4 - easeOut((rp - .3) / .38) * .4 : 0;
       if (rp > .75 && rp < .95) cock = Math.sin((rp - .75) / .2 * Math.PI);
     }
-    const magY0 = id === 'ak47' ? -.04 : -.075;
-    m.mag.position.y = magY0 - drop; m.mag.visible = drop < .35;
+    const slap = applyMagSwap(m, rp);   // destek eli şarjörü değiştirir (gunanim.js)
     if (m.slide && cock) m.slide.position.z = Math.max(m.slide.position.z, cock * G.slideBack);
     lerpPose(G.restP, G.adsP, s.adsK, gunPose);
     const sprint = player.sprinting && player.grounded ? 1 - s.adsK : 0, bk = 1 - s.adsK * .8;
-    root.position.set(gunPose.p.x + sword.swayX + bob.x * bk, gunPose.p.y + sword.swayY + bob.y * bk - low - tilt * .07 - sprint * .06 + Math.sin(t * 1.4) * .0015,
+    root.position.set(gunPose.p.x + sword.swayX + bob.x * bk, gunPose.p.y + sword.swayY + bob.y * bk - low - tilt * .07 - sprint * .06 + Math.sin(t * 1.4) * .0015 + slap * .013,
       gunPose.p.z + s.kick * (G.heavy ? .09 : .05) - cock * .03);
     root.rotation.set(gunPose.r.x + s.kick * (G.heavy ? .45 : G.slot === 'pistol' ? .25 : .07) - wpn.off * .8 + tilt * .35 - sprint * .5,
       gunPose.r.y + sprint * .4, gunPose.r.z - tilt * .8 + sprint * .3, 'YXZ');
