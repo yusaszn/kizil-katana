@@ -695,10 +695,7 @@ function frame(now) {
   updateAmbience(rdt, gameTime);
   updateVoice(rdt);
   if (typeof updateTouch === 'function') updateTouch();
-  renderer.clear();
-  renderer.render(scene, camera);
-  renderer.clearDepth();
-  if (state !== 'menu' && !SETTINGS.thirdPerson && awp.scopeK < .6) renderer.render(vmScene, vmCam);
+  renderFrame(state !== 'menu' && !SETTINGS.thirdPerson && awp.scopeK < .6, rdt);   // efektler.js (parlama, renk, vinyet)
 }
 // silah ve el renkleri sRGB olarak yazıldı; doğrusal renk uzayına çevrilmezse soluk / pembe görünürler
 function linearizeViewmodel() {

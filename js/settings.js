@@ -1,7 +1,7 @@
 'use strict';
 /* Ayarlar: FPS göstergesi, fare hassasiyeti, ses, görüş açısı, grafik kalitesi, kan miktarı. Tarayıcıda saklanır. */
 
-const SETTINGS_DEFAULT = { showFps: false, thirdPerson: false, alwaysSprint: false, sens: 1, volume: .5, fov: 80, quality: 1.5, gore: 1, voice: 'ptt', voiceVol: .9, minimap: true };
+const SETTINGS_DEFAULT = { showFps: false, thirdPerson: false, alwaysSprint: false, sens: 1, volume: .5, fov: 80, quality: 1.5, gore: 1, voice: 'ptt', voiceVol: .9, minimap: true, fx: !('ontouchstart' in window) };
 const SETTINGS = Object.assign({}, SETTINGS_DEFAULT);
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('kk-ayarlar') || '{}')); } catch (e) { /* kayıt yoksa varsayılanlar */ }
 
@@ -11,6 +11,7 @@ function applySettings() {
   resize();
   if (AU.master) AU.master.gain.value = SETTINGS.volume;
   $('fps').hidden = !SETTINGS.showFps;
+  if (typeof fxResize === 'function') fxResize();
 }
 
 const SETTING_ROWS = [
@@ -24,6 +25,7 @@ const SETTING_ROWS = [
   { key: 'voice', label: 'Sesli sohbet', type: 'choice', options: [['ptt', 'Bas-konuş (K)'], ['open', 'Açık mikrofon'], ['off', 'Kapalı']] },
   { key: 'voiceVol', label: 'Arkadaşların sesi', type: 'range', min: 0, max: 1, step: .05, fmt: v => Math.round(v * 100) + '%' },
   { key: 'minimap', label: 'Mini harita', type: 'toggle' },
+  { key: 'fx', label: 'Görsel efektler (parlama, renk, vinyet)', type: 'toggle' },
   { key: 'gore', label: 'Kan miktarı', type: 'choice', options: [[.35, 'Az'], [1, 'Normal'], [1.8, 'Kan gölü']] },
 ];
 function buildSettings() {
