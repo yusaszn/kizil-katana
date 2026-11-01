@@ -21,7 +21,22 @@ const GUN_KICK = {
   uzi: [.22, .28, .5], m4: [.42, .42, .45], awp: [1.5, 1.6, .8], pistol: [.5, .8, .6], ak47: [.55, .58, .55],
   deagle: [1, 1.5, .9], usps: [.32, .5, .4], glock: [.4, .6, .5], shotgun: [1.3, 1.5, .9], rocket: [1.4, .9, .5], launcher: [1, 1.1, .6],
 };
-function gunKickFor(w) { const k = GUN_KICK[w]; if (k) gunKick(k[0], k[1], k[2]); }
+function gunKickFor(w) { const k = GUN_KICK[w]; if (k) gunKick(k[0], k[1], k[2]); handLife.pull = 1; handLife.squeeze = 1; }
+
+/* ================= CANLI ELLER ================= */
+// elde tutulan silahın elleri her karede hafifçe canlandırılır (el.js animateHand)
+const handLife = { pull: 0, squeeze: 0, relax: 0 };
+const AUTO_FIRE = { uzi: 1, m4: 1, ak47: 1 };
+function shownIn(o, root) { for (let p = o; p && p !== root; p = p.parent) if (!p.visible) return false; return root.visible; }
+function updateHands(dt) {
+  const root = gunRootOf(wpn.cur); if (!root || !root.visible) return;
+  const firing = mouse.left && AUTO_FIRE[wpn.cur] && state === 'play' && player.alive;
+  handLife.pull = Math.max(firing ? .85 : 0, handLife.pull - dt * 11);
+  handLife.squeeze = Math.max(0, handLife.squeeze - dt * 5);
+  handLife.relax += ((player.sprinting && player.grounded ? 1 : 0) - handLife.relax) * Math.min(1, dt * 6);
+  const t = performance.now() / 1000;
+  for (const o of handsOf(root)) if (shownIn(o, root)) animateHand(o.userData.hand, dt, t, handLife);
+}
 function stepSpring(x, v, k, c, dt) { for (const a of ['x', 'y', 'z']) { v[a] += (-k * x[a] - c * v[a]) * dt; x[a] += v[a] * dt; } }
 function updateGunSpring(dt) {
   // küçük adımlarla (kararlı): sert yay, az sönümlü → canlı ama titremeyen toparlanma

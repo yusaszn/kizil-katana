@@ -127,6 +127,25 @@ function reachThumb(pose, target, dist, r) {
 }
 
 /* ================= DERİ (CPU) ================= */
+const _skinM = HAND.ibm.map(() => new THREE.Matrix4()), _one = new V3(1, 1, 1);
+// eklem pozuna göre köşeleri ve normalleri hesapla (var olan dizilere yazar)
+function skinInto(pose, pos, nor) {
+  const n = HAND.pos.length / 3, { pos: P0, nor: N0, ji, jw } = HAND;
+  const M = pose.P.map((p, i) => _skinM[i].compose(p, pose.Q[i], _one).multiply(HAND.ibm[i]).elements);
+  for (let v = 0; v < n; v++) {
+    const px = P0[v * 3], py = P0[v * 3 + 1], pz = P0[v * 3 + 2], nx0 = N0[v * 3], ny0 = N0[v * 3 + 1], nz0 = N0[v * 3 + 2];
+    let x = 0, y = 0, z = 0, nx = 0, ny = 0, nz = 0;
+    for (let k = 0; k < 4; k++) {
+      const w = jw[v * 4 + k]; if (!w) continue;
+      const m = M[ji[v * 4 + k]];
+      x += w * (m[0] * px + m[4] * py + m[8] * pz + m[12]); y += w * (m[1] * px + m[5] * py + m[9] * pz + m[13]); z += w * (m[2] * px + m[6] * py + m[10] * pz + m[14]);
+      nx += w * (m[0] * nx0 + m[4] * ny0 + m[8] * nz0); ny += w * (m[1] * nx0 + m[5] * ny0 + m[9] * nz0); nz += w * (m[2] * nx0 + m[6] * ny0 + m[10] * nz0);
+    }
+    const l = Math.hypot(nx, ny, nz) || 1;
+    pos[v * 3] = x; pos[v * 3 + 1] = y; pos[v * 3 + 2] = z;
+    nor[v * 3] = nx / l; nor[v * 3 + 1] = ny / l; nor[v * 3 + 2] = nz / l;
+  }
+}
 function skinHandGeo(pose) {
   const n = HAND.pos.length / 3, M = pose.P.map((p, i) => new THREE.Matrix4().compose(p, pose.Q[i], new V3(1, 1, 1)).multiply(HAND.ibm[i]).elements);
   const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
@@ -214,6 +233,61 @@ function createTacticalHand(isLeft = false, opts = {}) {
   }
   const mesh = new THREE.Mesh(skinHandGeo(pose), handGlove);
   g.add(mesh);
+  // canlı el: temel poz saklanır, her karede küçük parmak hareketleri üstüne eklenip deri yeniden hesaplanır (animateHand)
+  out.userData.hand = {
+    base: { P: pose.P.map(p => p.clone()), Q: pose.Q.map(q => q.clone()) },
+    work: { P: pose.P.map(p => p.clone()), Q: pose.Q.map(q => q.clone()) },
+    mesh, trigger, grip, phase: rand(0, 100), regripT: rand(3, 9), regrip: 0, lastSig: '',
+  };
   handArm(g, pose.P[H_WRIST].clone().addScaledVector(armDir, .012), armDir);
   return out;
+}
+
+/* ================= CANLI EL ================= */
+// Elin temel kavrayışına küçük, sürekli hareketler eklenir:
+//   nefes gibi hafif parmak oynaması, ara sıra kabzayı gevşetip yeniden kavrama, başparmak kıpırtısı,
+//   atışta tetik parmağının tetiği çekip bırakması, geri tepmede kabzayı sıkma.
+// st: { pull: 0..1 tetik çekme, squeeze: 0..1 sıkma, relax: 0..1 gevşeklik (koşarken) }
+const _ops = [[1, H_X, 0], [2, H_X, 0], [3, H_X, 0]];
+function animateHand(h, dt, t, st) {
+  h.acc = (h.acc || 0) + dt;
+  // boştayken 30 Hz yeter; tetik çekilirken / sıkarken her kare
+  if (st.pull < .01 && st.squeeze < .01 && h.regrip <= 0 && h.acc < 1 / 30) return;
+  dt = h.acc; h.acc = 0;
+  h.regripT -= dt;
+  if (h.regripT <= 0) { h.regrip = 1; h.regripT = rand(4, 10); }
+  const open = h.regrip > 0 ? Math.sin((1 - h.regrip) * Math.PI) : 0;   // 0 → 1 → 0: gevşet ve yeniden kavra
+  h.regrip = Math.max(0, h.regrip - dt * 2.6);
+  const w = h.work, b = h.base;
+  for (let i = 0; i < w.P.length; i++) { w.P[i].copy(b.P[i]); w.Q[i].copy(b.Q[i]); }
+  H_FINGERS.forEach((ch, i) => {
+    const trig = i === 0 && h.trigger;
+    const idle = Math.sin(t * (1.1 + i * .23) + h.phase + i * 1.7) * .022 + Math.sin(t * .37 + h.phase * 2 + i) * .015;
+    let d;
+    if (trig) {
+      // tetik parmağı: çekince orta ve uç boğum kıvrılır, kök biraz iner
+      const p = st.pull;
+      d = [p * .16 + idle * .5, p * .42 + idle, p * .3];
+    } else {
+      const s = st.squeeze * .05 - open * .2 - st.relax * .1 + idle;
+      d = [s, s * 1.2, s * .8];
+    }
+    if (Math.abs(d[0]) + Math.abs(d[1]) + Math.abs(d[2]) < 1e-4) return;
+    const P = ch.map(j => w.P[j]), Q = ch.map(j => w.Q[j]);
+    chainRotate(P, Q, 1, H_X, -d[0]); chainRotate(P, Q, 2, H_X, -d[1]); chainRotate(P, Q, 3, H_X, -d[2]);
+  });
+  // başparmak: hafif kıpırtı, yeniden kavrarken biraz açılır
+  {
+    const th = Math.sin(t * .9 + h.phase * 3) * .03 - open * .12 + st.squeeze * .03;
+    const P = H_THUMB.map(j => w.P[j]), Q = H_THUMB.map(j => w.Q[j]);
+    chainRotate(P, Q, 1, H_X, -th); chainRotate(P, Q, 2, H_X, -th * .8);
+  }
+  const geo = h.mesh.geometry;
+  skinInto(w, geo.attributes.position.array, geo.attributes.normal.array);
+  geo.attributes.position.needsUpdate = true; geo.attributes.normal.needsUpdate = true;
+}
+// bir silah kökündeki eller (bir kez bulunur, saklanır)
+function handsOf(root) {
+  if (!root.userData.hands) { const list = []; root.traverse(o => { if (o.userData && o.userData.hand) list.push(o); }); root.userData.hands = list; }
+  return root.userData.hands;
 }
