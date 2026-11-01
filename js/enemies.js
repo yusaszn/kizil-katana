@@ -304,6 +304,7 @@ function nearestTarget(tgs, p) {
 function hitTarget(tg, dmg, from, e, opts = {}) {
   if (tg.dead) return;
   if (e && e.dmgMul) dmg *= e.dmgMul;
+  if (tg.core || tg.build) { defDamage(tg, dmg * 1.4); return; }   // savunma: mühür ve yapılar
   if (tg.local) hurtPlayer(dmg, from, e, opts);
   else if (tg.conn.open) tg.conn.send({ t: 'hurtYou', dmg, from: from ? [r2(from.x), r2(from.z)] : null, att: e ? e.id : null, ub: !!opts.unblockable });
 }
@@ -646,6 +647,7 @@ function bomberExplode(e, by, killed) {
     const d = Math.hypot(t.x - c.x, t.z - c.z);
     if (d < R) hitTarget(t, (e.T.dmg * (1 - d / R) + 6) * (killed ? .5 : 1), c, null, { unblockable: true });
   }
+  if (isDefense()) defBlast(c, R, e.T.dmg * (killed ? .5 : 1));
   for (const o of enemies.slice()) {
     if (o === e) continue;
     const oc = enemyCenter(o, new V3()), d = oc.distanceTo(c);
@@ -713,9 +715,10 @@ function updateEnemies(dt) {
   const tgs = getTargets();
   for (const e of enemies.slice()) {
     const T = e.T, b = e.body, v = b.velocity;
-    const tg = nearestTarget(tgs, b.position);
+    const tg = isDefense() ? defTarget(e, tgs) : nearestTarget(tgs, b.position);
     toP.set(tg.x - b.position.x, 0, tg.z - b.position.z);
-    const dist = toP.length(); toP.divideScalar(dist || 1);
+    const dRaw = toP.length(); toP.divideScalar(dRaw || 1);
+    const dist = Math.max(.05, dRaw - (tg.rad || 0));   // mühür / yapı: yüzeyine olan uzaklık
     e.stun -= dt; e.atkCd -= dt; e.flash = Math.max(0, e.flash - dt * 6); e.chargeCd -= dt; e.kicked -= dt; e.invulnT = (e.invulnT || 0) - dt;
     if (!(isBossKind(e.kind) && (e.stage || 1) > 1)) e.skin.emissive.setRGB(Math.max(e.flash * .9, e.elite ? .3 : 0), e.flash * .7, e.flash * .6);
     let want = 0, dir = toP;
@@ -835,6 +838,7 @@ function updateProjectiles(dt) {
       for (const e of enemies) { if (enemyCenter(e, tmp).distanceTo(f.pos) < e.r + .9 * e.T.scale) { hit = e; break; } }
       if (hit) { hurtEnemy(hit, hit.kind === 'boss' ? 8 : 6, f.vel.clone().normalize(), UP, { big: true, by: f.by || net.myId }); explodeFireball(f); continue; }
     }
+    if (!f.deflected && isDefense() && defProjectileHit(f.pos)) { explodeFireball(f); continue; }
     if (f.life <= 0 || hitsStatic(f.pos)) explodeFireball(f);
   }
   for (const o of orbs.slice()) {

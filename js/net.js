@@ -3,7 +3,7 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 17;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 18;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 // çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
@@ -159,11 +159,11 @@ function showLobby() {
 function renderLobby() {
   fillPlayerList($('lobbyList'));
   const gm = net.gameMode, host = net.mode === 'host';
-  $('modeCoop').classList.toggle('on', gm === 'coop'); $('modeVs').classList.toggle('on', gm === 'vs'); $('modeBomb').classList.toggle('on', gm === 'bomb');
-  $('modeCoop').disabled = $('modeVs').disabled = $('modeBomb').disabled = !host;
+  $('modeCoop').classList.toggle('on', gm === 'coop'); $('modeVs').classList.toggle('on', gm === 'vs'); $('modeBomb').classList.toggle('on', gm === 'bomb'); $('modeDef').classList.toggle('on', gm === 'defense');
+  $('modeCoop').disabled = $('modeVs').disabled = $('modeBomb').disabled = $('modeDef').disabled = !host;
   $('mapPick').hidden = gm !== 'vs';
   for (const [id, m] of [['mapArena', 'arena'], ['mapAvlu', 'avlu'], ['mapCol', 'col']]) { $(id).classList.toggle('on', net.vsMap === m); $(id).disabled = !host; }
-  $('moneyPick').hidden = gm === 'coop';
+  $('moneyPick').hidden = gm === 'coop' || gm === 'defense';
   $('moneyNormal').classList.toggle('on', net.money !== 'inf'); $('moneyInf').classList.toggle('on', net.money === 'inf');
   $('moneyNormal').disabled = $('moneyInf').disabled = !host;
   $('venueKamp').classList.toggle('on', net.venue !== 'ev'); $('venueEv').classList.toggle('on', net.venue === 'ev');
@@ -173,6 +173,8 @@ function renderLobby() {
     ? 'VS: Kırmızı ve Mavi takım, rauntlu. Raunt başında kredinle silah, kalkan ve yetenek alırsın. Son kalan takım raundu alır, ilk ' + ROUNDS_WIN + ' raunt kazanır.'
     : gm === 'bomb'
     ? 'BOMBA: Çöl Geçidi haritası. Saldıranlar bombayı A ya da B bölgesine kurar (4 basılı), savunanlar engeller ya da imha eder. ' + BOMB.half + '. rauntta taraf değişir, ilk ' + ROUNDS_WIN + ' raunt kazanır.'
+    : gm === 'defense'
+    ? 'SAVUNMA: Mühür Kalesi. Ortadaki Mühür Taşı\'nı birlikte koruyun; iblisler dört geçitten gelir. Öldürdükçe hurda kazanın, B ile taret, havan ve barikat kurun. Mühür kırılırsa biter.'
     : 'CO-OP: Birlikte iblislere karşı. Her 5 dalgada ara boss, her 10 dalgada büyük boss gelir.';
 }
 function fillPlayerList(ul) {
@@ -244,6 +246,7 @@ function onHostData(conn, d) {
         conn.send({ t: 'start', wave: waveN, mode: net.gameMode, map: net.vsMap, money: net.money, list: roster() });
         if (isBomb()) conn.send(bombMsg());
         if (isVS()) conn.send({ t: 'round', ph: vs.phase, n: vs.round, rr: vs.rr, rb: vs.rb, time: vs.t });
+        if (isDefense()) defSendAll(conn);
       }
       break;
     }
@@ -272,6 +275,8 @@ function onHostData(conn, d) {
       break;
     }
     case 'fbshot': { const f = fbById(d.id); if (f) explodeFireball(f); break; }
+    case 'dreq': if (isDefense() && net.inMatch) defTryPlace(d.k, +d.x, +d.z, +d.ry); break;
+    case 'drep': if (isDefense() && net.inMatch) defTryRepair(); break;
     case 'chat': {
       const p = net.players[conn.pid]; if (!p) return;
       const now = performance.now(); if (now - (p.chatT || 0) < 350) return; p.chatT = now;
@@ -335,6 +340,7 @@ function onGuestData(d) {
     case 'toast': toast(d.text); break;
     case 'chat': if (d.id !== net.myId) chatShow(d.id, String(d.text || '').slice(0, 120)); break;
     case 'tolobby': enterLobby(); break;
+    case 'dst': case 'dpl': case 'ddl': case 'dsh': case 'drp': case 'dover': defNet(d); break;
   }
 }
 
@@ -468,7 +474,7 @@ function updateProxies(dt) {
   }
 }
 function checkAllDead() {
-  if (net.mode !== 'host' || state === 'menu' || matchOver || isVS()) return;
+  if (net.mode !== 'host' || state === 'menu' || matchOver || isVS() || isDefense()) return;
   if (player.alive) return;
   for (const id in net.players) if (id !== 'h' && net.players[id].alive) return;
   bcast({ t: 'over' });
@@ -489,6 +495,7 @@ $('mapArena').addEventListener('click', () => setVsMap('arena'));
 $('mapAvlu').addEventListener('click', () => setVsMap('avlu'));
 $('mapCol').addEventListener('click', () => setVsMap('col'));
 $('modeBomb').addEventListener('click', () => setGameMode('bomb'));
+$('modeDef').addEventListener('click', () => setGameMode('defense'));
 $('moneyNormal').addEventListener('click', () => setMoney('normal'));
 $('moneyInf').addEventListener('click', () => setMoney('inf'));
 $('lobbyLeave').addEventListener('click', () => toMainMenu());

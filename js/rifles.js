@@ -164,7 +164,7 @@ function updateGrenades(dt) {
 }
 const boomGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff7a22, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 }));
 scene.add(boomGlow); let boomT = 0, boomScale = 1;
-function explodeAt(p, real, R = 5, base = 3, vari = 9) {
+function explodeAt(p, real, R = 5, base = 3, vari = 9, by) {
   boomGlow.position.copy(p); boomT = .35; boomScale = R / 5;
   if (typeof flashWorld === 'function') flashWorld(5, 0xff7020, 0.15);
   if (typeof sparks === 'function') sparks(p, 45, 15);
@@ -179,7 +179,7 @@ function explodeAt(p, real, R = 5, base = 3, vari = 9) {
     const c = enemyCenter(e, new V3()), dist = c.distanceTo(p);
     if (dist > R + e.r) continue;
     const dir = c.clone().sub(p).setY(.4).normalize();
-    hurtEnemy(e, base + vari * (1 - dist / (R + e.r)), dir, randomNormal(), { big: true, power: 3 });
+    hurtEnemy(e, base + vari * (1 - dist / (R + e.r)), dir, randomNormal(), { big: true, power: 3, by });
   }
   for (const pc of pieces.slice()) {
     const bp = pc.body.position, dist = Math.hypot(bp.x - p.x, bp.y - p.y, bp.z - p.z);

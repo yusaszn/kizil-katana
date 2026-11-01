@@ -87,6 +87,7 @@ function hurtEnemy(e, dmg, push, cutN, opts = {}) {
 }
 function killEnemy(e, push, cutN, opts) {
   if (e.T.bomber && !e.exploded) { bomberExplode(e, opts.by, true); return; }   // vurulan kamikaze de patlar
+  if (isDefense()) defOnKill(e);   // savunma: takıma hurda
   bcast({ t: 'kill', id: e.id, push: arr(push), cut: arr(cutN), big: !!opts.big, bullet: !!opts.bullet, by: opts.by });
   killFx(e, push, cutN, opts);
 }
@@ -212,6 +213,7 @@ function die() {
   if (state === 'upgrade') $('upgrade').hidden = true;
   player.hp = 0; player.alive = false; state = 'dead'; player.deathT = 0;
   if (isVS()) { pvpDie(); return; }
+  if (isDefense()) { defPlayerDied(); return; }   // savunma: mühürde yeniden doğulur
   if (net.mode === 'solo') {
     $('bossbar').hidden = true;
     setTimeout(() => { if (state === 'dead' && !player.alive) showEnd(''); }, 1400);
@@ -267,6 +269,7 @@ function updateRevive(dt) {
     setRing(pr.ring, dead, pr.pos.x, pr.pos.z, pr.rv || 0);
     if (dead && player.alive && Math.hypot(pr.pos.x - pb.x, pr.pos.z - pb.z) < REV_R) hint = p.name.toLocaleUpperCase('tr-TR') + ' KALDIRILIYOR ' + Math.round((pr.rv || 0) * 100) + '%';
   }
+  if (isDefense() && !player.alive && !def.over) hint = 'MÜHÜRDE YENİDEN DOĞACAKSIN · ' + Math.max(1, Math.ceil(def.respawnT)) + ' sn';
   setText('reviveHint', hint);
 }
 
@@ -314,18 +317,18 @@ function onWaveStart(n, count) {
   shells.reserve = Math.min(ST.maxShells, shells.reserve + 6);
   m4.gren = Math.min(ST.grenMax, m4.gren + 1);
   phoenixReady = ST.phoenix;
-  for (let i = 0; i < 3 + Math.min(4, n); i++) spawnCrate(rand(-H + 3, H - 3), rand(7, 12), rand(-H + 3, H - 3), rand(.35, .55));
+  if (!isDefense()) for (let i = 0; i < 3 + Math.min(4, n); i++) spawnCrate(rand(-H + 3, H - 3), rand(7, 12), rand(-H + 3, H - 3), rand(.35, .55));
   if (!player.alive && net.mode !== 'solo') { revivePlayer(.5); toast('GERİ DÖNDÜN'); }
 }
 function updateWaves(dt) {
   if (wave.active) {
     wave.spawnT -= dt;
     if (wave.spawnT <= 0 && wave.list.length && enemies.length < Math.min(30, 16 + (waveN >> 1) + playerCount() * 3)) {
-      const k = wave.list.shift(); spawnEnemy(k);
+      const k = wave.list.shift(); spawnEnemy(k, isDefense() ? defPortalSpawn() : undefined);
       wave.spawnT = isBossKind(k) ? 4 : Math.max(.22, .85 - waveN * .035) / Math.sqrt(playerCount());
     }
     if (!wave.list.length && !enemies.length) {
-      wave.active = false; wave.between = waveBoss(waveN) ? 4.5 : 3.5;
+      wave.active = false; wave.between = isDefense() ? DEF_BUILD_T : waveBoss(waveN) ? 4.5 : 3.5;
       bcast({ t: 'clear' });
       onWaveClear();
     }
@@ -342,6 +345,13 @@ function updateWaves(dt) {
 let waitingFor = [];
 function onWaveClear() {
   const boss = !!waveBoss(waveN);
+  if (isDefense()) {
+    if (net.mode !== 'guest') def.scrap += 60 + waveN * 10;
+    banner('DALGA TEMİZ', 'Kurma zamanı · ' + DEF_BUILD_T + ' sn · B ile taret ve barikat kur');
+    if (!player.alive) { def.respawnT = .01; }
+    if (picksLeft() > 0) autoPickT = 2.5;
+    return;
+  }
   if (!boss) banner('TEMİZ', net.mode === 'solo' ? 'Sıradaki dalga geliyor' : 'Herkes özellik seçince sıradaki dalga başlar');
   if (net.mode === 'solo') { if (picksLeft() > 0 && autoPickT <= 0) autoPickT = 1.2; return; }
   if (!player.alive) { revivePlayer(.5); toast('GERİ DÖNDÜN'); }
@@ -350,7 +360,8 @@ function onWaveClear() {
 
 /* ================= SIFIRLAMA / BİTİŞ ================= */
 function resetGame() {
-  buildMap(isVS() ? net.vsMap : 'arena');
+  buildMap(isVS() ? net.vsMap : isDefense() ? 'kale' : 'arena');
+  defReset();
   for (const e of enemies.slice()) removeEnemy(e);
   for (const p of pieces.slice()) removePiece(p);
   for (const f of fireballs.slice()) scene.remove(f.g); fireballs.length = 0;
@@ -368,7 +379,7 @@ function resetGame() {
   Object.assign(wpn, { cur: 'katana', next: null, t: 0, off: 0, drawing: false, dt: 1, prev: null });
   score = 0; kills = 0; waveN = hashWave; bossCount = Math.floor(hashWave / 10); combo.n = 0; combo.t = 0; sword.blood = 0; sword.phase = 'idle';
   slowMo = 0; hitStop = 0; autoPickT = 0; matchOver = false; revive.p = 0;
-  wave.active = false; wave.between = 1.2; wave.list = []; waitingFor = [];
+  wave.active = false; wave.between = isDefense() ? DEF_BUILD_T + 5 : 1.2; wave.list = []; waitingFor = [];
   kickAnim = 0; Object.assign(viewKick, { roll: 0, pitch: 0, yaw: 0 });
   $('bossbar').hidden = true;
   resetRifles(); resetSpecials(); resetVS();
@@ -381,6 +392,7 @@ function resetGame() {
     b.position.copy(spawnPoint(myTeam())); player.yaw = myTeam() === 'blue' ? Math.PI : 0;
     return;
   }
+  if (isDefense()) return;
   for (const [x, z] of [[5, 12], [-12, 5], [12, -5], [-5, -12]]) { spawnCrate(x - .52, .5, z); spawnCrate(x + .52, .5, z); spawnCrate(x, 1.5, z); }
 }
 function boardRows() {
@@ -446,6 +458,7 @@ window.addEventListener('keydown', e => {
   if (state === 'lobby') { lobbyKey(e); return; }
   if (state !== 'play') return;
   if (e.repeat) return;
+  if (defKey(e)) return;   // savunma: B menü, 1-4 seçim, R döndür
   // VS: satın alma menüsü fareyle kullanılır (B), raunt içinde 1 / 2 / 3 yuvalar, Z sis, X flaş
   if (isVS() && e.code === 'KeyB') { toggleBuy(); return; }
   if (isVS() && e.code === 'Digit4') return;   // VS: 4 = bomba kur / imha et (basılı tutulur)
@@ -491,6 +504,7 @@ canvas.addEventListener('mousedown', e => {
   if (document.pointerLockElement !== canvas && !fallbackLook) { lock(); return; }
   if (buyMouseDown(e)) return;
   if (state !== 'play') return;
+  if (defMouse(e)) return;   // savunma: önizlemedeyken sol tık kurar, sağ tık vazgeçer
   if (e.button === 0) { mouse.left = true; sgClick = true; rifClick = true; attackInput('L'); }
   if (e.button === 1) { e.preventDefault(); attackInput('H'); }
   if (e.button === 2) { mouse.right = true; sgClickR = true; rifClickR = true; if (isKnife(wpn.cur)) knifeAttack(true); }
@@ -688,6 +702,7 @@ function frame(now) {
     updateMinimap(rdt);
     if (isVS()) updateVS(dt, rdt);
     else if (net.mode !== 'guest' && !matchOver && (state === 'play' || mp)) updateWaves(dt);
+    if (isDefense()) updateDefense(dt, rdt);   // savunma.js: mühür, taretler, havan, kurma
     if (autoPickT > 0) { autoPickT -= rdt; if (autoPickT <= 0) openPick(); }
     updateRevive(rdt);
     updateNet(rdt);

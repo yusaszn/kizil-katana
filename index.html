@@ -61,6 +61,17 @@
   <div id="reviveHint"></div>
   <div id="waitHint"></div>
   <div id="combo"><b id="comboLabel"></b><span id="comboN"></span></div>
+  <div id="defHud" hidden><span>MÜHÜR TAŞI</span><div class="dbar"><i id="defCoreFill"></i></div><b id="defInfo"></b></div>
+  <div id="defMenu" hidden>
+    <div class="dmTitle">KURMA · HURDA <b id="defScrap">0</b></div>
+    <div class="dmRow">
+      <button type="button" id="dm_mg"><kbd>1</kbd><b>MAKİNELİ TARET</b><small>150 hurda · yakındaki iblisleri tarar</small></button>
+      <button type="button" id="dm_havan"><kbd>2</kbd><b>HAVAN TOPU</b><small>250 hurda · kalabalığa uzaktan bomba</small></button>
+      <button type="button" id="dm_barikat"><kbd>3</kbd><b>BARİKAT</b><small>60 hurda · yolu keser, iblisler kırmaya uğraşır</small></button>
+      <button type="button" id="dm_tamir"><kbd>4</kbd><b>MÜHÜR TAMİRİ</b><small>120 hurda · mührü %30 onarır</small></button>
+    </div>
+    <div class="dmHint">Seçince önizleme çıkar: sol tık kur · sağ tık ya da B vazgeç · R barikatı döndür</div>
+  </div>
   <div id="banner"></div>
   <div id="toast"></div>
   <div id="xpbox">
@@ -118,9 +129,11 @@
       <div><kbd>M</kbd><span>VS: takım değiştir</span></div>
       <div><kbd>K (BASILI)</kbd><span>Sesli sohbet: konuş</span></div>
       <div><kbd>ENTER</kbd><span>Odada yazılı sohbet</span></div>
+      <div><kbd>B (SAVUNMA)</kbd><span>Taret, havan, barikat kur</span></div>
     </div>
     <div class="btns">
       <button class="btn" id="startBtn" type="button">TEK KİŞİ OYNA</button>
+      <button class="btn" id="defBtn" type="button">SAVUNMA</button>
       <button class="btn ghost" id="setBtnStart" type="button">AYARLAR</button>
     </div>
     <div class="mp" id="mpBox">
@@ -147,6 +160,7 @@
       <button type="button" id="modeCoop" class="on">CO-OP</button>
       <button type="button" id="modeVs">VS · KIRMIZI / MAVİ</button>
       <button type="button" id="modeBomb">BOMBA KURMA</button>
+      <button type="button" id="modeDef">SAVUNMA</button>
     </div>
     <div class="modes" id="mapPick" role="group" aria-label="VS haritası" hidden>
       <button type="button" id="mapArena" class="on">HARİTA: KIZIL ARENA</button>
@@ -268,6 +282,7 @@
 <script src="js/minimap.js"></script>
 <script src="js/voice.js"></script>
 <script src="js/lobi.js"></script>
+<script src="js/savunma.js"></script>
 <script src="js/gunanim.js"></script>
 <script src="js/mermiler.js"></script>
 <script src="js/efektler.js"></script>

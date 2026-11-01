@@ -37,6 +37,8 @@ const TBTN = [
   ['wave', 'SELAM', () => false, () => lobbyEmote('wave')],
   ['dance', 'DANS', () => false, () => lobbyEmote('dance')],
   ['chat', 'SOHBET', () => net.mode !== 'solo', () => chatOpen()],
+  ['build', 'KUR', () => isDefense(), () => { if (def.sel) defConfirm(); else defToggleMenu(); }],
+  ['cancel', 'VAZGEÇ', () => isDefense() && !!def.sel, () => defCancel()],
 ];
 
 function buildTouchUI() {
