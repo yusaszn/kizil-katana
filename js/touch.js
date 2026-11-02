@@ -5,6 +5,17 @@
 const IS_TOUCH = (('ontouchstart' in window) || navigator.maxTouchPoints > 0) && matchMedia('(pointer: coarse)').matches;
 const touch = { stick: null, look: null, sx: 0, sy: 0, kx: 0, ky: 0, btn: {} };
 const LOBBY_TB = new Set(['jump', 'talk', 'cam', 'pause', 'sit', 'wave', 'dance', 'chat', 'kick']);   // lobide görünen tuşlar
+// yerleşim: üst sırada küçük tuşlar (sağdan sola), ana kümenin solunda duruma göre çıkan tuşlar (iki sütun);
+// yalnız görünenler yer kaplar, böylece hiçbir tuş başka bir tuşun altında kalmaz
+const TOP_TB = ['pause', 'cam', 'talk', 'chat', 'inspect', 'team', 'buy'];
+const EXTRA_TB = ['sit', 'heavy', 'smoke', 'flash', 'heg', 'bomb', 'build', 'cancel', 'race', 'wave', 'dance'];
+// lobide E tuşunun o anki işi (yakında bir şey yoksa boş: tuş gizlenir)
+function lobbyActionName() {
+  if (!lobby.walking) return '';
+  if (lobby.sit >= 0) return 'KALK';
+  const n = lobby.near; if (!n) return '';
+  return n.kind === 'seat' ? 'OTUR' : n.kind === 'guitar' ? 'GİTAR' : 'PANO';
+}
 
 // telefonda varsayılan çözünürlük düşük (kayıtlı bir ayar yoksa): akıcı oynansın
 if (IS_TOUCH) {
@@ -22,7 +33,9 @@ const TBTN = [
   ['dash', 'ATIL', () => !isVS(), () => dash()],
   ['kick', 'TEKME', () => true, () => { if (state === 'lobby') lobbyKick(); else kick(); }],
   ['reload', 'ŞARJÖR', () => true, () => { startReload(); startShellReload(); rifleReload(); pistolReload(); gunReload(); }],
-  ['swap', 'SİLAH', () => true, () => quickSwitch()],
+  ['swap', 'SİLAH', () => true, () => { switchWeapon(); touch.stripUntil = performance.now() + 3000; }],   // sıradaki silah + 3 sn silah şeridi (istediğine dokun)
+  ['inspect', 'İNCELE', () => true, () => startInspect()],
+  ['race', 'YARIŞ', () => isRange(), () => rangeChallenge()],
   ['heavy', 'AĞIR', () => !isVS() && wpn.cur === 'katana', () => attackInput('H')],
   ['pick', 'ÖZELLİK', () => !isVS() && picksLeft() > 0, () => openPick()],
   ['buy', 'SATIN AL', () => isVS() && vs.phase === 'buy', () => toggleBuy()],
@@ -34,7 +47,7 @@ const TBTN = [
   ['talk', 'KONUŞ', () => net.mode !== 'solo' && voiceMode() === 'ptt', () => { keys.KeyK = true; }, () => { keys.KeyK = false; }],
   ['cam', 'KAMERA', () => true, () => { if (state === 'lobby') lobby.tp = !lobby.tp; else { SETTINGS.thirdPerson = !SETTINGS.thirdPerson; saveSettings(); } }],
   ['pause', 'II', () => true, () => { if (state === 'lobby') lobbyWalk(false); else openPause(); }],
-  ['sit', 'OTUR', () => false, () => lobbyUse()],
+  ['sit', 'E', () => false, () => lobbyUse()],   // lobide E: yanındakine göre OTUR / KALK / GİTAR / PANO yazar
   ['wave', 'SELAM', () => false, () => lobbyEmote('wave')],
   ['dance', 'DANS', () => false, () => lobbyEmote('dance')],
   ['chat', 'SOHBET', () => net.mode !== 'solo', () => chatOpen()],
@@ -45,7 +58,8 @@ const TBTN = [
 function buildTouchUI() {
   const root = $('touch');
   root.innerHTML = '<div id="tStickZone"></div><div id="tLookZone"></div><div id="tStick"><i></i></div>' +
-    TBTN.map(([id, txt]) => `<button type="button" class="tb" id="tb_${id}" data-id="${id}">${txt}</button>`).join('') +
+    TBTN.map(([id, txt]) => `<button type="button" class="tb${TOP_TB.includes(id) ? ' tsm' : EXTRA_TB.includes(id) ? ' tex' : ''}" id="tb_${id}" data-id="${id}">${txt}</button>`).join('') +
+    '<div id="tWeapons"></div>' +
     '<div id="tRotate">Telefonu yan çevir</div>';
   for (const [id, , , down, up] of TBTN) {
     const el = $('tb_' + id);
@@ -110,7 +124,45 @@ function updateTouch() {
   shiftDown = far ? performance.now() - 1000 : 0;
   touch.stickKeys = true;
   // moda göre görünen tuşlar
-  for (const [id, , cond] of TBTN) { const el = $('tb_' + id), on = state === 'lobby' ? LOBBY_TB.has(id) : !!cond(); if (el.hidden === on) el.hidden = !on; }
+  const act = state === 'lobby' ? lobbyActionName() : '';
+  if (act && touch.act !== act) { touch.act = act; $('tb_sit').textContent = act; }
+  for (const [id, , cond] of TBTN) { const el = $('tb_' + id), on = state === 'lobby' ? (id === 'sit' ? !!act : LOBBY_TB.has(id)) : !!cond(); if (el.hidden === on) el.hidden = !on; }
+  layoutTouch();
+  updateWeaponStrip();
   $('tRotate').hidden = innerWidth >= innerHeight;
 }
-if (IS_TOUCH) buildTouchUI();
+function layoutTouch() {
+  const sig = TOP_TB.concat(EXTRA_TB).map(id => $('tb_' + id).hidden ? 0 : 1).join('');
+  if (touch.sig === sig) return; touch.sig = sig;
+  let i = 0;
+  for (const id of TOP_TB) { const el = $('tb_' + id); if (el.hidden) continue; Object.assign(el.style, { right: `calc(${222 + i * 54}px + env(safe-area-inset-right,0px))`, top: 'calc(12px + env(safe-area-inset-top,0px))', bottom: 'auto' }); i++; }
+  i = 0;
+  for (const id of EXTRA_TB) {
+    const el = $('tb_' + id); if (el.hidden) continue;
+    const col = Math.floor(i / 4), row = i % 4;
+    Object.assign(el.style, { right: `calc(${292 + col * 64}px + env(safe-area-inset-right,0px))`, bottom: `calc(${24 + row * 64}px + env(safe-area-inset-bottom,0px))`, top: 'auto' });
+    i++;
+  }
+}
+// silah şeridi: SİLAH'a dokununca 3 sn açılır, eldeki bütün silahlar yan yana; dokunduğun silaha geçersin
+const shortName = w => ({ katana: 'KATANA', uzi: 'UZİ', shotgun: 'POMPALI', m4: 'M4', awp: 'AWP', pistol: 'TABANCA', knife: 'BIÇAK', karambit: 'KARAMB.', butterfly: 'KELEBEK', rocket: 'ROKET', launcher: 'BOMBAATAR' })[w] || (typeof GUNS !== 'undefined' && GUNS[w] ? GUNS[w].name : w.toUpperCase());
+function updateWeaponStrip() {
+  const box = $('tWeapons'), show = state === 'play' && player.alive && performance.now() < (touch.stripUntil || 0);
+  if (box.hidden === show) box.hidden = !show;
+  if (!show) return;
+  const list = weaponList(), sig = list.join(',');
+  if (touch.wsig !== sig) {
+    touch.wsig = sig;
+    box.innerHTML = list.map((w, i) => `<button type="button" data-w="${w}"><small>${i + 1}</small>${shortName(w)}</button>`).join('');
+  }
+  const cur = wpn.next || wpn.cur;
+  if (touch.wcur !== cur) { touch.wcur = cur; for (const b of box.children) b.classList.toggle('on', b.dataset.w === cur); }
+}
+if (IS_TOUCH) {
+  buildTouchUI();
+  $('tWeapons').addEventListener('touchstart', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    if (state === 'play') { switchWeapon(b.dataset.w); touch.stripUntil = performance.now() + 700; }
+  }, { passive: false });
+}
