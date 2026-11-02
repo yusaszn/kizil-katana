@@ -27,7 +27,7 @@ if (IS_TOUCH) {
 // tuş: [kimlik, yazı, mod koşulu, basınca, bırakınca]
 const TBTN = [
   ['fire', 'ATEŞ', () => true, () => { mouse.left = true; sgClick = true; rifClick = true; attackInput('L'); }, () => { mouse.left = false; }],
-  ['aim', 'NİŞAN', () => true, () => { mouse.right = true; sgClickR = true; rifClickR = true; if (isKnife(wpn.cur)) knifeAttack(true); }, () => { mouse.right = false; }],
+  ['aim', 'NİŞAN', () => true, () => { aimPress(); sgClickR = true; rifClickR = true; if (isKnife(wpn.cur)) knifeAttack(true); }, () => { aimRelease(); }],
   ['jump', 'ZIPLA', () => true, () => { player.jumpBuf = .15; }],
   ['crouch', 'EĞİL', () => true, () => { keys.ControlLeft = true; crouchInput(); }, () => { keys.ControlLeft = false; }],
   ['dash', 'ATIL', () => !isVS(), () => dash()],

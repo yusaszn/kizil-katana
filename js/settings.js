@@ -1,7 +1,7 @@
 'use strict';
 /* Ayarlar: FPS göstergesi, fare hassasiyeti, ses, görüş açısı, grafik kalitesi, kan miktarı. Tarayıcıda saklanır. */
 
-const SETTINGS_DEFAULT = { showFps: false, thirdPerson: false, alwaysSprint: false, sens: 1, volume: .5, fov: 80, quality: 1.5, gore: 1, voice: 'ptt', voiceVol: .9, minimap: true, fx: !('ontouchstart' in window), music: .45 };
+const SETTINGS_DEFAULT = { showFps: false, thirdPerson: false, alwaysSprint: false, sens: 1, volume: .5, fov: 80, quality: 1.5, gore: 1, voice: 'ptt', voiceVol: .9, minimap: true, fx: !('ontouchstart' in window), music: .45, adsMode: 'hold' };
 const SETTINGS = Object.assign({}, SETTINGS_DEFAULT);
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('kk-ayarlar') || '{}')); } catch (e) { /* kayıt yoksa varsayılanlar */ }
 
@@ -18,6 +18,7 @@ const SETTING_ROWS = [
   { key: 'showFps', label: 'FPS göstergesi', type: 'toggle' },
   { key: 'thirdPerson', label: '3. şahıs kamera (V)', type: 'toggle' },
   { key: 'alwaysSprint', label: 'Sürekli koş (Shift = atılma)', type: 'toggle' },
+  { key: 'adsMode', label: 'Nişan alma (sağ tık / NİŞAN)', type: 'choice', options: [['hold', 'Basılı tut'], ['toggle', 'Bas-bırak (aç / kapa)']] },
   { key: 'sens', label: 'Fare hassasiyeti', type: 'range', min: .2, max: 3, step: .05, fmt: v => v.toFixed(2) + '×' },
   { key: 'volume', label: 'Ses', type: 'range', min: 0, max: 1, step: .05, fmt: v => Math.round(v * 100) + '%' },
   { key: 'music', label: 'Müzik', type: 'range', min: 0, max: 1, step: .05, fmt: v => Math.round(v * 100) + '%' },

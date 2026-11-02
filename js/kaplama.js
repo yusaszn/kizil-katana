@@ -104,6 +104,7 @@ function renderSkins() {
   const cur = skinSel[skinUI.w] || 'std';
   const grid = SKINS.map(S => `<button type="button" class="sk${S.id === cur ? ' on' : ''}" data-s="${S.id}"><i style="background:${S.tex ? swatchUrl(S) + ' center/120px' : S.sw}"></i><b>${S.name}</b></button>`).join('');
   $('skinTabs').innerHTML = tabs; $('skinGrid').innerHTML = grid;
+  if (typeof renderSights === 'function') renderSights();
 }
 $('skinTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; skinUI.w = b.dataset.w; renderSkins(); });
 $('skinGrid').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; setSkin(skinUI.w, b.dataset.s); });

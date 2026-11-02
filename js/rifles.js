@@ -65,7 +65,7 @@ const AWP_REST = P([.21, -.21, -.45], [0, .04, 0]);
 const rifPose = P([0, 0, 0], [0, 0, 0]);
 
 /* ================= YARDIMCILAR ================= */
-const m4Ads = () => wpn.cur === 'm4' && !wpn.next && isVS() && mouse.right && player.alive && m4.reloadT <= 0 && state === 'play';
+const m4Ads = () => wpn.cur === 'm4' && !wpn.next && (isVS() || isRange()) && mouse.right && player.alive && m4.reloadT <= 0 && state === 'play';
 const awpScoped = () => wpn.cur === 'awp' && !wpn.next && mouse.right && player.alive && awp.reloadT <= 0 && awp.boltT <= 0 && state === 'play';
 // kamera görüş açısı: dürbün ve nişan
 function aimFov(base) {
@@ -228,6 +228,7 @@ function updateRifles(dt) {
 
   // ---- animasyon ----
   m4.adsK += ((m4Ads() ? 1 : 0) - m4.adsK) * Math.min(1, dt * 14);
+  if (m4m.rearMat) m4m.rearMat.opacity = 1 - m4.adsK * .82;   // nişanda arka gez saydamlaşır, görüşü kapatmaz
   awp.scopeK += ((awpScoped() ? 1 : 0) - awp.scopeK) * Math.min(1, dt * 16);
   const bob = viewBob(), low = lowerOffset(), t = performance.now() / 1000;
   const sprint = player.sprinting && player.grounded ? 1 : 0;

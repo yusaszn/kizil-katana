@@ -434,3 +434,13 @@ body.rangemode #wave,body.rangemode #score,body.rangemode #xpbox,body.rangemode 
 #tWeapons button.on{background:rgba(255,58,42,.55);border-color:var(--blood-hi)}
 #tb_sit{background:rgba(160,110,10,.6)!important;font-size:11px!important}
 body.touchdev.showboard #board{display:block;transform:scale(.8);transform-origin:top right}
+
+/* ================= ATÖLYE: nişangah seçimi ================= */
+#sightRow{display:grid;grid-template-columns:auto repeat(3,1fr);gap:8px;align-items:stretch}
+#sightRow>b{align-self:center;font-size:12px;letter-spacing:.25em;color:var(--gold);padding-right:6px}
+#sightRow button{display:flex;flex-direction:column;gap:4px;padding:8px 10px;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid rgba(239,225,205,.2);color:var(--bone);font-family:var(--hud);text-align:left}
+#sightRow button b{font-size:12px;letter-spacing:.14em}
+#sightRow button small{font-size:11px;color:var(--ash)}
+#sightRow button.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;background:rgba(255,194,58,.08)}
+#sightRow button.locked{opacity:.55;cursor:not-allowed}
+@media (max-width:640px){#sightRow{grid-template-columns:1fr}}

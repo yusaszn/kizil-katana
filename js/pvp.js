@@ -151,6 +151,7 @@ function onPkill(d) {
   vs.feed.unshift({ by: d.by ? nameOf(d.by) : '', byTeam: teamOf(d.by), v: nameOf(d.v), vTeam: teamOf(d.v), w: WEAPON_SHORT[d.w] || '', t: 5 });
   vs.feed.length = Math.min(vs.feed.length, 5);
   if (d.by === net.myId && d.v !== net.myId) {
+    statKill();
     kills++; combo.n++; combo.t = 3.2; score += 100 * combo.n;
     const name = COMBO_NAMES.find(([n]) => combo.n >= n)[1];
     $('comboLabel').textContent = name; $('comboN').textContent = '×' + combo.n;

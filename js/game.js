@@ -25,6 +25,7 @@ function hitMarkShow(kind) { const el = $('hitm'); el.className = ''; void el.of
 
 const COMBO_NAMES = [[10, 'ŞEYTAN AVCISI'], [7, 'KANLI HASAT'], [5, 'KATLİAM'], [3, 'ÜÇLÜ DOĞRAMA'], [2, 'ÇİFT KESİK'], [1, 'KESİK']];
 function registerKill(T, close) {
+  statKill();   // eklenti kilitleri için toplam leş (eklenti.js)
   kills++; combo.n++; combo.t = 3.2;
   score += Math.round(T.score * (1 + (combo.n - 1) * .25));
   const name = COMBO_NAMES.find(([n]) => combo.n >= n)[1];
@@ -377,7 +378,7 @@ function resetGame() {
   for (const s of spawnFx) scene.remove(s.m); spawnFx.length = 0;
   for (const s of shockwaves) scene.remove(s.m); shockwaves.length = 0;
   clearParticles(); clearDecals(); clearHoles(); drops.length = 0;
-  resetUpgrades();
+  resetUpgrades(); aimReset();
   const b = player.body; b.position.set(rand(-2, 2), .6, 7 + rand(-1, 1)); b.velocity.set(0, 0, 0); b.collisionFilterMask = G_STATIC | G_ENEMY | G_DEBRIS;
   Object.assign(player, { hp: ST.maxHp, yaw: 0, pitch: 0, charges: ST.maxDash, recharge: 0, dashT: 0, invuln: 0, alive: true, kickCd: 0, deathT: 0, slideT: 0, slideCd: 0, spinT: 0, crouchK: 0, airJumps: 0, jumpBuf: 0, sprinting: false });
   Object.assign(shells, { tube: ST.sgTube, reserve: 24, cd: 0, pumpT: 0, loadT: 0, loading: false });
@@ -519,9 +520,15 @@ canvas.addEventListener('mousedown', e => {
   if (defMouse(e)) return;   // savunma: önizlemedeyken sol tık kurar, sağ tık vazgeçer
   if (e.button === 0) { mouse.left = true; sgClick = true; rifClick = true; attackInput('L'); }
   if (e.button === 1) { e.preventDefault(); attackInput('H'); }
-  if (e.button === 2) { mouse.right = true; sgClickR = true; rifClickR = true; if (isKnife(wpn.cur)) knifeAttack(true); }
+  if (e.button === 2) { aimPress(); sgClickR = true; rifClickR = true; if (isKnife(wpn.cur)) knifeAttack(true); }
 });
-window.addEventListener('mouseup', e => { if (e.button === 0) mouse.left = false; if (e.button === 2) mouse.right = false; });
+window.addEventListener('mouseup', e => { if (e.button === 0) mouse.left = false; if (e.button === 2) aimRelease(); });
+// nişan alma: ayara göre basılı tutunca ya da bas-bırak (aç / kapa). Katana ve bıçakta sağ tık savunma / ağır vuruştur, hep basılı tutulur
+let aimTog = false;
+const aimToggleMode = () => SETTINGS.adsMode === 'toggle' && wpn.cur !== 'katana' && !isKnife(wpn.cur);
+function aimPress() { if (aimToggleMode()) { aimTog = !aimTog; mouse.right = aimTog; } else mouse.right = true; }
+function aimRelease() { if (!aimToggleMode()) mouse.right = false; }
+function aimReset() { aimTog = false; mouse.right = false; }
 let wheelT = 0;
 window.addEventListener('wheel', e => { if (state !== 'play') return; const n = performance.now(); if (n - wheelT < 220) return; wheelT = n; switchWeapon(); }, { passive: true });
 canvas.addEventListener('contextmenu', e => e.preventDefault());

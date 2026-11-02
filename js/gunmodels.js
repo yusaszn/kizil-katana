@@ -83,11 +83,14 @@ GM.m4 = ({ hands = true } = {}) => {
   GK.lathe(g, GK.steel, [[.0085, -.7], [.0115, -.703], [.0115, -.756], [.0104, -.76], [.0062, -.76], [.0062, -.75]], 0, Y, 16);
   for (const [sx, sy] of [[0, 1], [1, 0], [-1, 0], [.7, .7], [-.7, .7]]) GK.box(g, GK.hole, sx ? .0012 : .003, sy && !sx ? .0012 : .003, .032, sx * .0112, Y + sy * .0112, -.73);   // kafes yarıkları
   GK.bore(g, .0062, Y, -.7602);
-  // ---- arka gez: delikli levha, gez deliği nişan çizgisinde ----
-  GK.rbox(g, GK.black, .026, .008, .034, 0, .043, .074, .002);
-  GK.plate(g, GK.black, [[-.013, .045], [.013, .045], [.013, SL + .006, .004], [.006, SL + .012, .003], [-.006, SL + .012, .003], [-.013, SL + .006, .004]], .006, 0, 0, .082,
-    { holes: [GK.circle(0, SL, .0032, 14)] });
-  GK.pin(g, GK.steel, .004, .004, .015, .052, .074, 10);                               // gez ayar düğmesi
+  // ---- arka gez: delikli levha, gez deliği nişan çizgisinde. Nişan alınca saydamlaşır (göz arpacığa odaklanır),
+  // optik takılınca katlanır (gizlenir) ----
+  const rear = new THREE.Group(); g.add(rear);
+  const rearMat = GK.black.clone(); rearMat.transparent = true;
+  GK.rbox(rear, GK.black, .026, .008, .034, 0, .043, .074, .002);
+  GK.plate(rear, rearMat, [[-.013, .045], [.013, .045], [.013, SL + .006, .004], [.006, SL + .012, .003], [-.006, SL + .012, .003], [-.013, SL + .006, .004]], .006, 0, 0, .082,
+    { holes: [GK.circle(0, SL, .0047, 16)] });
+  GK.pin(rear, GK.steel, .004, .004, .015, .052, .074, 10);                            // gez ayar düğmesi
   // ---- şarjör (STANAG, hafif kavisli) ----
   const mag = new THREE.Group(); mag.position.set(0, -.12, -.082); g.add(mag);
   GK.prof(mag, GK.black, [[-.036, .08], [-.038, .0], [-.045, -.088], [.025, -.088], [.033, .0], [.034, .08]], .03);
@@ -110,7 +113,7 @@ GM.m4 = ({ hands = true } = {}) => {
     magHand = gmMagHand(mag, { r: .024, y: -.045, z: -.01, rake: -.08 });
   }
   const flash = GK.flash(g, Y, -.785);
-  return { g, mag, gl, flash, ch, lh, magHand, port: new V3(.025, Y + .002, .006), sight: SL, muzzleZ: -.76 };
+  return { g, mag, gl, flash, ch, lh, magHand, rear, rearMat, port: new V3(.025, Y + .002, .006), sight: SL, muzzleZ: -.76 };
 };
 
 /* ================= AWP (AW tipi, başparmak delikli dipçik) ================= */

@@ -41,6 +41,7 @@ function switchWeapon(w) {
   if (w === target || !list.includes(w)) return;
   wpn.next = w; wpn.t = 0; wpn.drawing = false; sfx.swap();
   ammo.reloadT = 0; shells.loading = false; m4.reloadT = 0; awp.reloadT = 0; pis.reloadT = 0;
+  if (typeof aimReset === 'function') aimReset();   // silah değişince nişan (bas-bırak modunda da) kapanır
   if (typeof gst !== 'undefined') for (const k in gst) gst[k].reloadT = 0;
 }
 // Q: en son kullanılan silaha geç (iki silah arasında gidip gelir)
