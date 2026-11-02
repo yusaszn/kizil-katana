@@ -124,6 +124,7 @@
     <p class="note" id="mpOff" hidden>Arkadaşla oynamak için Kızıl Katana.exe ile ya da yusaszn.github.io/kizil-katana adresinden aç.</p>
     <div class="btns mfoot">
       <button class="btn ghost" id="setBtnStart" type="button">AYARLAR</button>
+      <button class="btn ghost" id="skinsBtn" type="button">KAPLAMALAR</button>
       <button class="btn ghost nontouch" id="keysBtn" type="button" aria-expanded="false" aria-controls="keysBox">KONTROLLER</button>
     </div>
     <div class="keys" id="keysBox" hidden>
@@ -156,6 +157,18 @@
     </div>
     <p class="note nontouch">Klavye ve fare gerekir. Ekrana tıklayınca fare kilitlenir, Esc duraklatır.</p>
     <p class="note touchonly">Telefonu yan tut. Sol başparmak: hareket (sonuna kadar it: koş) · sağ taraf: kaydırıp nişan al · tuşlar ekranda.</p>
+  </div>
+</div>
+<div id="skins" class="screen" hidden>
+  <div class="panel">
+    <h2>Kaplamalar</h2>
+    <p>Silahını, sonra desenini seç. Seçimin bu cihazda saklanır; maçta F ile incelerken görürsün.</p>
+    <div class="modes" id="skinTabs" role="group" aria-label="Silah"></div>
+    <div id="skinGrid"></div>
+    <div class="btns">
+      <button class="btn" id="skinsTry" type="button">POLİGONDA DENE</button>
+      <button class="btn ghost" id="skinsBack" type="button">GERİ</button>
+    </div>
   </div>
 </div>
 <div id="lobby" class="screen" hidden>
@@ -199,7 +212,7 @@
   <div id="lhMic" hidden>🎙 KONUŞUYORSUN</div>
   <div id="lhPrompt"></div>
   <div id="lhClick">MEKÂNDA DOLAŞMAK İÇİN EKRANA TIKLA</div>
-  <div class="lhKeys"><b>WASD</b> dolaş · <b>SHIFT</b> koş · <b>E</b> otur / kalk · <b>G</b> el salla · <b>H</b> dans · <b>ENTER</b> sohbet · <b>K</b> konuş · <b>V</b> kamera · <b>TAB</b> oda paneli</div>
+  <div class="lhKeys"><b>WASD</b> dolaş · <b>SHIFT</b> koş · <b>E</b> otur / kalk · <b>G</b> el salla · <b>H</b> dans · <b>F</b> topa vur · <b>ENTER</b> sohbet · <b>K</b> konuş · <b>V</b> kamera · <b>TAB</b> oda paneli</div>
 </div>
 <div id="chatBox" hidden><div id="chatLog" aria-live="polite"></div><input id="chatIn" maxlength="120" autocomplete="off" spellcheck="false" placeholder="Mesaj yaz · Enter gönder · Esc kapat" aria-label="Sohbet mesajı"></div>
 <div id="pause" class="screen" hidden>
@@ -298,4 +311,5 @@
 <script src="js/mermiler.js"></script>
 <script src="js/efektler.js"></script>
 <script src="js/game.js"></script>
+<script src="js/kaplama.js"></script>
 <script src="js/touch.js"></script>

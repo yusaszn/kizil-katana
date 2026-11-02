@@ -36,6 +36,7 @@ function lobbyBuild() {
   b.position.set(p.x, .6, p.z); b.velocity.set(0, 0, 0); b.collisionResponse = true;
   player.yaw = Math.atan2(p.x, p.z); player.pitch = -.08;   // ateşe / odanın ortasına bakarak doğ
   drawVenueBoard();
+  lobbyBallSpawn();
 }
 function exitLobby() {
   if (!$('lobby').classList.contains('social')) return;
@@ -76,6 +77,7 @@ function lobbyKey(e) {
   else if (e.code === 'KeyG') lobbyEmote('wave');
   else if (e.code === 'KeyH') lobbyEmote('dance');
   else if (e.code === 'KeyV') { lobby.tp = !lobby.tp; }
+  else if (e.code === 'KeyF') lobbyKick();
   else if (e.code === 'Space') { if (lobby.sit >= 0) lobbyStand(); else player.jumpBuf = .15; }
 }
 function lobbyEmote(k) {
@@ -87,6 +89,7 @@ function lobbyUse() {
   const n = lobby.near; if (!n) return;
   if (n.kind === 'seat') lobbySit(n.i);
   else if (n.kind === 'board') lobbyWalk(false);
+  else if (n.kind === 'guitar') playGuitar();
 }
 function lobbySit(i) {
   const s = venue.seats[i]; if (!s) return;
@@ -134,6 +137,7 @@ function updateLobby(dt) {
     if (lobby.tp) player.pitch = clamp(player.pitch, -1.05, 1.0);
   }
   world.step(1 / 60, dt, 4);
+  updateBall(dt);
   if (lobby.emote) { lobby.emoteT += dt; if (lobby.emoteT > EMOTE_DUR[lobby.emote]) lobby.emote = ''; }
   lobbyCamera();
   lobbyMyAvatar(dt);
@@ -190,10 +194,12 @@ function lobbyNear(dt) {
   let best = null, bd = 1.5;
   if (lobby.sit < 0) {
     venue.seats.forEach((s, i) => { const d = Math.hypot(s.x - b.x, s.z - b.z); if (d < bd && !seatTaken(i)) { bd = d; best = { kind: 'seat', i }; } });
+    const gs = GUITAR_SPOT[curMap];
+    if (gs && Math.hypot(gs[0] - b.x, gs[1] - b.z) < Math.min(bd, 1.6)) best = { kind: 'guitar' };
     if (venue.board && Math.hypot(venue.board.x - b.x, venue.board.z - b.z) < 2.4) best = { kind: 'board' };
   }
   lobby.near = best;
-  const txt = lobby.sit >= 0 ? 'E · KALK' : best ? (best.kind === 'seat' ? 'E · OTUR' : 'E · ODA PANELİ') : '';
+  const txt = lobby.sit >= 0 ? 'E · KALK' : best ? (best.kind === 'seat' ? 'E · OTUR' : best.kind === 'guitar' ? 'E · GİTAR ÇAL' : 'E · ODA PANELİ') : '';
   if (hud.lhPrompt !== txt) { hud.lhPrompt = txt; $('lhPrompt').textContent = txt; }
   const room = 'ODA ' + net.code + ' · ' + (VENUE_NAMES[curMap] || '') + ' · ' + Object.keys(net.players).length + ' KİŞİ';
   if (hud.lhRoom !== room) { hud.lhRoom = room; $('lhRoom').textContent = room; }
@@ -377,3 +383,91 @@ $('setBtnLobby').addEventListener('click', () => openSettings('lobby'));
 $('lobbyBackBtn').addEventListener('click', hostBackToLobby);
 $('pauseLobbyBtn').addEventListener('click', hostBackToLobby);
 canvas.addEventListener('mousedown', () => { if (state === 'lobby' && !lobby.walking) lobbyWalk(true); });
+
+/* ================= LOBİ OYUNCAKLARI: top ve gitar =================
+   Top: fiziği host yürütür. Host üstüne yürüyerek iter; herkes F ile şut çeker, konuklar yürüyerek de iter (istek hosta gider).
+   Konum ve hız saniyede 10 kez herkese gider, konukta tahminle yumuşatılır.
+   Gitar: yanında E → sıradaki akor çalınır (Am · F · C · G). Herkes duyar, uzaklaştıkça kısılır. */
+const ball = { body: null, mesh: null, tgt: new V3(), vel: new V3(), sendT: 0, reqT: 0, spot: null };
+const ballTex = canvasTex(128, (g, s) => {
+  g.fillStyle = '#f2efe6'; g.fillRect(0, 0, s, s);
+  g.fillStyle = '#1c1c1e';
+  for (const [x, y] of [[32, 32], [96, 32], [64, 80], [16, 104], [112, 104], [64, 8]]) { g.beginPath(); for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2 - Math.PI / 2; g.lineTo(x + Math.cos(a) * 13, y + Math.sin(a) * 13); } g.fill(); }
+  for (let i = 0; i < 500; i++) { g.fillStyle = `rgba(0,0,0,${Math.random() * .05})`; g.fillRect(Math.random() * s, Math.random() * s, 2, 2); }
+}, 1, 1);
+const BALL_SPOT = { kamp: [3.6, 5.8], ev: [-2.2, 3.2] };
+function lobbyBallSpawn() {
+  const sp = BALL_SPOT[curMap]; if (!sp) return;
+  ball.mesh = mapMesh(new THREE.Mesh(new THREE.SphereGeometry(.22, 22, 16), new THREE.MeshStandardMaterial({ map: ballTex, roughness: .5 })));
+  const host = net.mode !== 'guest';
+  ball.body = new CANNON.Body({ mass: host ? .45 : 0, type: host ? CANNON.Body.DYNAMIC : CANNON.Body.KINEMATIC, material: mWorld, collisionFilterGroup: G_DEBRIS, collisionFilterMask: G_STATIC | G_PLAYER | G_DEBRIS, linearDamping: .32, angularDamping: .45 });
+  ball.body.addShape(new CANNON.Sphere(.22)); ball.body.position.set(sp[0], .4, sp[1]); world.addBody(ball.body); mapStuff.bodies.push(ball.body);
+  ball.tgt.set(sp[0], .22, sp[1]); ball.vel.set(0, 0, 0);
+}
+// şut / itme: host doğrudan uygular, konuk hosta yollar
+function ballImpulse(dx, dz, up, sp) {
+  if (!ball.body) return;
+  if (net.mode === 'guest') { toHost({ t: 'bk', d: [r2(dx), r2(dz)], u: r2(up), s: r2(sp) }); return; }
+  const v = ball.body.velocity; v.x = dx * sp; v.z = dz * sp; v.y = Math.max(v.y, up);
+  ball.body.wakeUp();
+}
+function lobbyKick() {
+  if (!ball.body || lobby.sit >= 0) return;
+  const b = player.body.position, p = ball.mesh.position, d = Math.hypot(p.x - b.x, p.z - b.z);
+  if (d > 1.6) return;
+  const dx = (p.x - b.x) / (d || 1) * .4 + flatF.x * .6, dz = (p.z - b.z) / (d || 1) * .4 + flatF.z * .6, l = Math.hypot(dx, dz) || 1;
+  ballImpulse(dx / l, dz / l, 3.2, 9.5);
+  if (AU.ctx) { punch(150, .08, .35); nz(.05, 900, 300, 1, .2, 'lowpass'); }
+}
+function updateBall(dt) {
+  if (!ball.body || !ball.mesh.parent) return;
+  const m = ball.mesh, b = ball.body;
+  if (net.mode !== 'guest') {
+    m.position.set(b.position.x, b.position.y, b.position.z); m.quaternion.set(b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w);
+    if (net.mode === 'host') { ball.sendT -= dt; if (ball.sendT <= 0) { ball.sendT = .1; bcast({ t: 'bs', p: arr(b.position), v: arr(b.velocity) }); } }
+  } else {
+    // konuk: hostun gönderdiği konuma doğru tahminle ilerle, yuvarlanma görüntüsü hızdan
+    ball.tgt.addScaledVector(ball.vel, dt); ball.vel.multiplyScalar(Math.max(0, 1 - dt * .4));
+    if (ball.tgt.y < .22) { ball.tgt.y = .22; ball.vel.y = Math.abs(ball.vel.y) * .4; } else ball.vel.y -= 25 * dt;
+    m.position.lerp(ball.tgt, Math.min(1, dt * 12)); b.position.set(m.position.x, m.position.y, m.position.z);
+    const hs = Math.hypot(ball.vel.x, ball.vel.z);
+    if (hs > .05) { _dvb.set(ball.vel.z, 0, -ball.vel.x).normalize(); m.rotateOnWorldAxis(_dvb, hs * dt / .22); }
+    // yürüyerek itme: oyuncu topa değiyorsa hızını hosta bildir
+    const pb = player.body.position, pv = player.body.velocity, d = Math.hypot(m.position.x - pb.x, m.position.z - pb.z), ps = Math.hypot(pv.x, pv.z);
+    ball.reqT -= dt;
+    if (d < .78 && ps > 1 && ball.reqT <= 0) { ball.reqT = .2; ballImpulse(pv.x / ps, pv.z / ps, 1.2, ps * 1.15); }
+  }
+}
+const _dvb = new V3();
+function ballNet(d) { if (!ball.body) return; ball.tgt.set(d.p[0], d.p[1], d.p[2]); ball.vel.set(d.v[0], d.v[1], d.v[2]); }
+// ---- gitar ----
+const GUITAR_SPOT = { kamp: [1.55, -3.42] };
+const CHORDS_GTR = [[57, 64, 69, 72, 76], [53, 60, 65, 69, 72], [48, 55, 60, 64, 67, 72], [43, 50, 55, 59, 62, 67]];   // Am F C G
+const gtr = { i: 0 };
+function strum(ci, vol, pan = 0) {
+  const c = AU.ctx; if (!c) return;
+  const t0 = c.currentTime + .01, out = c.createGain(); out.gain.value = vol;
+  let node = out; if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = pan; out.connect(p); node = p; }
+  node.connect(AU.master);
+  CHORDS_GTR[ci % CHORDS_GTR.length].forEach((m, i) => {
+    const t = t0 + i * .028, f = 440 * Math.pow(2, (m - 69) / 12), o = c.createOscillator(), fl = c.createBiquadFilter(), g = c.createGain();
+    o.type = 'sawtooth'; o.frequency.value = f; fl.type = 'lowpass'; fl.frequency.setValueAtTime(f * 8, t); fl.frequency.exponentialRampToValueAtTime(f * 1.5, t + .6); fl.Q.value = 1.5;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.09, t + .004); g.gain.exponentialRampToValueAtTime(.0008, t + 2.2);
+    o.connect(fl); fl.connect(g); g.connect(out); o.start(t); o.stop(t + 2.3);
+  });
+}
+function nearGuitar() { const sp = GUITAR_SPOT[curMap]; if (!sp) return false; const b = player.body.position; return Math.hypot(sp[0] - b.x, sp[1] - b.z) < 1.8; }
+function playGuitar() {
+  const i = gtr.i++ % CHORDS_GTR.length;
+  strum(i, .9);
+  const msg = { t: 'gtr', id: net.myId, i };
+  if (net.mode === 'host') bcast(msg); else toHost(msg);
+  const sp = GUITAR_SPOT[curMap]; if (sp) for (let k = 0; k < 6; k++) emit(sp[0], .9, sp[1], rand(-.4, .4), rand(1, 2), rand(-.4, .4), 2, 1, .8, .3, rand(.6, 1));
+}
+function gtrNet(d) {
+  if (state !== 'lobby' || d.id === net.myId) return;
+  const pr = net.players[d.id] && net.players[d.id].proxy, p = pr ? pr.pos : null;
+  const dist = p ? Math.hypot(p.x - eyePos.x, p.z - eyePos.z) : 5, vol = clamp(1 - (dist - 2) / 22, .05, 1) * .9;
+  const pan = p && dist > .5 ? clamp(((p.x - eyePos.x) * rightV.x + (p.z - eyePos.z) * rightV.z) / dist, -1, 1) * .7 : 0;
+  strum(d.i, vol, pan);
+}

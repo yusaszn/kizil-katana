@@ -4,7 +4,7 @@
 
 const IS_TOUCH = (('ontouchstart' in window) || navigator.maxTouchPoints > 0) && matchMedia('(pointer: coarse)').matches;
 const touch = { stick: null, look: null, sx: 0, sy: 0, kx: 0, ky: 0, btn: {} };
-const LOBBY_TB = new Set(['jump', 'talk', 'cam', 'pause', 'sit', 'wave', 'dance', 'chat']);   // lobide görünen tuşlar
+const LOBBY_TB = new Set(['jump', 'talk', 'cam', 'pause', 'sit', 'wave', 'dance', 'chat', 'kick']);   // lobide görünen tuşlar
 
 // telefonda varsayılan çözünürlük düşük (kayıtlı bir ayar yoksa): akıcı oynansın
 if (IS_TOUCH) {
@@ -20,7 +20,7 @@ const TBTN = [
   ['jump', 'ZIPLA', () => true, () => { player.jumpBuf = .15; }],
   ['crouch', 'EĞİL', () => true, () => { keys.ControlLeft = true; crouchInput(); }, () => { keys.ControlLeft = false; }],
   ['dash', 'ATIL', () => !isVS(), () => dash()],
-  ['kick', 'TEKME', () => true, () => kick()],
+  ['kick', 'TEKME', () => true, () => { if (state === 'lobby') lobbyKick(); else kick(); }],
   ['reload', 'ŞARJÖR', () => true, () => { startReload(); startShellReload(); rifleReload(); pistolReload(); gunReload(); }],
   ['swap', 'SİLAH', () => true, () => quickSwitch()],
   ['heavy', 'AĞIR', () => !isVS() && wpn.cur === 'katana', () => attackInput('H')],
