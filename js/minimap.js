@@ -9,7 +9,7 @@ function mmBuildBase() {
   const S = mm.S, b = mm.base; b.width = b.height = S;
   const g = b.getContext('2d'), k = S / (2 * H), P = v => (v + H) * k;
   const M = MAPS[curMap] || {};
-  g.fillStyle = curMap === 'col' ? '#b89a6a' : curMap === 'avlu' ? '#3a4458' : '#4a2a20'; g.fillRect(0, 0, S, S);
+  g.fillStyle = M.mmBg || (curMap === 'col' ? '#b89a6a' : curMap === 'avlu' ? '#3a4458' : '#4a2a20'); g.fillRect(0, 0, S, S);
   const walls = statics.slice(baseStatics).filter(s => s.y0 < 2.4)   // tavanlar ve kapı kirişleri çizilmez (tünel yolu görünsün)
     .sort((a, b) => a.y1 - b.y1);
   for (const s of walls) {

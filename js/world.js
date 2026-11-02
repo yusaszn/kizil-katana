@@ -309,9 +309,9 @@ function buildMap(id) {
   if ((M.half || 22) !== H) buildShell(M.half || 22); else statics.length = baseStatics;
   for (const L of torchLights) { L.intensity = 0; L.distance = 24; L.color.setHex(M.light); }   // haritada mangal yoksa meşale ışığı da yok
   moon.position.set(6, 20, 9);
-  M.build();
-  // açık mekân (lobi): dış duvarlar ve ışıklı oluk görünmez, çarpışma kalır
+  // açık mekân (lobi, liman): dış duvarlar ve ışıklı oluk görünmez, çarpışma kalır (harita isterse bazılarını geri açar)
   for (const m of shell.meshes) m.visible = !M.open || m.material === floorMat;
+  M.build();
   scene.fog.color.setHex(M.fog); scene.background.setHex(M.sky || M.fog); scene.fog.density = M.fogD || .034;
   embers.visible = !M.noEmbers;
   hemi.color.setHex(M.hemi[0]); hemi.groundColor.setHex(M.hemi[1]); moon.color.setHex(M.moon);

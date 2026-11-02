@@ -3,7 +3,7 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 18;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 19;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 // çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
@@ -100,7 +100,7 @@ function addPlayer(id, name, conn) {
   const team = n.red <= n.blue ? 'red' : 'blue';
   net.players[id] = { id, name, conn, kills: 0, deaths: 0, score: 0, lv: 1, alive: true, hp: 100, proxy: null, color, team, lastSeen: performance.now(), ping: null };
 }
-function setGameMode(m) { if (net.mode !== 'host' || net.inMatch) return; net.gameMode = m; sendRoster(); }
+function setGameMode(m) { if (net.mode !== 'host' || net.inMatch) return; net.gameMode = m; if (m === 'bomb' && !(MAPS[net.vsMap] || {}).sites) net.vsMap = 'col'; sendRoster(); }
 function setVsMap(m) { if (net.mode !== 'host' || net.inMatch) return; net.vsMap = m; sendRoster(); }
 function setMoney(m) { if (net.mode !== 'host' || net.inMatch) return; net.money = m; sendRoster(); }
 function setVenue(v) { if (net.mode !== 'host' || net.inMatch || !MAPS[v] || net.venue === v) return; net.venue = v; sendRoster(); if (state === 'lobby') lobbyBuild(); }
@@ -161,8 +161,8 @@ function renderLobby() {
   const gm = net.gameMode, host = net.mode === 'host';
   $('modeCoop').classList.toggle('on', gm === 'coop'); $('modeVs').classList.toggle('on', gm === 'vs'); $('modeBomb').classList.toggle('on', gm === 'bomb'); $('modeDef').classList.toggle('on', gm === 'defense');
   $('modeCoop').disabled = $('modeVs').disabled = $('modeBomb').disabled = $('modeDef').disabled = !host;
-  $('mapPick').hidden = gm !== 'vs';
-  for (const [id, m] of [['mapArena', 'arena'], ['mapAvlu', 'avlu'], ['mapCol', 'col']]) { $(id).classList.toggle('on', net.vsMap === m); $(id).disabled = !host; }
+  $('mapPick').hidden = gm !== 'vs' && gm !== 'bomb';
+  for (const [id, m] of [['mapArena', 'arena'], ['mapAvlu', 'avlu'], ['mapCol', 'col'], ['mapLiman', 'liman']]) { $(id).classList.toggle('on', net.vsMap === m); $(id).disabled = !host; $(id).hidden = gm === 'bomb' && !MAPS[m].sites; }
   $('moneyPick').hidden = gm === 'coop' || gm === 'defense';
   $('moneyNormal').classList.toggle('on', net.money !== 'inf'); $('moneyInf').classList.toggle('on', net.money === 'inf');
   $('moneyNormal').disabled = $('moneyInf').disabled = !host;
@@ -172,7 +172,7 @@ function renderLobby() {
   $('modeInfo').textContent = gm === 'vs'
     ? 'VS: Kırmızı ve Mavi takım, rauntlu. Raunt başında kredinle silah, kalkan ve yetenek alırsın. Son kalan takım raundu alır, ilk ' + ROUNDS_WIN + ' raunt kazanır.'
     : gm === 'bomb'
-    ? 'BOMBA: Çöl Geçidi haritası. Saldıranlar bombayı A ya da B bölgesine kurar (4 basılı), savunanlar engeller ya da imha eder. ' + BOMB.half + '. rauntta taraf değişir, ilk ' + ROUNDS_WIN + ' raunt kazanır.'
+    ? 'BOMBA: ' + (MAPS[net.vsMap] || MAPS.col).name + ' haritası. Saldıranlar bombayı A ya da B bölgesine kurar (4 basılı), savunanlar engeller ya da imha eder. ' + BOMB.half + '. rauntta taraf değişir, ilk ' + ROUNDS_WIN + ' raunt kazanır.'
     : gm === 'defense'
     ? 'SAVUNMA: Mühür Kalesi. Ortadaki Mühür Taşı\'nı birlikte koruyun; iblisler dört geçitten gelir. Öldürdükçe hurda kazanın, B ile taret, havan ve barikat kurun. Mühür kırılırsa biter.'
     : 'CO-OP: Birlikte iblislere karşı. Her 5 dalgada ara boss, her 10 dalgada büyük boss gelir.';
@@ -208,7 +208,7 @@ function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp
 /* ================= MAÇ ================= */
 function startMatchHost() {
   if (net.mode !== 'host') return;
-  if (net.gameMode === 'bomb') net.vsMap = 'col';
+  if (net.gameMode === 'bomb' && !(MAPS[net.vsMap] || {}).sites) net.vsMap = 'col';   // bomba modu yalnız A / B bölgeli haritalarda
   exitLobby();
   net.inMatch = true; resetGame();
   bcast({ t: 'start', wave: hashWave, mode: net.gameMode, map: net.vsMap, money: net.money, list: roster() });
@@ -494,6 +494,7 @@ $('modeVs').addEventListener('click', () => setGameMode('vs'));
 $('mapArena').addEventListener('click', () => setVsMap('arena'));
 $('mapAvlu').addEventListener('click', () => setVsMap('avlu'));
 $('mapCol').addEventListener('click', () => setVsMap('col'));
+$('mapLiman').addEventListener('click', () => setVsMap('liman'));
 $('modeBomb').addEventListener('click', () => setGameMode('bomb'));
 $('modeDef').addEventListener('click', () => setGameMode('defense'));
 $('moneyNormal').addEventListener('click', () => setMoney('normal'));

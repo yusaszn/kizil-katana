@@ -214,7 +214,7 @@ function drawVenueBoard() {
   const modeTxt = { coop: 'CO-OP', vs: 'VS · KIRMIZI / MAVİ', bomb: 'BOMBA KURMA', defense: 'SAVUNMA' }[net.gameMode] || net.gameMode;
   g.fillStyle = '#efe1cd'; g.font = '700 22px "Chakra Petch", Consolas, monospace';
   g.fillText('MOD: ' + modeTxt, 24, 64);
-  if (net.gameMode === 'vs') g.fillText('HARİTA: ' + ((MAPS[net.vsMap] || {}).name || ''), 24, 94);
+  if (net.gameMode === 'vs' || net.gameMode === 'bomb') g.fillText('HARİTA: ' + ((MAPS[net.vsMap] || {}).name || ''), 24, 94);
   let y = 134;
   for (const p of Object.values(net.players)) {
     g.fillStyle = '#' + p.color.toString(16).padStart(6, '0'); g.fillRect(28, y + 4, 14, 14);
