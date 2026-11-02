@@ -679,6 +679,7 @@ function updateHUD(dt) {
 }
 
 /* ================= ANA DÖNGÜ ================= */
+const wsOpen = () => typeof ws !== 'undefined' && ws.open;   // atolye3d.js sonra yüklenir; ilk kareler ondan önce gelebilir
 let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
@@ -731,18 +732,19 @@ function frame(now) {
     drawSplats(rdt);
     syncCamera(dt, rdt);
   } else if (state === 'lobby') updateLobby(rdt);   // lobi.js: sosyal buluşma alanı
-  else if (state === 'menu') updateMenuScene(rdt);   // lobi.js: kamp ateşi başında oturan karakter
+  else if (state === 'menu' && !wsOpen()) updateMenuScene(rdt);   // lobi.js: kamp ateşi başında oturan karakter (atölye açıkken durur)
   updateAmbience(rdt, gameTime);
   updateVoice(rdt);
   updateChat(rdt);
   updateMusic(rdt);
   if (typeof updateTouch === 'function') updateTouch();
-  renderFrame(state !== 'menu' && state !== 'lobby' && !SETTINGS.thirdPerson && awp.scopeK < .6, rdt);   // efektler.js (parlama, renk, vinyet)
+  if (wsOpen()) wsRender(rdt);   // atolye3d.js: atölyede büyük silah modeli
+  else renderFrame(state !== 'menu' && state !== 'lobby' && !SETTINGS.thirdPerson && awp.scopeK < .6, rdt);   // efektler.js (parlama, renk, vinyet)
 }
 // silah ve el renkleri sRGB olarak yazıldı; doğrusal renk uzayına çevrilmezse soluk / pembe görünürler
-function linearizeViewmodel() {
+function linearizeViewmodel(root = vmScene) {
   const seen = new Set();
-  vmScene.traverse(o => {
+  root.traverse(o => {
     const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
     for (const m of ms) {
       if (seen.has(m) || m.userData.lin || !m.color) continue;

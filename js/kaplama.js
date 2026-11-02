@@ -78,6 +78,11 @@ function skinMat(base, S) {
 }
 function applySkin(w, id) {
   const root = skinRoot(w); if (!root) return;
+  skinTo(root, w, id);
+  linearizeViewmodel();
+}
+// kaplamayı bir modele uygula (eldeki silah ya da atölyedeki büyük model)
+function skinTo(root, w, id) {
   const S = SKINS.find(s => s.id === id) || SKINS[0], knife = w === 'knife' || w === 'karambit' || w === 'butterfly';
   root.traverse(o => {
     if (!o.isMesh) return;
@@ -86,7 +91,6 @@ function applySkin(w, id) {
     o.userData.skinBase = base;
     o.material = S.id === 'std' ? base : skinMat(base, S);
   });
-  linearizeViewmodel();
 }
 function setSkin(w, id) {
   skinSel[w] = id; try { localStorage.setItem('kk-kaplama', JSON.stringify(skinSel)); } catch (e) { /* kayıt yok */ }
@@ -105,13 +109,14 @@ function renderSkins() {
   const grid = SKINS.map(S => `<button type="button" class="sk${S.id === cur ? ' on' : ''}" data-s="${S.id}"><i style="background:${S.tex ? swatchUrl(S) + ' center/120px' : S.sw}"></i><b>${S.name}</b></button>`).join('');
   $('skinTabs').innerHTML = tabs; $('skinGrid').innerHTML = grid;
   if (typeof renderSights === 'function') renderSights();
+  if (typeof ws !== 'undefined' && ws.open) wsBuild(skinUI.w);   // canlı 3D görünüm
 }
 $('skinTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; skinUI.w = b.dataset.w; renderSkins(); });
 $('skinGrid').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; setSkin(skinUI.w, b.dataset.s); });
-$('skinsBtn').addEventListener('click', () => { renderSkins(); $('start').hidden = true; $('skins').hidden = false; });
-$('skinsBack').addEventListener('click', () => { $('skins').hidden = true; $('start').hidden = false; });
+$('skinsBtn').addEventListener('click', () => { $('start').hidden = true; $('skins').hidden = false; wsShow(true); renderSkins(); });
+$('skinsBack').addEventListener('click', () => { wsShow(false); $('skins').hidden = true; $('start').hidden = false; });
 $('skinsTry').addEventListener('click', () => {
-  $('skins').hidden = true;
+  wsShow(false); $('skins').hidden = true;
   leaveRoom(true); net.gameMode = 'range'; resetGame(); play();
   const w = skinUI.w;
   if (RANGE_W.includes(w)) { wpn.cur = w; wpn.next = null; }

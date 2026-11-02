@@ -82,6 +82,7 @@ function setSight(w, id) {
   const S = SIGHTS.find(s => s.id === id); if (!S || !sightOpen(S)) { sfx.empty(); return; }
   sightSel[w] = id; try { localStorage.setItem('kk-nisangah', JSON.stringify(sightSel)); } catch (e) { /* kayıt yok */ }
   applySight(w, id); renderSights();
+  if (typeof ws !== 'undefined' && ws.open) wsBuild(w);
 }
 // Atölye ekranında nişangah satırı (yalnız M4 ve AK-47)
 function renderSights() {

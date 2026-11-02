@@ -452,3 +452,13 @@ body.touchdev.showboard #board{display:block;transform:scale(.8);transform-origi
 #skinTabs button{display:flex;flex-direction:column;align-items:center;gap:2px}
 #skinTabs button img{width:74px;height:28px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
 #buy .bc .bimg,#buy .bk img,#skinTabs button img{background:radial-gradient(ellipse at center,rgba(255,240,220,.16),rgba(255,240,220,0) 70%)}
+
+/* ================= ATÖLYE: canlı 3D görünüm ================= */
+#skins{background:linear-gradient(90deg,rgba(8,2,2,.95) 0,rgba(8,2,2,.88) 40%,rgba(8,2,2,.25) 58%,rgba(8,2,2,0) 70%);place-items:center start;padding-left:max(18px,3vw);touch-action:none}
+#skins .panel{max-width:600px;text-align:left;align-items:stretch;touch-action:pan-y}
+#skins .panel h2,#skins .btns{text-align:left;justify-content:flex-start}
+#skins .modes{justify-content:flex-start}
+#wsHint{position:absolute;right:max(20px,3vw);bottom:24px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;pointer-events:none;font-family:var(--hud);text-shadow:0 2px 0 #000}
+#wsHint b{font-size:28px;letter-spacing:.2em;color:var(--bone)}
+#wsHint span{font-size:11px;letter-spacing:.18em;color:var(--ash)}
+@media (max-width:820px){#skins{background:linear-gradient(0deg,rgba(8,2,2,.96) 0,rgba(8,2,2,.9) 56%,rgba(8,2,2,0) 68%);place-items:end center;padding:0 10px 10px}#skins .panel{max-height:58vh;overflow:auto}#wsHint{top:12px;bottom:auto;right:12px}#wsHint b{font-size:18px}}
