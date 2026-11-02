@@ -139,7 +139,7 @@ function updateLobby(dt) {
     if (lobby.tp) player.pitch = clamp(player.pitch, -1.05, 1.0);
   }
   world.step(1 / 60, dt, 4);
-  updateBall(dt);
+  updateBall(dt); updateSaha(dt);
   if (lobby.emote) { lobby.emoteT += dt; if (lobby.emoteT > EMOTE_DUR[lobby.emote]) lobby.emote = ''; }
   lobbyCamera();
   lobbyMyAvatar(dt);
@@ -382,6 +382,7 @@ $('keysBtn').addEventListener('click', () => { const b = $('keysBox'); b.hidden 
 $('venueKamp').addEventListener('click', () => setVenue('kamp'));
 $('venueEv').addEventListener('click', () => setVenue('ev'));
 $('venueCati').addEventListener('click', () => setVenue('cati'));
+$('venueSaha').addEventListener('click', () => setVenue('saha'));
 $('setBtnLobby').addEventListener('click', () => openSettings('lobby'));
 $('lobbyBackBtn').addEventListener('click', hostBackToLobby);
 $('pauseLobbyBtn').addEventListener('click', hostBackToLobby);
@@ -398,7 +399,7 @@ const ballTex = canvasTex(128, (g, s) => {
   for (const [x, y] of [[32, 32], [96, 32], [64, 80], [16, 104], [112, 104], [64, 8]]) { g.beginPath(); for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2 - Math.PI / 2; g.lineTo(x + Math.cos(a) * 13, y + Math.sin(a) * 13); } g.fill(); }
   for (let i = 0; i < 500; i++) { g.fillStyle = `rgba(0,0,0,${Math.random() * .05})`; g.fillRect(Math.random() * s, Math.random() * s, 2, 2); }
 }, 1, 1);
-const BALL_SPOT = { kamp: [3.6, 5.8], ev: [-2.2, 3.2], cati: [3.5, 5.5] };
+const BALL_SPOT = { kamp: [3.6, 5.8], ev: [-2.2, 3.2], cati: [3.5, 5.5], saha: [0, 0] };
 function lobbyBallSpawn() {
   const sp = BALL_SPOT[curMap]; if (!sp) return;
   ball.mesh = mapMesh(new THREE.Mesh(new THREE.SphereGeometry(.22, 22, 16), new THREE.MeshStandardMaterial({ map: ballTex, roughness: .5 })));
@@ -427,7 +428,7 @@ function updateBall(dt) {
   const m = ball.mesh, b = ball.body;
   if (net.mode !== 'guest') {
     m.position.set(b.position.x, b.position.y, b.position.z); m.quaternion.set(b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w);
-    if (net.mode === 'host') { ball.sendT -= dt; if (ball.sendT <= 0) { ball.sendT = .1; bcast({ t: 'bs', p: arr(b.position), v: arr(b.velocity) }); } }
+    if (net.mode === 'host') { ball.sendT -= dt; if (ball.sendT <= 0) { ball.sendT = .1; bcast({ t: 'bs', p: arr(b.position), v: arr(b.velocity), sc: curMap === 'saha' ? [SAHA.red, SAHA.blue] : null }); } }
   } else {
     // konuk: hostun gönderdiği konuma doğru tahminle ilerle, yuvarlanma görüntüsü hızdan
     ball.tgt.addScaledVector(ball.vel, dt); ball.vel.multiplyScalar(Math.max(0, 1 - dt * .4));
@@ -442,7 +443,10 @@ function updateBall(dt) {
   }
 }
 const _dvb = new V3();
-function ballNet(d) { if (!ball.body) return; ball.tgt.set(d.p[0], d.p[1], d.p[2]); ball.vel.set(d.v[0], d.v[1], d.v[2]); }
+function ballNet(d) {
+  if (!ball.body) return; ball.tgt.set(d.p[0], d.p[1], d.p[2]); ball.vel.set(d.v[0], d.v[1], d.v[2]);
+  if (d.sc && curMap === 'saha' && (d.sc[0] !== SAHA.red || d.sc[1] !== SAHA.blue)) { SAHA.red = d.sc[0]; SAHA.blue = d.sc[1]; sahaTabelaDraw(); }   // sonradan gelen skoru görsün
+}
 // ---- gitar ----
 const GUITAR_SPOT = { kamp: [1.55, -3.42] };
 const CHORDS_GTR = [[57, 64, 69, 72, 76], [53, 60, 65, 69, 72], [48, 55, 60, 64, 67, 72], [43, 50, 55, 59, 62, 67]];   // Am F C G

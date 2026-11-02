@@ -3,7 +3,7 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 24;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 25;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 // çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
@@ -170,7 +170,7 @@ function renderLobby() {
   $('moneyNormal').classList.toggle('on', net.money !== 'inf'); $('moneyInf').classList.toggle('on', net.money === 'inf');
   $('moneyNormal').disabled = $('moneyInf').disabled = !host;
   const ven = lobbyVenue();
-  for (const [id, v] of [['venueKamp', 'kamp'], ['venueEv', 'ev'], ['venueCati', 'cati']]) { $(id).classList.toggle('on', ven === v); $(id).disabled = !host; }
+  for (const [id, v] of [['venueKamp', 'kamp'], ['venueEv', 'ev'], ['venueCati', 'cati'], ['venueSaha', 'saha']]) { $(id).classList.toggle('on', ven === v); $(id).disabled = !host; }
   if (state === 'lobby') drawVenueBoard();
   $('modeInfo').textContent = gm === 'vs'
     ? 'VS: Kırmızı ve Mavi takım, rauntlu. Raunt başında kredinle silah, kalkan ve yetenek alırsın. Son kalan takım raundu alır, ilk ' + ROUNDS_WIN + ' raunt kazanır.'
@@ -348,6 +348,7 @@ function onGuestData(d) {
     case 'chat': if (d.id !== net.myId) chatShow(d.id, String(d.text || '').slice(0, 120)); break;
     case 'tolobby': enterLobby(); break;
     case 'bs': ballNet(d); break;
+    case 'gol': sahaGoal(d); break;
     case 'gtr': gtrNet(d); break;
     case 'dst': case 'dpl': case 'ddl': case 'dsh': case 'drp': case 'dover': defNet(d); break;
   }
