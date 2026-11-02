@@ -7,8 +7,8 @@ const touch = { stick: null, look: null, sx: 0, sy: 0, kx: 0, ky: 0, btn: {} };
 const LOBBY_TB = new Set(['jump', 'talk', 'cam', 'pause', 'sit', 'wave', 'dance', 'chat', 'kick']);   // lobide görünen tuşlar
 // yerleşim: üst sırada küçük tuşlar (sağdan sola), ana kümenin solunda duruma göre çıkan tuşlar (iki sütun);
 // yalnız görünenler yer kaplar, böylece hiçbir tuş başka bir tuşun altında kalmaz
-const TOP_TB = ['pause', 'cam', 'talk', 'chat', 'inspect', 'team', 'buy'];
-const EXTRA_TB = ['sit', 'heavy', 'smoke', 'flash', 'heg', 'bomb', 'build', 'cancel', 'race', 'wave', 'dance'];
+const TOP_TB = ['pause', 'cam', 'talk', 'chat', 'score', 'inspect', 'team', 'buy'];
+const EXTRA_TB = ['sit', 'heavy', 'smoke', 'flash', 'heg', 'bomb', 'build', 'cancel', 'rotate', 'race', 'wave', 'dance'];
 // lobide E tuşunun o anki işi (yakında bir şey yoksa boş: tuş gizlenir)
 function lobbyActionName() {
   if (!lobby.walking) return '';
@@ -53,6 +53,8 @@ const TBTN = [
   ['chat', 'SOHBET', () => net.mode !== 'solo', () => chatOpen()],
   ['build', 'KUR', () => isDefense(), () => { if (def.sel) defConfirm(); else defToggleMenu(); }],
   ['cancel', 'VAZGEÇ', () => isDefense() && !!def.sel, () => defCancel()],
+  ['rotate', 'DÖNDÜR', () => isDefense() && def.sel === 'barikat', () => { def.rot = def.rot ? 0 : 1; }],
+  ['score', 'SKOR', () => net.mode !== 'solo', () => document.body.classList.toggle('showboard')],
 ];
 
 function buildTouchUI() {
