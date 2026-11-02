@@ -420,3 +420,5 @@ body.rangemode #wave,body.rangemode #score,body.rangemode #xpbox,body.rangemode 
 #skinGrid .sk b{font-size:11px;letter-spacing:.16em}
 #skinGrid .sk.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;background:rgba(255,194,58,.08)}
 #skinGrid .sk:hover,#skinGrid .sk:focus-visible{border-color:var(--bone);outline:none}
+#start #botBtn{background:#4a3a1a}
+#start #botBtn:hover{background:#6a5226}

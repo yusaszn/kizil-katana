@@ -240,3 +240,14 @@ function botsBlast(p, by) {
 }
 $('botAdd').addEventListener('click', addBot);
 $('botClear').addEventListener('click', removeBots);
+
+// ana menü → BOTLARLA OYNA: internet ve oda kodu gerekmez; sen host olursun, oda yalnız bu cihazda kurulur
+function botMatchOffline() {
+  leaveRoom(true);
+  Object.assign(net, { mode: 'host', myId: 'h', code: 'BOT', players: {}, gameMode: 'tdm', vsMap: 'liman', peer: null, hostConn: null, inMatch: false });
+  addPlayer('h', playerName(), null);
+  showLobby();
+  for (let i = 0; i < 3; i++) addBot();
+  lobbyMsg('Botlarla çevrimdışı oda. Mod, harita ve bot sayısını seç, BAŞLAT\'a bas.');
+}
+$('botBtn').addEventListener('click', botMatchOffline);
