@@ -376,7 +376,7 @@ function updatePlayer(dt) {
   player.slideK += ((player.slideT > 0 ? 1 : 0) - player.slideK) * Math.min(1, dt * (player.slideT > 0 ? 14 : 7));
   if (player.charges < ST.maxDash) { player.recharge += dt; if (player.recharge >= ST.dashRecharge) { player.recharge = 0; player.charges++; } }
   else player.recharge = 0;
-  player.kickCd -= dt; player.invuln -= dt; player.slideCd -= dt; player.jumpBuf -= dt;
+  player.kickCd -= dt; player.invuln -= dt; player.slideCd -= dt; player.jumpBuf -= dt; player.tagT = (player.tagT || 0) - dt;
   player.crouchK += (((crouchHeld() && player.alive) || player.slideT > 0 ? 1 : 0) - player.crouchK) * Math.min(1, dt * 12);
   if (player.dashT > 0) {
     player.dashT -= dt;
@@ -446,7 +446,7 @@ function updatePlayer(dt) {
     player.sprinting = (SETTINGS.alwaysSprint || shiftHeld) && (keys.KeyW || keys.ArrowUp) && !block.on && !crouching && !(player.fireLock > 0);
     const aimSlow = m4.adsK > .5 || awp.scopeK > .5 || pis.adsK > .5 || uziAim.k > .5 ? .6 : 1;
     const knifeFast = isKnife(wpn.cur) ? 1.12 : 1;   // bıçakla daha hızlı koşulur
-    const sp = ST.moveSpeed * (isVS() ? .85 : 1) * knifeFast * aimSlow * (block.on ? .55 : 1) * (crouching ? .6 : player.sprinting ? (isVS() ? 1.45 : 2.05) : 1), acc = player.grounded ? 14 : 3.5;
+    const sp = ST.moveSpeed * (isVS() ? .85 : 1) * knifeFast * aimSlow * (player.tagT > 0 ? .6 : 1) * (block.on ? .55 : 1) * (crouching ? .6 : player.sprinting ? (isVS() ? 1.45 : 2.05) : 1), acc = player.grounded ? 14 : 3.5;
     const k = Math.min(1, acc * dt);
     if (player.grounded) { v.x += (wish.x * sp - v.x) * k; v.z += (wish.z * sp - v.z) * k; }
     else {

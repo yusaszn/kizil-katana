@@ -29,6 +29,7 @@ const TBTN = [
   ['team', 'TAKIM', () => isVS(), () => toggleTeamPick()],
   ['smoke', 'SİS', () => isVS() && eco.smoke > 0, () => throwUtil('smoke')],
   ['flash', 'FLAŞ', () => isVS() && eco.flash > 0, () => throwUtil('flash')],
+  ['heg', 'EL BOMB.', () => isVS() && eco.he > 0, () => throwUtil('he')],
   ['bomb', 'BOMBA', () => typeof isBomb === 'function' && isBomb(), () => { keys.Digit4 = true; }, () => { keys.Digit4 = false; }],
   ['talk', 'KONUŞ', () => net.mode !== 'solo' && voiceMode() === 'ptt', () => { keys.KeyK = true; }, () => { keys.KeyK = false; }],
   ['cam', 'KAMERA', () => true, () => { if (state === 'lobby') lobby.tp = !lobby.tp; else { SETTINGS.thirdPerson = !SETTINGS.thirdPerson; saveSettings(); } }],

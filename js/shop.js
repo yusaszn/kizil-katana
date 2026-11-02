@@ -20,10 +20,11 @@ const SHOP = [
   { id: 'heavy', cat: 'KALKAN', name: 'AĞIR KALKAN', price: 1000, armor: 50, info: '+50 kalkan' },
   { id: 'smoke', cat: 'YETENEK', name: 'SİS BOMBASI', price: 200, max: 2, key: 'Z', info: '14 sn görüşü kapatan duman' },
   { id: 'flash', cat: 'YETENEK', name: 'FLAŞ', price: 250, max: 2, key: 'X', info: 'Bakanı birkaç saniye kör eder' },
+  { id: 'he', cat: 'YETENEK', name: 'EL BOMBASI', price: 300, max: 1, key: 'H', info: '1.6 sn sonra patlar, siper arkası korur' },
 ];
 const PRIMARY_IDS = ['uzi', 'shotgun', 'ak47', 'm4', 'awp', 'katana'];
 const SIDEARM_IDS = ['pistol', 'glock', 'usps', 'deagle'];
-const eco = { cr: ECON.start, primary: null, sidearm: null, armor: 0, armorKind: null, smoke: 0, flash: 0, bought: [], streak: 0, keep: false, roundKills: 0, ready: false, taken: {}, deathInfo: '' };
+const eco = { cr: ECON.start, primary: null, sidearm: null, armor: 0, armorKind: null, smoke: 0, flash: 0, he: 0, bought: [], streak: 0, keep: false, roundKills: 0, ready: false, taken: {}, deathInfo: '' };
 const shopItem = id => SHOP.find(s => s.id === id);
 const buy = { open: false, x: 0, y: 0, hov: null };
 const teamUI = { open: false };
@@ -55,7 +56,7 @@ function requestTeam(t) {
 }
 
 function resetEco() {
-  Object.assign(eco, { cr: ECON.start, primary: null, sidearm: null, armor: 0, armorKind: null, smoke: 0, flash: 0, bought: [], streak: 0, keep: false, roundKills: 0, ready: false, taken: {}, deathInfo: '' });
+  Object.assign(eco, { cr: ECON.start, primary: null, sidearm: null, armor: 0, armorKind: null, smoke: 0, flash: 0, he: 0, bought: [], streak: 0, keep: false, roundKills: 0, ready: false, taken: {}, deathInfo: '' });
   closeBuy();
 }
 function addCredits(n, why) {
@@ -137,7 +138,7 @@ function renderBuy() {
   const html = `<div class="bcol"><h3>ANA SİLAH</h3><div class="bgrid">${col(PRIMARY_IDS)}</div>
       <h3>TABANCA</h3><div class="bgrid">${col(SIDEARM_IDS)}</div></div>
     <div class="bcol"><h3>KALKAN</h3><div class="bgrid">${col(['light', 'heavy'])}</div>
-      <h3>YETENEKLER</h3><div class="bgrid">${col(['smoke', 'flash'])}</div>
+      <h3>YETENEKLER</h3><div class="bgrid">${col(['smoke', 'flash', 'he'])}</div>
       <h3>BIÇAK</h3><div class="bknife">${KNIFE_LIST.map(k => `<button type="button" class="bk${loadout.knife === k ? ' own' : ''}" data-knife="${k}">${WEAPON_SHORT[k]}</button>`).join('')}</div></div>`;
   if (buy.html !== html) { buy.html = html; $('buyBody').innerHTML = html; buy.hov = null; }
   const mates = Object.values(net.players).filter(p => p.team === myTeam() && p.id !== net.myId).map(p => `<span>${escapeHtml(p.name)} <b>${p.cr != null ? p.cr : '?'} ◈</b>${p.rd ? ' ✓' : ''}</span>`).join('');
@@ -180,7 +181,7 @@ function ecoRoundBuy(n) {
   if (n === 1 || (isBomb() && n === BOMB.half + 1)) { eco.cr = ECON.start; eco.streak = 0; eco.keep = false; }
   if (isTDM() && n === 1) eco.cr = Math.max(eco.cr, 4500);   // takım ölüm maçı: ilk anda tüfek ve kalkan alınabilsin
   if (infMoney()) eco.cr = ECON.max;
-  if (!eco.keep) { eco.primary = null; eco.sidearm = null; eco.armor = 0; eco.armorKind = null; eco.smoke = 0; eco.flash = 0; }
+  if (!eco.keep) { eco.primary = null; eco.sidearm = null; eco.armor = 0; eco.armorKind = null; eco.smoke = 0; eco.flash = 0; eco.he = 0; }
   eco.bought = []; eco.roundKills = 0; eco.ready = false; eco.taken = {}; eco.deathInfo = '';
   for (const id in net.players) net.players[id].rd = 0;
   openBuy();
@@ -221,24 +222,24 @@ function checkClutch() {
 const utilShots = [], smokes = [];
 const smokeTex = canvasTex(64, (g, s) => { const gr = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2); gr.addColorStop(0, 'rgba(255,255,255,.9)'); gr.addColorStop(.6, 'rgba(255,255,255,.5)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, s, s); }, 1, 1, false);
 const utilGeo = new THREE.CylinderGeometry(.05, .05, .14, 8);
-const utilMats = { smoke: new THREE.MeshStandardMaterial({ color: 0x5a6a5a, roughness: .6 }), flash: new THREE.MeshStandardMaterial({ color: 0xd8d8d0, roughness: .4, metalness: .4 }) };
+const utilMats = { smoke: new THREE.MeshStandardMaterial({ color: 0x5a6a5a, roughness: .6 }), flash: new THREE.MeshStandardMaterial({ color: 0xd8d8d0, roughness: .4, metalness: .4 }), he: new THREE.MeshStandardMaterial({ color: 0x3e4a2c, roughness: .55, metalness: .3 }) };
 const SMOKE_R = 4.2, SMOKE_T = 14;
 let flashBlind = 0;
 function throwUtil(k) {
-  if (!isVS() || vs.phase !== 'live' || !player.alive || state !== 'play' || eco[k] <= 0) { if (isVS() && eco[k] <= 0 && vs.phase === 'live') { sfx.empty(); toast(k === 'smoke' ? 'SİS BOMBAN YOK' : 'FLAŞIN YOK'); } return; }
+  if (!isVS() || vs.phase !== 'live' || !player.alive || state !== 'play' || eco[k] <= 0) { if (isVS() && eco[k] <= 0 && vs.phase === 'live') { sfx.empty(); toast({ smoke: 'SİS BOMBAN YOK', flash: 'FLAŞIN YOK', he: 'EL BOMBAN YOK' }[k]); } return; }
   eco[k]--;
   camVectors();
   const p = eyePos.clone().addScaledVector(camFwd, .6); p.y -= .1;
   const v = camFwd.clone().multiplyScalar(k === 'flash' ? 19 : 15).add(new V3(0, 3.2, 0));
   v.x += player.body.velocity.x * .5; v.z += player.body.velocity.z * .5;
-  const msg = { t: 'util', k, p: arr(p), v: arr(v) };
+  const msg = { t: 'util', k, p: arr(p), v: arr(v), by: net.myId };
   if (net.mode === 'host') bcast(msg); else toHost(msg);
   onUtil(msg);
   sfx.swap(); kickView(0, .02);
 }
 function onUtil(d) {
   const m = new THREE.Mesh(utilGeo, utilMats[d.k]); m.position.set(d.p[0], d.p[1], d.p[2]); scene.add(m);
-  utilShots.push({ k: d.k, m, pos: m.position, vel: new V3(d.v[0], d.v[1], d.v[2]), t: 0, still: 0 });
+  utilShots.push({ k: d.k, m, pos: m.position, vel: new V3(d.v[0], d.v[1], d.v[2]), t: 0, still: 0, by: d.by });
 }
 function popSmoke(p) {
   const g = new THREE.Group(); g.position.copy(p); g.position.y = Math.max(1.2, p.y);
@@ -268,6 +269,24 @@ function popFlash(p) {
   if (f < .05) return;
   flashBlind = Math.max(flashBlind, .3 + f * 2.6);
 }
+// el bombası: herkes kendi ekranında patlamayı görür, hasarı kendine kendisi uygular (konumunu en iyi o bilir);
+// siperin arkasındaysan korunursun; takım arkadaşının bombası zarar vermez, kendi bomban yarım hasar verir
+function popHE(p, by) {
+  explodeAt(new V3(p.x, Math.max(.3, p.y), p.z), false, 4.5);
+  if (!player.alive || !isVS() || vs.over) return;
+  const c = player.body.position, R = 6, to = new V3(c.x - p.x, c.y + .6 - p.y, c.z - p.z), d = to.length();
+  if (d > R) return;
+  to.divideScalar(d || 1);
+  if (rayStatic(new V3(p.x, Math.max(.3, p.y), p.z).addScaledVector(to, .2), to, d) < d - .5) return;
+  const self = by === net.myId;
+  if (!self && teamOf(by) === myTeam()) return;
+  const dmg = 98 * Math.pow(1 - d / R, 1.3) * (self ? .5 : 1);
+  if (dmg < 2) return;
+  vs.lastHit = { by: self ? null : by, w: 'he' };
+  if (!self && vs.spawnProt <= 0) noteTaken(by, dmg);
+  hurtPlayer(dmg, p, null, { pvp: true });
+  shake(.45);
+}
 // iki nokta arasındaki çizgi bir sis bulutundan geçiyor mu?
 function smokeBlocks(a, b) {
   for (const s of smokes) {
@@ -293,8 +312,8 @@ function updateShop(dt, rdt) {
     if (u.pos.y < .08) { u.pos.y = .08; u.vel.y *= -.35; u.vel.x *= .6; u.vel.z *= .6; if (Math.abs(u.vel.y) > 1) sfx.shell(); }
     if (hitsStatic(u.pos)) { u.pos.copy(prev); u.vel.x *= -.45; u.vel.z *= -.45; }
     const spd = u.vel.length(); u.still = spd < 1.2 ? u.still + dt : 0;
-    const pop = u.k === 'flash' ? u.t > .85 : (u.still > .25 || u.t > 2.2);
-    if (pop) { scene.remove(u.m); utilShots.splice(utilShots.indexOf(u), 1); if (u.k === 'flash') popFlash(u.pos.clone()); else popSmoke(u.pos.clone()); }
+    const pop = u.k === 'flash' ? u.t > .85 : u.k === 'he' ? u.t > 1.6 : (u.still > .25 || u.t > 2.2);
+    if (pop) { scene.remove(u.m); utilShots.splice(utilShots.indexOf(u), 1); if (u.k === 'flash') popFlash(u.pos.clone()); else if (u.k === 'he') popHE(u.pos.clone(), u.by); else popSmoke(u.pos.clone()); }
   }
   for (const s of smokes.slice()) {
     s.t += dt;

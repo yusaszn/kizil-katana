@@ -16,7 +16,7 @@ const vsFrozen = () => isVS() && (vs.phase === 'buy' || (typeof bombAct !== 'und
 const myTeam = () => (net.players[net.myId] || {}).team || 'red';
 const teamOf = id => (net.players[id] || {}).team;
 const nameOf = id => id === net.myId ? playerName() : (net.players[id] || {}).name || '?';
-const WEAPON_SHORT = { katana: 'KATANA', uzi: 'UZİ', shotgun: 'POMPALI', m4: 'M4', awp: 'AWP', pistol: 'TABANCA', kick: 'TEKME', knife: 'BIÇAK', karambit: 'KARAMBİT', butterfly: 'KELEBEK' };
+const WEAPON_SHORT = { he: 'EL BOMBASI', katana: 'KATANA', uzi: 'UZİ', shotgun: 'POMPALI', m4: 'M4', awp: 'AWP', pistol: 'TABANCA', kick: 'TEKME', knife: 'BIÇAK', karambit: 'KARAMBİT', butterfly: 'KELEBEK' };
 
 /* ================= SİLAH SETİ ================= */
 const PRIMARIES = ['m4', 'awp', 'shotgun', 'uzi', 'katana'];
@@ -81,6 +81,8 @@ function applyPhit(d) {
   if (vs.spawnProt <= 0) noteTaken(d.by, d.dmg);
   hurtPlayer(d.dmg, from, null, { pvp: true, melee: d.melee });
   if (d.head) screenSplat(1);
+  // vurulma hissi (CS'teki gibi): nişan yukarı sıçrar, kısa süre yavaşlarsın
+  if (!d.melee && player.alive) { kickView(rand(-.015, .015), .028 + Math.min(.04, d.dmg * .0007)); player.pitch = Math.min(1.45, player.pitch + .01); player.tagT = .4; }
 }
 // katana / kasırga / tekme: yakın mesafedeki rakip oyuncular
 function pvpMelee(range, arc, dmg, opts) {
@@ -301,7 +303,7 @@ function renderVsHud() {
   setText('vsTime', (vs.phase === 'buy' ? 'HAZIRLIK ' : vs.phase === 'end' || isTDM() ? '' : 'R' + vs.round + ' · ') + (vs.phase === 'end' ? 'RAUNT BİTTİ' : Math.floor(tm / 60) + ':' + String(tm % 60).padStart(2, '0')));
   setText('vsTeam', TEAMS[myTeam()].name + ' TAKIMDASIN' + (isBomb() ? ' · ' + (myTeam() === attackTeam() ? 'SALDIRI' : 'SAVUNMA') : '') + (isTDM() ? ' · İLK ' + KILLS_WIN + ' LEŞ' : ' · İLK ' + ROUNDS_WIN + ' RAUNT'));
   $('vsTeam').className = myTeam();
-  setText('ecoHud', '◈ ' + (infMoney() ? '∞' : eco.cr) + (eco.smoke ? '   Z SİS ×' + eco.smoke : '') + (eco.flash ? '   X FLAŞ ×' + eco.flash : '') + (buyPhase() && !buy.open ? '   B MENÜ' : ''));
+  setText('ecoHud', '◈ ' + (infMoney() ? '∞' : eco.cr) + (eco.smoke ? '   Z SİS ×' + eco.smoke : '') + (eco.flash ? '   X FLAŞ ×' + eco.flash : '') + (eco.he ? '   H BOMBA ×' + eco.he : '') + (buyPhase() && !buy.open ? '   B MENÜ' : ''));
   $('armorb').style.width = (eco.armor / 50 * 100) + '%';
   const html = vs.feed.map(f => `<div class="kf"><b class="${f.byTeam || ''}">${escapeHtml(f.by)}</b><span>${f.w}</span><b class="${f.vTeam || ''}">${escapeHtml(f.v)}</b></div>`).join('');
   if (hud.feed !== html) { hud.feed = html; $('killfeed').innerHTML = html; }

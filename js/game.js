@@ -476,6 +476,7 @@ window.addEventListener('keydown', e => {
   if (isVS() && /^Digit[1-3]$/.test(e.code)) { const w = vsSlots()[+e.code.slice(5) - 1]; if (w) switchWeapon(w); return; }
   if (isVS() && e.code === 'KeyZ') { throwUtil('smoke'); return; }
   if (isVS() && e.code === 'KeyX') { throwUtil('flash'); return; }
+  if (isVS() && e.code === 'KeyH') { throwUtil('he'); return; }
   if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { if (SETTINGS.alwaysSprint) dash(); else shiftDown = performance.now(); }
   if (e.code === 'Space') player.jumpBuf = .15;
   if (e.code === 'KeyC' || e.code === 'ControlLeft' || e.code === 'ControlRight') crouchInput();
