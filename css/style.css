@@ -462,3 +462,17 @@ body.touchdev.showboard #board{display:block;transform:scale(.8);transform-origi
 #wsHint b{font-size:28px;letter-spacing:.2em;color:var(--bone)}
 #wsHint span{font-size:11px;letter-spacing:.18em;color:var(--ash)}
 @media (max-width:820px){#skins{background:linear-gradient(0deg,rgba(8,2,2,.96) 0,rgba(8,2,2,.9) 56%,rgba(8,2,2,0) 68%);place-items:end center;padding:0 10px 10px}#skins .panel{max-height:58vh;overflow:auto}#wsHint{top:12px;bottom:auto;right:12px}#wsHint b{font-size:18px}}
+/* atölye: alçak ekranlarda (telefon yatay) sıkışık panel, silaha sağ yarı kalır */
+@media (max-height:520px) and (min-width:821px){
+  #skins .panel{max-width:50vw;max-height:100vh;overflow:auto;gap:7px;padding:6px 0}
+  #skins .panel h2{font-size:30px}
+  #skins .panel>p{display:none}
+  #skinTabs{gap:4px}
+  #skinTabs button{padding:3px 6px;font-size:9px;letter-spacing:.08em}
+  #skinTabs button img{width:52px;height:19px}
+  #sightRow{gap:5px}#sightRow button{padding:5px 7px}#sightRow button small{display:none}
+  #skinGrid{grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:6px}
+  #skinGrid .sk{padding:5px;gap:4px}#skinGrid .sk i{height:30px}#skinGrid .sk b{font-size:9px}
+  #skins .btns .btn{padding:8px 14px;font-size:12px}
+  #wsHint b{font-size:18px}
+}
