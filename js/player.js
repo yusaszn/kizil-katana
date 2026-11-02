@@ -50,7 +50,7 @@ function quickSwitch() {
   else switchWeapon();
 }
 const WEAPONS = ['katana', 'uzi', 'shotgun', 'm4', 'awp'];
-const weaponList = () => isVS() ? vsWeapons() : (special.kind && special.ammo > 0 ? WEAPONS.concat(special.kind) : WEAPONS);
+const weaponList = () => isVS() ? vsWeapons() : isRange() ? RANGE_W : (special.kind && special.ammo > 0 ? WEAPONS.concat(special.kind) : WEAPONS);
 const WEAPON_NAMES = { katana: 'KATANA', uzi: 'ÇİFT UZİ', shotgun: 'POMPALI', m4: 'M4', awp: 'AWP', pistol: 'TABANCA', knife: 'BIÇAK', karambit: 'KARAMBİT', butterfly: 'KELEBEK', rocket: 'ROKETATAR', launcher: 'BOMBAATAR' };
 // değiştirme: eski silah indirilir (.17 sn), sonra yenisi kendi çekme animasyonuyla ele alınır; animasyon bitene kadar ateş edilemez
 function updateWeaponSwitch(dt) {

@@ -76,6 +76,7 @@ function castShot(dir, muzzle, baseDmg, power, splitChance, falloff, pvpDmg) {
   for (const e of enemies) { const r = rayEnemy(e, o, dir); if (r && r.t < best) { best = r.t; kind = 'enemy'; hitObj = e; head = r.head; } }
   for (const f of fireballs) { if (f.deflected) continue; const t = raySphere(o, dir, f.pos, .45); if (t >= 0 && t < best) { best = t; kind = 'fire'; hitObj = f; } }
   if (vs) for (const [id, pr] of enemyProxies()) { const r = rayPlayer(pr, o, dir); if (r && r.t < best) { best = r.t; kind = 'player'; hitObj = id; head = r.head; } }
+  if (isRange()) { rng.shots++; const r = rangeRay(o, dir, best); if (r) { best = r.t; kind = 'target'; hitObj = r; } }
   else for (const p of pieces) { const t = raySphere(o, dir, p.body.position, (p.he.x + p.he.y + p.he.z) / 3 * 1.2); if (t >= 0 && t < best) { best = t; kind = 'piece'; hitObj = p; } }
   hitAt.copy(o).addScaledVector(dir, best);
   addTracer(muzzle, hitAt, { chance: TRACER_CHANCE[wpn.cur] !== undefined ? TRACER_CHANCE[wpn.cur] : .3 });
@@ -96,8 +97,10 @@ function castShot(dir, muzzle, baseDmg, power, splitChance, falloff, pvpDmg) {
   } else if (kind === 'fire') {
     if (net.mode === 'guest') toHost({ t: 'fbshot', id: hitObj.id });
     explodeFireball(hitObj); score += 25; hitMarker(false);
+  } else if (kind === 'target') {
+    rangeHit(hitObj, hitAt); hitMarker(hitObj.head);
   } else {
-    chips(hitAt, 6, 1, .75, .35, 3);
+    chips(hitAt, 6, 1, .75, .35, 3); bulletHole(hitAt);
     if (typeof sparks === 'function') sparks(hitAt, Math.round(rand(6, 12)), 7);
     if (Math.random() < .3) sfx.ric();
   }

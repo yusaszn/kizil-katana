@@ -3,7 +3,7 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 19;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 20;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 // çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
@@ -159,9 +159,9 @@ function showLobby() {
 function renderLobby() {
   fillPlayerList($('lobbyList'));
   const gm = net.gameMode, host = net.mode === 'host';
-  $('modeCoop').classList.toggle('on', gm === 'coop'); $('modeVs').classList.toggle('on', gm === 'vs'); $('modeBomb').classList.toggle('on', gm === 'bomb'); $('modeDef').classList.toggle('on', gm === 'defense');
-  $('modeCoop').disabled = $('modeVs').disabled = $('modeBomb').disabled = $('modeDef').disabled = !host;
-  $('mapPick').hidden = gm !== 'vs' && gm !== 'bomb';
+  $('modeCoop').classList.toggle('on', gm === 'coop'); $('modeVs').classList.toggle('on', gm === 'vs'); $('modeBomb').classList.toggle('on', gm === 'bomb'); $('modeDef').classList.toggle('on', gm === 'defense'); $('modeTdm').classList.toggle('on', gm === 'tdm');
+  $('modeCoop').disabled = $('modeVs').disabled = $('modeBomb').disabled = $('modeDef').disabled = $('modeTdm').disabled = !host;
+  $('mapPick').hidden = gm !== 'vs' && gm !== 'bomb' && gm !== 'tdm';
   for (const [id, m] of [['mapArena', 'arena'], ['mapAvlu', 'avlu'], ['mapCol', 'col'], ['mapLiman', 'liman']]) { $(id).classList.toggle('on', net.vsMap === m); $(id).disabled = !host; $(id).hidden = gm === 'bomb' && !MAPS[m].sites; }
   $('moneyPick').hidden = gm === 'coop' || gm === 'defense';
   $('moneyNormal').classList.toggle('on', net.money !== 'inf'); $('moneyInf').classList.toggle('on', net.money === 'inf');
@@ -173,6 +173,8 @@ function renderLobby() {
     ? 'VS: Kırmızı ve Mavi takım, rauntlu. Raunt başında kredinle silah, kalkan ve yetenek alırsın. Son kalan takım raundu alır, ilk ' + ROUNDS_WIN + ' raunt kazanır.'
     : gm === 'bomb'
     ? 'BOMBA: ' + (MAPS[net.vsMap] || MAPS.col).name + ' haritası. Saldıranlar bombayı A ya da B bölgesine kurar (4 basılı), savunanlar engeller ya da imha eder. ' + BOMB.half + '. rauntta taraf değişir, ilk ' + ROUNDS_WIN + ' raunt kazanır.'
+    : gm === 'tdm'
+    ? 'TAKIM ÖLÜM MAÇI: Kırmızı ve Mavi, raunt yok. Ölen ' + TDM_RESPAWN + ' sn sonra üssünde doğar ve ' + TDM_BUY + ' sn satın alabilir. İlk ' + KILLS_WIN + ' leşe ulaşan ya da 10 dakika sonunda önde olan takım kazanır.'
     : gm === 'defense'
     ? 'SAVUNMA: Mühür Kalesi. Ortadaki Mühür Taşı\'nı birlikte koruyun; iblisler dört geçitten gelir. Öldürdükçe hurda kazanın, B ile taret, havan ve barikat kurun. Mühür kırılırsa biter.'
     : 'CO-OP: Birlikte iblislere karşı. Her 5 dalgada ara boss, her 10 dalgada büyük boss gelir.';
@@ -441,6 +443,7 @@ function remoteShots(pr, n, focused) {
     rsFrom.set(pr.pos.x, pr.pos.y + 1.1, pr.pos.z).addScaledVector(rsDir, .6);
     const t = rayStatic(rsFrom, rsDir, 40);
     rsTo.copy(rsFrom).addScaledVector(rsDir, t);
+    if (t < 39.5) bulletHole(rsTo);   // diğer oyuncunun mermisi de duvarda iz bırakır
     addTracer(rsFrom, rsTo, { chance: sgShot ? .05 : pr.w === 'usps' ? 0 : .5 });
   }
   remoteCasing(pr);   // kovan oyuncunun silahından düşer (mermiler.js)
@@ -497,6 +500,7 @@ $('mapCol').addEventListener('click', () => setVsMap('col'));
 $('mapLiman').addEventListener('click', () => setVsMap('liman'));
 $('modeBomb').addEventListener('click', () => setGameMode('bomb'));
 $('modeDef').addEventListener('click', () => setGameMode('defense'));
+$('modeTdm').addEventListener('click', () => setGameMode('tdm'));
 $('moneyNormal').addEventListener('click', () => setMoney('normal'));
 $('moneyInf').addEventListener('click', () => setMoney('inf'));
 $('lobbyLeave').addEventListener('click', () => toMainMenu());

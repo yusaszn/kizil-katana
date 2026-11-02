@@ -368,7 +368,7 @@ function onWaveClear() {
 
 /* ================= SIFIRLAMA / BİTİŞ ================= */
 function resetGame() {
-  buildMap(isVS() ? net.vsMap : isDefense() ? 'kale' : 'arena');
+  buildMap(isVS() ? net.vsMap : isDefense() ? 'kale' : isRange() ? 'poligon' : 'arena');
   defReset();
   for (const e of enemies.slice()) removeEnemy(e);
   for (const p of pieces.slice()) removePiece(p);
@@ -376,7 +376,7 @@ function resetGame() {
   for (const o of orbs) scene.remove(o.g); orbs.length = 0;
   for (const s of spawnFx) scene.remove(s.m); spawnFx.length = 0;
   for (const s of shockwaves) scene.remove(s.m); shockwaves.length = 0;
-  clearParticles(); clearDecals(); drops.length = 0;
+  clearParticles(); clearDecals(); clearHoles(); drops.length = 0;
   resetUpgrades();
   const b = player.body; b.position.set(rand(-2, 2), .6, 7 + rand(-1, 1)); b.velocity.set(0, 0, 0); b.collisionFilterMask = G_STATIC | G_ENEMY | G_DEBRIS;
   Object.assign(player, { hp: ST.maxHp, yaw: 0, pitch: 0, charges: ST.maxDash, recharge: 0, dashT: 0, invuln: 0, alive: true, kickCd: 0, deathT: 0, slideT: 0, slideCd: 0, spinT: 0, crouchK: 0, airJumps: 0, jumpBuf: 0, sprinting: false });
@@ -395,12 +395,14 @@ function resetGame() {
   refreshPips();
   const vsMode = isVS();
   document.body.classList.toggle('vsmode', vsMode);
+  document.body.classList.toggle('rangemode', isRange()); $('rangeHud').hidden = !isRange();
   if (vsMode) {
     // VS: takımının tarafında doğ, sandık yok, herkes eşit
     b.position.copy(spawnPoint(myTeam())); player.yaw = myTeam() === 'blue' ? Math.PI : 0;
     return;
   }
   if (isDefense()) return;
+  if (isRange()) { rangeReset(); return; }
   for (const [x, z] of [[5, 12], [-12, 5], [12, -5], [-5, -12]]) { spawnCrate(x - .52, .5, z); spawnCrate(x + .52, .5, z); spawnCrate(x, 1.5, z); }
 }
 function boardRows() {
@@ -424,7 +426,7 @@ function showEnd(msg, vsWin) {
   if (vsWin) {
     $('endTitle').textContent = msg;
     $('endTitle').className = vsWin;
-    $('endWave').innerHTML = `RAUNT <b class="red">${vs.rr}</b> — <b class="blue">${vs.rb}</b>`;
+    $('endWave').innerHTML = `${isTDM() ? 'LEŞ' : 'RAUNT'} <b class="red">${vs.rr}</b> — <b class="blue">${vs.rb}</b>`;
     $('endBoard').innerHTML = '<tr><th>OYUNCU</th><th>TAKIM</th><th>LEŞ</th><th>ÖLÜM</th></tr>' + rows.map(r => `<tr${r.me ? ' class="me"' : ''}><td><i style="background:${hexCol(r.color)}"></i>${escapeHtml(r.name)}</td><td>${TEAMS[r.team].name}</td><td>${r.kills}</td><td>${r.deaths}</td></tr>`).join('');
   } else {
     $('endTitle').textContent = 'Katledildin'; $('endTitle').className = '';
@@ -467,6 +469,7 @@ window.addEventListener('keydown', e => {
   if (state !== 'play') return;
   if (e.repeat) return;
   if (defKey(e)) return;   // savunma: B menü, 1-4 seçim, R döndür
+  if (rangeKey(e)) return;   // poligon: 1-7 silah, E yarış
   // VS: satın alma menüsü fareyle kullanılır (B), raunt içinde 1 / 2 / 3 yuvalar, Z sis, X flaş
   if (isVS() && e.code === 'KeyB') { toggleBuy(); return; }
   if (isVS() && e.code === 'Digit4') return;   // VS: 4 = bomba kur / imha et (basılı tutulur)
@@ -705,12 +708,13 @@ function frame(now) {
     applyInspect(rdt);
     updateGunSpring(dt); applyGunSpring(); updateCasings(dt); updateHands(rdt);   // yaylı tepme, atalet, kovanlar, canlı eller (gunanim.js)
     updateKickLeg(dt);
-    updateTracers(rdt); updateBullets(dt); updateRagdolls(dt);   // izler, kovanlar (mermiler.js), cesetler (karakter.js)
+    updateTracers(rdt); updateBullets(dt); updateRagdolls(dt); updateHoles();   // izler, kovanlar (mermiler.js), cesetler (karakter.js)
     updateShop(dt, rdt);
     updateBomb(rdt);
     updateMinimap(rdt);
     if (isVS()) updateVS(dt, rdt);
-    else if (net.mode !== 'guest' && !matchOver && (state === 'play' || mp)) updateWaves(dt);
+    else if (net.mode !== 'guest' && !matchOver && (state === 'play' || mp) && !isRange()) updateWaves(dt);
+    if (isRange()) updateRange(dt, rdt);   // poligon.js: hedefler, refleks yarışı, sınırsız cephane
     if (isDefense()) updateDefense(dt, rdt);   // savunma.js: mühür, taretler, havan, kurma
     if (autoPickT > 0) { autoPickT -= rdt; if (autoPickT <= 0) openPick(); }
     updateRevive(rdt);

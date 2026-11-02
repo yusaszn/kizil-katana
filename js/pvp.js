@@ -6,8 +6,12 @@
 const PVP_DMG = { uzi: 8, shotgun: 9, m4: 15, awp: 115, pistol: 26, katanaL: 45, katanaH: 85, katanaS: 35, kick: 10 };
 const TEAMS = { red: { name: 'KIRMIZI', color: 0xc0281e }, blue: { name: 'MAVİ', color: 0x2f6fd0 } };
 const ROUNDS_WIN = 7, BUY_T = 22, ROUND_T = 105, END_T = 4;
-const vs = { rr: 0, rb: 0, round: 0, phase: 'buy', t: BUY_T, spawnProt: 0, deaths: 0, feed: [], over: false, tick: 0, lastHit: null };
-const isVS = () => net.mode !== 'solo' && (net.gameMode === 'vs' || net.gameMode === 'bomb');   // bomba modu da rauntlu VS'dir
+// TAKIM ÖLÜM MAÇI: raunt yok; ölen 3 sn sonra üssünde doğar, doğunca 10 sn satın alabilir; ilk 40 leşe ulaşan takım ya da 10 dk sonunda önde olan kazanır
+const KILLS_WIN = 40, TDM_T = 600, TDM_BUY = 10, TDM_RESPAWN = 3;
+const vs = { rr: 0, rb: 0, round: 0, phase: 'buy', t: BUY_T, spawnProt: 0, deaths: 0, feed: [], over: false, tick: 0, lastHit: null, respawnT: 0, buyT: 0 };
+const isVS = () => net.mode !== 'solo' && (net.gameMode === 'vs' || net.gameMode === 'bomb' || net.gameMode === 'tdm');   // bomba ve takım ölüm maçı da VS'dir
+const isTDM = () => net.mode !== 'solo' && net.gameMode === 'tdm';
+const buyPhase = () => vs.phase === 'buy' || (isTDM() && vs.phase === 'live' && vs.buyT > 0 && player.alive);
 const vsFrozen = () => isVS() && (vs.phase === 'buy' || (typeof bombAct !== 'undefined' && !!bombAct.kind));
 const myTeam = () => (net.players[net.myId] || {}).team || 'red';
 const teamOf = id => (net.players[id] || {}).team;
@@ -127,7 +131,8 @@ function pvpDie() {
   avatarGore(av, new V3(-flatF.x, 0, -flatF.z));
   if (av !== myAvatar) scene.remove(av.g);
   screenSplat(6); deathSummary();
-  banner('KATLEDİLDİN', (k.by ? nameOf(k.by).toLocaleUpperCase('tr-TR') + ' · ' : '') + 'SONRAKİ RAUNDU BEKLE');
+  banner('KATLEDİLDİN', (k.by ? nameOf(k.by).toLocaleUpperCase('tr-TR') + ' · ' : '') + (isTDM() ? TDM_RESPAWN + ' SN SONRA YENİDEN DOĞACAKSIN' : 'SONRAKİ RAUNDU BEKLE'));
+  if (isTDM()) { vs.respawnT = TDM_RESPAWN; eco.keep = true; closeBuy(); }
   if (net.mode === 'host') { net.players.h.alive = false; hostKill(net.myId, k.by, k.w); }
   else toHost({ t: 'pdied', by: k.by, w: k.w });
   vs.lastHit = null;
@@ -135,6 +140,7 @@ function pvpDie() {
 function hostKill(v, by, w) {
   if (vs.over) return;
   if (net.players[v]) net.players[v].alive = false;
+  if (isTDM() && by && by !== v && teamOf(by) && teamOf(by) !== teamOf(v)) { if (teamOf(by) === 'red') vs.rr++; else vs.rb++; vs.tick = 0; }   // takım leşi
   const msg = { t: 'pkill', v, by, w };
   bcast(msg); onPkill(msg);
 }
@@ -181,11 +187,11 @@ function pvpRespawn() {
 function hostStartRound() {
   vs.round++;
   for (const id in net.players) net.players[id].alive = true;
-  const msg = { t: 'round', ph: 'buy', n: vs.round, rr: vs.rr, rb: vs.rb, time: BUY_T };
+  const msg = { t: 'round', ph: 'buy', n: vs.round, rr: vs.rr, rb: vs.rb, time: isTDM() ? 8 : BUY_T };
   bcast(msg); onRound(msg);
 }
 function hostSetPhase(ph, extra = {}) {
-  const msg = Object.assign({ t: 'round', ph, n: vs.round, rr: vs.rr, rb: vs.rb, time: ph === 'live' ? ROUND_T : END_T }, extra);
+  const msg = Object.assign({ t: 'round', ph, n: vs.round, rr: vs.rr, rb: vs.rb, time: ph === 'live' ? (isTDM() ? TDM_T : ROUND_T) : END_T }, extra);
   bcast(msg); onRound(msg);
   if (ph === 'live' && isBomb()) hostGiveBomb();
 }
@@ -200,10 +206,12 @@ function onRound(d) {
     pvpRespawn();
     ecoRoundBuy(d.n);
     if (isBomb() && d.n === BOMB.half + 1) banner('DEVRE ARASI', 'Taraflar değişti · ' + (myTeam() === attackTeam() ? 'artık SALDIRIYORSUN' : 'artık SAVUNUYORSUN'));
+    else if (isTDM()) banner('TAKIM ÖLÜM MAÇI', 'İlk ' + KILLS_WIN + ' leşe ulaşan takım kazanır · ölünce ' + TDM_RESPAWN + ' sn sonra doğarsın');
     else banner('RAUNT ' + d.n, (isBomb() ? (myTeam() === attackTeam() ? 'SALDIRI: bombayı kur · ' : 'SAVUNMA: bölgeleri koru · ') : '') + 'Satın alma menüsü · B ile aç / kapat');
   } else if (d.ph === 'live') {
     ecoRoundLive();
     applyLoadout();
+    if (isTDM()) vs.buyT = TDM_BUY;   // ilk 10 sn daha satın alınabilir
     banner('SAVAŞ', '');
     sfx.wave();
   } else if (d.ph === 'end') {
@@ -232,7 +240,7 @@ function showVsEnd(win) {
 }
 function resetVS() {
   vs.lastTeam = null;
-  Object.assign(vs, { rr: 0, rb: 0, round: 0, phase: 'buy', t: BUY_T, spawnProt: 0, deaths: 0, feed: [], over: false, tick: 0, lastHit: null });
+  Object.assign(vs, { rr: 0, rb: 0, round: 0, phase: 'buy', t: BUY_T, spawnProt: 0, deaths: 0, feed: [], over: false, tick: 0, lastHit: null, respawnT: 0, buyT: 0 });
   resetEco(); clearUtils();
 }
 
@@ -243,6 +251,7 @@ function checkTeamChange() {
   if (vs.lastTeam && mt !== vs.lastTeam && !vs.over) {
     banner('TAKIM DEĞİŞTİ', TEAMS[mt].name + (vs.phase === 'live' ? ' · sonraki rauntta oyundasın' : ''));
     if (vs.phase === 'buy') pvpRespawn();
+    else if (isTDM()) { pvpRespawn(); applyLoadout(); vs.spawnProt = 2; }
     else if (player.alive) {
       player.alive = false; player.hp = 0; player.deathT = 0; state = 'dead'; eco.keep = false;
       if (net.mode === 'host' && net.players.h) net.players.h.alive = false;
@@ -253,12 +262,20 @@ function checkTeamChange() {
 function hostSetTeam(id, t) {
   const p = net.players[id]; if (!p || !TEAMS[t] || p.team === t) return;
   p.team = t; sendRoster();
-  if (vs.phase === 'live' && id !== 'h') p.alive = false;
+  if (vs.phase === 'live' && id !== 'h' && !isTDM()) p.alive = false;
   toast(p.name.toLocaleUpperCase('tr-TR') + ' → ' + TEAMS[t].name);
 }
 function updateVS(dt, rdt) {
   checkTeamChange();
   vs.t -= rdt;
+  vs.spawnProt = Math.max(0, vs.spawnProt - rdt);
+  if (isTDM() && !vs.over) {
+    vs.buyT = Math.max(0, vs.buyT - rdt);
+    if (!player.alive && vs.respawnT > 0) {
+      vs.respawnT -= rdt;
+      if (vs.respawnT <= 0 && vs.phase === 'live') { pvpRespawn(); applyLoadout(); vs.buyT = TDM_BUY; vs.spawnProt = 2; banner('YENİDEN DOĞDUN', TDM_BUY + ' sn içinde B ile satın alabilirsin'); }
+    }
+  }
   for (const f of vs.feed) f.t -= rdt;
   vs.feed = vs.feed.filter(f => f.t > 0);
   if (net.mode !== 'host' || vs.over) return;
@@ -267,6 +284,7 @@ function updateVS(dt, rdt) {
   // herkes hazırsa satın alma süresi kısalır
   if (vs.phase === 'buy' && vs.t > 3 && eco.ready && Object.values(net.players).every(p => p.id === 'h' || p.rd)) { vs.t = 3; vs.tick = 0; }
   if (vs.phase === 'buy' && vs.t <= 0) hostSetPhase('live');
+  else if (vs.phase === 'live' && isTDM()) { if (vs.rr >= KILLS_WIN || vs.rb >= KILLS_WIN || vs.t <= 0) endVS(); }
   else if (vs.phase === 'live' && isBomb()) bombHostTick(rdt);
   else if (vs.phase === 'live') {
     const r = aliveCount('red'), b = aliveCount('blue');
@@ -280,13 +298,13 @@ function updateVS(dt, rdt) {
 function renderVsHud() {
   const tm = Math.max(0, Math.ceil(vs.t));
   setText('vsRed', vs.rr); setText('vsBlue', vs.rb);
-  setText('vsTime', (vs.phase === 'buy' ? 'HAZIRLIK ' : vs.phase === 'end' ? '' : 'R' + vs.round + ' · ') + (vs.phase === 'end' ? 'RAUNT BİTTİ' : Math.floor(tm / 60) + ':' + String(tm % 60).padStart(2, '0')));
-  setText('vsTeam', TEAMS[myTeam()].name + ' TAKIMDASIN' + (isBomb() ? ' · ' + (myTeam() === attackTeam() ? 'SALDIRI' : 'SAVUNMA') : '') + ' · İLK ' + ROUNDS_WIN + ' RAUNT');
+  setText('vsTime', (vs.phase === 'buy' ? 'HAZIRLIK ' : vs.phase === 'end' || isTDM() ? '' : 'R' + vs.round + ' · ') + (vs.phase === 'end' ? 'RAUNT BİTTİ' : Math.floor(tm / 60) + ':' + String(tm % 60).padStart(2, '0')));
+  setText('vsTeam', TEAMS[myTeam()].name + ' TAKIMDASIN' + (isBomb() ? ' · ' + (myTeam() === attackTeam() ? 'SALDIRI' : 'SAVUNMA') : '') + (isTDM() ? ' · İLK ' + KILLS_WIN + ' LEŞ' : ' · İLK ' + ROUNDS_WIN + ' RAUNT'));
   $('vsTeam').className = myTeam();
-  setText('ecoHud', '◈ ' + (infMoney() ? '∞' : eco.cr) + (eco.smoke ? '   Z SİS ×' + eco.smoke : '') + (eco.flash ? '   X FLAŞ ×' + eco.flash : '') + (vs.phase === 'buy' && !buy.open ? '   B MENÜ' : ''));
+  setText('ecoHud', '◈ ' + (infMoney() ? '∞' : eco.cr) + (eco.smoke ? '   Z SİS ×' + eco.smoke : '') + (eco.flash ? '   X FLAŞ ×' + eco.flash : '') + (buyPhase() && !buy.open ? '   B MENÜ' : ''));
   $('armorb').style.width = (eco.armor / 50 * 100) + '%';
   const html = vs.feed.map(f => `<div class="kf"><b class="${f.byTeam || ''}">${escapeHtml(f.by)}</b><span>${f.w}</span><b class="${f.vTeam || ''}">${escapeHtml(f.v)}</b></div>`).join('');
   if (hud.feed !== html) { hud.feed = html; $('killfeed').innerHTML = html; }
   const sp = spectateTarget();
-  setText('respawnHint', !player.alive && !vs.over && vs.phase === 'live' ? (sp ? 'İZLİYORSUN: ' + sp.name.toLocaleUpperCase('tr-TR') : 'SONRAKİ RAUNDU BEKLE') + (eco.deathInfo ? '\n' + eco.deathInfo : '') : '');
+  setText('respawnHint', !player.alive && !vs.over && isTDM() ? 'YENİDEN DOĞUŞ ' + Math.max(1, Math.ceil(vs.respawnT)) : !player.alive && !vs.over && vs.phase === 'live' ? (sp ? 'İZLİYORSUN: ' + sp.name.toLocaleUpperCase('tr-TR') : 'SONRAKİ RAUNDU BEKLE') + (eco.deathInfo ? '\n' + eco.deathInfo : '') : '');
 }

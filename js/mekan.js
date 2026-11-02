@@ -211,10 +211,10 @@ function drawVenueBoard() {
   for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(255,255,255,${r() * .035})`; g.fillRect(r() * W, r() * Hh, 3, 3); }
   g.textBaseline = 'top'; g.fillStyle = '#ff5a40'; g.font = '700 30px "Chakra Petch", Consolas, monospace';
   g.fillText('KIZIL KATANA · ODA ' + (net.code || '-----'), 24, 18);
-  const modeTxt = { coop: 'CO-OP', vs: 'VS · KIRMIZI / MAVİ', bomb: 'BOMBA KURMA', defense: 'SAVUNMA' }[net.gameMode] || net.gameMode;
+  const modeTxt = { coop: 'CO-OP', vs: 'VS · KIRMIZI / MAVİ', bomb: 'BOMBA KURMA', defense: 'SAVUNMA', tdm: 'TAKIM ÖLÜM MAÇI' }[net.gameMode] || net.gameMode;
   g.fillStyle = '#efe1cd'; g.font = '700 22px "Chakra Petch", Consolas, monospace';
   g.fillText('MOD: ' + modeTxt, 24, 64);
-  if (net.gameMode === 'vs' || net.gameMode === 'bomb') g.fillText('HARİTA: ' + ((MAPS[net.vsMap] || {}).name || ''), 24, 94);
+  if (net.gameMode === 'vs' || net.gameMode === 'bomb' || net.gameMode === 'tdm') g.fillText('HARİTA: ' + ((MAPS[net.vsMap] || {}).name || ''), 24, 94);
   let y = 134;
   for (const p of Object.values(net.players)) {
     g.fillStyle = '#' + p.color.toString(16).padStart(6, '0'); g.fillRect(28, y + 4, 14, 14);

@@ -161,3 +161,46 @@ function updateBullets(dt) {
   }
   updateWorldCasings(dt);
 }
+
+/* ================= MERMİ DELİKLERİ =================
+   Duvara, zemine ve siperlere isabet eden her mermi kalıcı bir delik bırakır (en son 400 delik). Yüzey yönü isabet
+   noktasının değdiği kutu yüzünden bulunur. Sprey desenini görmek için de kullanılır (atış poligonu). */
+const HOLE_MAX = 400;
+const holeTex = canvasTex(64, (g, s) => {
+  g.clearRect(0, 0, s, s);
+  const gr = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(.2, 'rgba(12,10,8,1)'); gr.addColorStop(.34, 'rgba(46,40,34,.85)'); gr.addColorStop(.62, 'rgba(70,60,50,.3)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, s, s);
+  g.strokeStyle = 'rgba(18,14,10,.55)'; g.lineWidth = 1;
+  for (let i = 0; i < 6; i++) { const a = Math.random() * 6.28, r0 = 6, r1 = 13 + Math.random() * 15; g.beginPath(); g.moveTo(s / 2 + Math.cos(a) * r0, s / 2 + Math.sin(a) * r0); g.lineTo(s / 2 + Math.cos(a + .2) * r1, s / 2 + Math.sin(a + .2) * r1); g.stroke(); }
+}, 1, 1, false);
+const holes = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial({ map: holeTex, transparent: true, depthWrite: false, roughness: .95, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }), HOLE_MAX);
+holes.instanceMatrix.setUsage(THREE.DynamicDrawUsage); holes.frustumCulled = false; scene.add(holes);
+const _hd = new THREE.Object3D(), _hn = new V3();
+let holeIdx = 0, holeDirty = false;
+function clearHoles() {
+  _hd.position.set(0, -50, 0); _hd.scale.setScalar(0); _hd.rotation.set(0, 0, 0); _hd.updateMatrix();
+  for (let i = 0; i < HOLE_MAX; i++) holes.setMatrixAt(i, _hd.matrix);
+  holes.instanceMatrix.needsUpdate = true;
+}
+clearHoles();
+// isabet noktasının yüzey normali: zemin ya da değdiği kutunun en yakın yüzü
+function surfNormal(p, out) {
+  if (p.y < .02) return out.set(0, 1, 0);
+  let best = .035, n = -1;
+  for (const s of statics) {
+    if (p.x < s.x0 - .04 || p.x > s.x1 + .04 || p.y < s.y0 - .04 || p.y > s.y1 + .04 || p.z < s.z0 - .04 || p.z > s.z1 + .04) continue;
+    const d = [Math.abs(p.x - s.x0), Math.abs(p.x - s.x1), Math.abs(p.y - s.y0), Math.abs(p.y - s.y1), Math.abs(p.z - s.z0), Math.abs(p.z - s.z1)];
+    for (let i = 0; i < 6; i++) if (d[i] < best) { best = d[i]; n = i; }
+  }
+  if (n < 0) return null;
+  return out.set(n === 0 ? -1 : n === 1 ? 1 : 0, n === 2 ? -1 : n === 3 ? 1 : 0, n === 4 ? -1 : n === 5 ? 1 : 0);
+}
+function bulletHole(p, size = .065) {
+  const n = surfNormal(p, _hn); if (!n) return;
+  _hd.position.copy(p).addScaledVector(n, .005);
+  _hd.lookAt(_hd.position.x + n.x, _hd.position.y + n.y, _hd.position.z + n.z);
+  _hd.rotateZ(Math.random() * 6.28); _hd.scale.setScalar(size * rand(.85, 1.2)); _hd.updateMatrix();
+  holes.setMatrixAt(holeIdx, _hd.matrix); holeIdx = (holeIdx + 1) % HOLE_MAX; holeDirty = true;
+}
+function updateHoles() { if (holeDirty) { holes.instanceMatrix.needsUpdate = true; holeDirty = false; } }

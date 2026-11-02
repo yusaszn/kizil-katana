@@ -59,6 +59,39 @@ function gunReload() {
   s.reloadT = G.reload; sfx.reload();
 }
 const gunAdsFov = () => { let f = 0; for (const id in GUNS) f = Math.max(f, gst[id].adsK * GUNS[id].adsFov); return f; };
+/* ================= SPREY DESENİ (CS tarzı) =================
+   Otomatik tüfeklerde her mermi belli bir desene gider: ilk mermiler dimdik yukarı tırmanır, sonra sağa sola salınır.
+   Desenin yarısı görüşü kaydırır (namlu kalkar), mermi ise desenin tamamına gider; ateş edenin fareyi aşağı (ve salınıma ters)
+   çekerek deseni karşılaması gerekir. Ateş kesilince desen kısa sürede başa döner.
+   İsabetsizlik: dururken ilk mermi tam isabet; koşarken çok dağılır, havadayken daha da çok; eğilmek ve nişan almak toplar. */
+const SPRAY = {
+  ak47: { climb: .12, k: 5.5, sway: .05, s0: 8, f: .36, ph: 0, base: .0035, run: .11, crouch: .62, view: .5 },
+  m4: { climb: .085, k: 5, sway: .032, s0: 10, f: .42, ph: Math.PI, base: .0025, run: .09, crouch: .62, view: .5 },
+};
+const spray = { i: 0, last: 0, w: '' };
+function sprayAt(P, i) {
+  const up = P.climb * (1 - Math.exp(-i / P.k)), n = i - P.s0;
+  const side = n <= 0 ? 0 : Math.sin(n * P.f + P.ph) * P.sway * Math.min(1, n / 4) + Math.max(0, i - 24) * .002;
+  return [side, up];
+}
+// mermi yönü (kameraya göre) ve görüş kayması; camVectors() önceden çağrılmış olmalı
+function sprayFire(w, ads) {
+  const P = SPRAY[w];
+  if (spray.w !== w) { spray.w = w; spray.i = 0; }
+  const i = Math.floor(spray.i), [s1, u1] = sprayAt(P, i), [s0, u0] = i > 0 ? sprayAt(P, i - 1) : [0, 0];
+  const sp = Math.hypot(player.body.velocity.x, player.body.velocity.z);
+  let inacc = P.base + clamp((sp - 1.4) / 3.6, 0, 1) * P.run + Math.min(i, 10) * .0006;
+  if (!player.grounded) inacc += .12;
+  if (player.crouchK > .5) inacc *= P.crouch;
+  if (ads) inacc *= .55;
+  const ang = rand(0, 6.28), rr = Math.sqrt(Math.random()) * inacc;
+  const dir = camFwd.clone().addScaledVector(rightV, s1 - P.view * s0 + Math.cos(ang) * rr).addScaledVector(upV, u1 - P.view * u0 + Math.sin(ang) * rr).normalize();
+  player.pitch = Math.min(1.45, player.pitch + (u1 - u0) * P.view);
+  player.yaw -= (s1 - s0) * P.view;
+  spray.i = i + 1; spray.last = performance.now();
+  return dir;
+}
+function updateSpray(dt) { if (performance.now() - spray.last > 110) spray.i = Math.max(0, spray.i - dt * 16); }
 function fireGun(id) {
   const G = GUNS[id], s = gst[id], m = gunModels[id];
   s.mag--; netFx.sh++; netFx.ft = 0;
@@ -69,6 +102,14 @@ function fireGun(id) {
   ejectCasing(m, id === 'ak47' ? 'rifle' : 'pistol'); playerCasing(id); gunKickFor(id);
   if (!G.silenced && typeof flashWorld === 'function') flashWorld(G.heavy ? 3 : 2, 0xffa850, .05);
   const ads = s.adsK > .6;
+  if (SPRAY[id]) {
+    camVectors();
+    const dir = sprayFire(id, ads);
+    kickView(rand(-.006, .006), .004);
+    muzzleW.copy(eyePos).addScaledVector(rightV, ads ? 0 : .17).addScaledVector(upV, -.1).addScaledVector(camFwd, .6);
+    castHeadMul = G.head; castShot(dir, muzzleW.clone(), G.dmg, 1.2, .2, G.falloff, G.pvp); castHeadMul = 0;
+    return;
+  }
   player.pitch = Math.min(1.45, player.pitch + G.recoil * (ads ? .75 : 1)); player.yaw += rand(-1, 1) * G.recoilYaw;
   kickView(rand(-.01, .01), G.recoil * .7);
   camVectors();
@@ -85,6 +126,7 @@ function updateGuns(dt) {
   for (const id in GUNS) {
     const G = GUNS[id], s = gst[id], m = gunModels[id], root = gunRoots[id];
     s.cd -= dt; s.bloom = Math.max(0, s.bloom - dt * (G.auto ? 3.5 : 2.2));
+    if (id === 'ak47') updateSpray(dt);
     if (s.reloadT > 0) { s.reloadT -= dt; if (s.reloadT <= 0) { s.reloadT = 0; const n = Math.min(G.mag - s.mag, s.reserve); s.mag += n; s.reserve -= n; } }
     const on = wpn.cur === id;
     root.visible = on && !SETTINGS.thirdPerson;

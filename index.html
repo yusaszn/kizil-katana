@@ -62,6 +62,7 @@
   <div id="reviveHint"></div>
   <div id="waitHint"></div>
   <div id="combo"><b id="comboLabel"></b><span id="comboN"></span></div>
+  <div id="rangeHud" hidden><b id="rgStats"></b><span>1-7 SİLAH · E REFLEKS YARIŞI · SOLDA SPREY DUVARI · R ŞARJÖR</span></div>
   <div id="defHud" hidden><span>MÜHÜR TAŞI</span><div class="dbar"><i id="defCoreFill"></i></div><b id="defInfo"></b></div>
   <div id="defMenu" hidden>
     <div class="dmTitle">KURMA · HURDA <b id="defScrap">0</b></div>
@@ -107,6 +108,7 @@
     <div class="mbtns">
       <button class="btn" id="startBtn" type="button">TEK KİŞİ OYNA</button>
       <button class="btn" id="defBtn" type="button">SAVUNMA</button>
+      <button class="btn" id="rangeBtn" type="button">ATIŞ POLİGONU</button>
     </div>
     <div class="mp" id="mpBox">
       <span class="mpt">ARKADAŞLA OYNA · EN FAZLA 4 KİŞİ · KAMP ATEŞİNDE BULUŞUN</span>
@@ -164,6 +166,7 @@
       <button type="button" id="modeCoop" class="on">CO-OP</button>
       <button type="button" id="modeVs">VS · KIRMIZI / MAVİ</button>
       <button type="button" id="modeBomb">BOMBA KURMA</button>
+      <button type="button" id="modeTdm">TAKIM ÖLÜM MAÇI</button>
       <button type="button" id="modeDef">SAVUNMA</button>
     </div>
     <div class="modes" id="mapPick" role="group" aria-label="VS haritası" hidden>
@@ -264,6 +267,7 @@
 <script src="js/world.js"></script>
 <script src="js/mekan.js"></script>
 <script src="js/liman.js"></script>
+<script src="js/poligon.js"></script>
 <script src="js/debris.js"></script>
 <script src="js/upgrades.js"></script>
 <script src="js/el-veri.js"></script>

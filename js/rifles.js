@@ -94,6 +94,14 @@ function fireM4() {
   ejectCasing(m4m, 'rifle'); playerCasing('m4'); gunKickFor('m4');
   if (typeof flashWorld === 'function') flashWorld(2.4, 0xffa040, 0.05);
   const ads = m4.adsK > .6;
+  if (isVS() || isRange()) {   // VS ve poligon: CS tarzı sprey deseni (guns.js)
+    camVectors();
+    const dir = sprayFire('m4', ads);
+    kickView(rand(-.006, .006), .004);
+    muzzleW.copy(eyePos).addScaledVector(rightV, ads ? 0 : .2).addScaledVector(upV, -.12).addScaledVector(camFwd, .8);
+    castShot(dir, muzzleW.clone(), RIF.m4.dmg, 1.3, .25, 30, RIF.m4.pvp);
+    return;
+  }
   player.pitch = Math.min(1.45, player.pitch + (ads ? .006 : .009)); player.yaw += rand(-.003, .003);
   kickView(rand(-.008, .008), .006);
   camVectors();

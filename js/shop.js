@@ -73,7 +73,7 @@ function refund(id) {
   return true;
 }
 function buyItem(id) {
-  if (!isVS() || vs.phase !== 'buy') return;
+  if (!isVS() || !buyPhase()) return;
   const it = shopItem(id); if (!it) return;
   if (SIDEARM_IDS.includes(id)) {
     // tabanca yuvası: ücretsiz tabancaya dönmek, alınmış tabancanın parasını iade eder
@@ -99,10 +99,11 @@ function buyItem(id) {
     eco.cr -= it.price; eco.bought.push({ id, price: it.price }); eco[id]++;
   }
   if (infMoney()) eco.cr = ECON.max;   // sınırsız para
+  if (isTDM() && vs.phase === 'live') applyLoadout();   // takım ölüm maçında aldığın hemen eline geçer
   sfx.ammo(); renderBuy();
 }
 function sellItem(id) {
-  if (!isVS() || vs.phase !== 'buy' || boughtNow(id) < 0) return;
+  if (!isVS() || !buyPhase() || boughtNow(id) < 0) return;
   refund(id);
   if (PRIMARY_IDS.includes(id)) eco.primary = null;
   else if (SIDEARM_IDS.includes(id)) eco.sidearm = null;
@@ -114,7 +115,7 @@ function noMoney() { sfx.empty(); toast('YETERSİZ KREDİ'); }
 
 /* ================= MENÜ ================= */
 function openBuy() {
-  if (!isVS() || vs.phase !== 'buy' || vs.over) return;
+  if (!isVS() || !buyPhase() || vs.over) return;
   buy.open = true; buy.x = innerWidth / 2; buy.y = innerHeight * .55;
   $('buy').hidden = false; renderBuy(); moveCursor(0, 0);
 }
@@ -177,6 +178,7 @@ const infMoney = () => net.money === 'inf';
 function ecoRoundBuy(n) {
   // ilk raunt ve bomba modunda devre arası: herkes sıfırdan başlar
   if (n === 1 || (isBomb() && n === BOMB.half + 1)) { eco.cr = ECON.start; eco.streak = 0; eco.keep = false; }
+  if (isTDM() && n === 1) eco.cr = Math.max(eco.cr, 4500);   // takım ölüm maçı: ilk anda tüfek ve kalkan alınabilsin
   if (infMoney()) eco.cr = ECON.max;
   if (!eco.keep) { eco.primary = null; eco.sidearm = null; eco.armor = 0; eco.armorKind = null; eco.smoke = 0; eco.flash = 0; }
   eco.bought = []; eco.roundKills = 0; eco.ready = false; eco.taken = {}; eco.deathInfo = '';
@@ -194,7 +196,7 @@ function ecoKill() {
   addCredits(ECON.kill, 'LEŞ');
   eco.roundKills++;
   const foes = Object.values(net.players).filter(p => p.team && p.team !== myTeam()).length;
-  if (foes >= 2 && eco.roundKills === foes) { banner('ACE', 'Bütün rakip takımı tek başına indirdin'); sfx.upgrade(); }
+  if (!isTDM() && foes >= 2 && eco.roundKills === foes) { banner('ACE', 'Bütün rakip takımı tek başına indirdin'); sfx.upgrade(); }
 }
 // kalkan hasarın %70'ini emer, bitene kadar
 function armorAbsorb(dmg) {
@@ -311,5 +313,5 @@ function updateShop(dt, rdt) {
   flashBlind = Math.max(0, flashBlind - rdt);
   $('flashfx').style.opacity = Math.min(1, flashBlind / .6);
   if (isVS()) checkClutch();
-  if (buy.open) { if (vs.phase !== 'buy' || !isVS()) closeBuy(); else { buy.renderT = (buy.renderT || 0) - rdt; if (buy.renderT <= 0) { buy.renderT = .3; renderBuy(); } setBuyText('buyTime', Math.max(0, Math.ceil(vs.t)) + ' SN'); } }
+  if (buy.open) { if (!buyPhase() || !isVS()) closeBuy(); else { buy.renderT = (buy.renderT || 0) - rdt; if (buy.renderT <= 0) { buy.renderT = .3; renderBuy(); } setBuyText('buyTime', Math.max(0, Math.ceil(isTDM() && vs.phase === 'live' ? vs.buyT : vs.t)) + ' SN'); } }
 }
