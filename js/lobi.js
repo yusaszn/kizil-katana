@@ -100,7 +100,8 @@ function lobbySit(i) {
 function lobbyStand() {
   const s = venue.seats[lobby.sit]; lobby.sit = -1;
   const b = player.body; b.collisionResponse = true; b.velocity.set(0, 0, 0);
-  if (s) b.position.set(s.x - Math.sin(s.yaw) * .8, .6, s.z - Math.cos(s.yaw) * .8);
+  if (s && s.exit) b.position.set(s.exit[0], .6, s.exit[1]);   // havuz gibi yerlerden dışarı çık
+  else if (s) b.position.set(s.x - Math.sin(s.yaw) * .8, .6, s.z - Math.cos(s.yaw) * .8);
 }
 function seatTaken(i) {
   for (const id in net.players) { const pr = net.players[id].proxy; if (pr && pr.st === i + 1) return true; }
@@ -379,6 +380,7 @@ $('lobbyWalkBtn').addEventListener('click', () => lobbyWalk(true));
 $('keysBtn').addEventListener('click', () => { const b = $('keysBox'); b.hidden = !b.hidden; $('keysBtn').setAttribute('aria-expanded', String(!b.hidden)); });
 $('venueKamp').addEventListener('click', () => setVenue('kamp'));
 $('venueEv').addEventListener('click', () => setVenue('ev'));
+$('venueCati').addEventListener('click', () => setVenue('cati'));
 $('setBtnLobby').addEventListener('click', () => openSettings('lobby'));
 $('lobbyBackBtn').addEventListener('click', hostBackToLobby);
 $('pauseLobbyBtn').addEventListener('click', hostBackToLobby);
@@ -395,7 +397,7 @@ const ballTex = canvasTex(128, (g, s) => {
   for (const [x, y] of [[32, 32], [96, 32], [64, 80], [16, 104], [112, 104], [64, 8]]) { g.beginPath(); for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2 - Math.PI / 2; g.lineTo(x + Math.cos(a) * 13, y + Math.sin(a) * 13); } g.fill(); }
   for (let i = 0; i < 500; i++) { g.fillStyle = `rgba(0,0,0,${Math.random() * .05})`; g.fillRect(Math.random() * s, Math.random() * s, 2, 2); }
 }, 1, 1);
-const BALL_SPOT = { kamp: [3.6, 5.8], ev: [-2.2, 3.2] };
+const BALL_SPOT = { kamp: [3.6, 5.8], ev: [-2.2, 3.2], cati: [3.5, 5.5] };
 function lobbyBallSpawn() {
   const sp = BALL_SPOT[curMap]; if (!sp) return;
   ball.mesh = mapMesh(new THREE.Mesh(new THREE.SphereGeometry(.22, 22, 16), new THREE.MeshStandardMaterial({ map: ballTex, roughness: .5 })));

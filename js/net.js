@@ -3,7 +3,7 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 21;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 22;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 // çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
@@ -166,8 +166,8 @@ function renderLobby() {
   $('moneyPick').hidden = gm === 'coop' || gm === 'defense';
   $('moneyNormal').classList.toggle('on', net.money !== 'inf'); $('moneyInf').classList.toggle('on', net.money === 'inf');
   $('moneyNormal').disabled = $('moneyInf').disabled = !host;
-  $('venueKamp').classList.toggle('on', net.venue !== 'ev'); $('venueEv').classList.toggle('on', net.venue === 'ev');
-  $('venueKamp').disabled = $('venueEv').disabled = !host;
+  const ven = lobbyVenue();
+  for (const [id, v] of [['venueKamp', 'kamp'], ['venueEv', 'ev'], ['venueCati', 'cati']]) { $(id).classList.toggle('on', ven === v); $(id).disabled = !host; }
   if (state === 'lobby') drawVenueBoard();
   $('modeInfo').textContent = gm === 'vs'
     ? 'VS: Kırmızı ve Mavi takım, rauntlu. Raunt başında kredinle silah, kalkan ve yetenek alırsın. Son kalan takım raundu alır, ilk ' + ROUNDS_WIN + ' raunt kazanır.'
