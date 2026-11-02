@@ -92,7 +92,7 @@ const MAPS = {
       const rune = mapMesh(new THREE.Mesh(new THREE.PlaneGeometry(10, 10), runeMat)); rune.rotation.x = -Math.PI / 2; rune.position.y = .02;
     },
   },
-  avlu: {
+  avlu: { verb: .2,
     // VS haritası: iki takım üssü, ortada siper, kanatlarda koridorlar, eğilerek saklanılan alçak duvarlar
     name: 'KEMİK AVLUSU',
     fog: 0x0a0d16, hemi: [0x4a5a80, 0x0a0a14], moon: 0x8fb0ff, lava: 0x2a6cff, flame: 0x5aa8ff, light: 0x6aa8ff, ember: 0x8ac0ff, floor: 0x9aa4bc, wall: 0x8a96b4,
@@ -119,7 +119,7 @@ const MAPS = {
       [[-18, -9], [18, 9], [-18, 9], [18, -9]].forEach(([x, z], i) => makeBrazier(x, z, i));
     },
   },
-  col: {
+  col: { verb: .09,
     // Dust 2 (yaklaşık 80 x 80 m, kuzey = -z). Güney ortada saldıran üssü; doğuda dış uzun yol → mavi Uzun A kapıları → geniş Uzun A → köşede çukur (pit),
     // merdivenle yüksek A bölgesine. Ortada uzun orta koridor; xbox'tan merdivenle yüksek kısa geçide (catwalk) çıkıp A'ya. Kuzeyde orta kapılar → savunma ortası.
     // Savunma üssü kuzeyde: doğuda A rampası (merdiven), batıda mavi B kapıları ve B penceresi. Batıda alt tüneller → üstü kapalı B tünelleri → B (arkada B platformu).
@@ -323,6 +323,7 @@ function buildMap(id) {
   // büyük haritada zemin dokusu gerilmesin
   const ft = floorMat.map; if (ft.baseRep == null) ft.baseRep = ft.repeat.x; ft.repeat.setScalar(ft.baseRep * H / 22);
   hemi.intensity = M.hemiI || .6; moon.intensity = M.moonI || .35;
+  if (AU.verbG) AU.verbG.gain.setTargetAtTime(mapVerb(), AU.ctx.currentTime, .3);   // haritanın yankısı
   embers.material.color.setHex(M.ember);
 }
 // uçuşan közler

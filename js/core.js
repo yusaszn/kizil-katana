@@ -180,6 +180,12 @@ function initAudio() {
     comp.attack.setValueAtTime(0.003, c.currentTime);
     comp.release.setValueAtTime(0.18, c.currentTime);
     AU.master.connect(comp); comp.connect(c.destination);
+    // oda sesi: bütün efektler kısa bir yankıdan geçer; miktarı haritaya göre (kapalı depo / poligon çok, açık hava az)
+    AU.fx = c.createGain(); AU.fx.connect(AU.master);
+    const rl = c.sampleRate * 1.5, ir = c.createBuffer(2, rl, c.sampleRate), pre = c.sampleRate * .014;
+    for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < rl; i++) d[i] = i < pre ? 0 : (Math.random() * 2 - 1) * Math.pow(1 - i / rl, 2.8); }
+    AU.verb = c.createConvolver(); AU.verb.buffer = ir; AU.verbG = c.createGain(); AU.verbG.gain.value = mapVerb();
+    AU.fx.connect(AU.verb); AU.verb.connect(AU.verbG); AU.verbG.connect(AU.master);
 
     // Beyaz ve pembe gürültü tamponu
     const buf = c.createBuffer(1, c.sampleRate, c.sampleRate); const d = buf.getChannelData(0);
@@ -192,6 +198,7 @@ function initAudio() {
     for (const f of [40, 40.8, 60.5]) { const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.connect(lp); o.start(); }
   } catch (e) { AU.ctx = null; }
 }
+const mapVerb = () => { const M = typeof MAPS !== 'undefined' && MAPS[curMap]; return M && M.verb != null ? M.verb : .18; };
 function gate(key, ms) { const n = performance.now(); if (AU.last[key] && n - AU.last[key] < ms) return false; AU.last[key] = n; return true; }
 
 // Gürültü patlaması (noise burst)
@@ -201,7 +208,7 @@ function nz(dur, f0, f1, q, gain, type = 'bandpass') {
   const f = c.createBiquadFilter(); f.type = type; f.Q.value = q;
   f.frequency.setValueAtTime(Math.max(20, f0), t); f.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
   const g = c.createGain(); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + .006); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-  s.connect(f); f.connect(g); g.connect(AU.master); s.start(t, Math.random() * .5); s.stop(t + dur + .05);
+  s.connect(f); f.connect(g); g.connect(AU.fx); s.start(t, Math.random() * .5); s.stop(t + dur + .05);
 }
 
 // Saf osilatör tonu (pitch glide)
@@ -209,7 +216,7 @@ function tn(type, f0, f1, dur, gain) {
   const c = AU.ctx; if (!c) return; const t = c.currentTime;
   const o = c.createOscillator(); o.type = type; o.frequency.setValueAtTime(Math.max(20, f0), t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
   const g = c.createGain(); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + .008); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-  o.connect(g); g.connect(AU.master); o.start(t); o.stop(t + dur + .05);
+  o.connect(g); g.connect(AU.fx); o.start(t); o.stop(t + dur + .05);
 }
 
 // Tok sub-bass vuruşu (silah patlamaları ve ağır darbeler için göğüs titreten punch)
@@ -221,7 +228,7 @@ function punch(f0, dur, gain, type = 'sine') {
   const g = c.createGain();
   g.gain.setValueAtTime(gain, t);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g); g.connect(AU.master);
+  o.connect(g); g.connect(AU.fx);
   o.start(t); o.stop(t + dur + 0.02);
 }
 
@@ -235,7 +242,7 @@ function clink(f0, f1, dur, gain) {
     const g = c.createGain();
     g.gain.setValueAtTime(gain * (f === f0 ? 1 : 0.6), t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(AU.master);
+    o.connect(g); g.connect(AU.fx);
     o.start(t); o.stop(t + dur + 0.03);
   }
 }
@@ -244,7 +251,7 @@ function clink(f0, f1, dur, gain) {
 function stepSound(vol, pan = 0, pitch = 1) {
   const c = AU.ctx; if (!c || vol < .015) return; const t = c.currentTime;
   const out = c.createGain(); out.gain.value = vol;
-  if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); out.connect(p); p.connect(AU.master); } else out.connect(AU.master);
+  if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); out.connect(p); p.connect(AU.fx); } else out.connect(AU.fx);
   const o = c.createOscillator(); o.type = 'sine';
   o.frequency.setValueAtTime(110 * pitch, t); o.frequency.exponentialRampToValueAtTime(40 * pitch, t + .08);
   const g = c.createGain(); g.gain.setValueAtTime(.55, t); g.gain.exponentialRampToValueAtTime(.0001, t + .1);

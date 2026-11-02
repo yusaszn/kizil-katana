@@ -84,7 +84,7 @@ function rangeHit(r, at) {
 
 /* ================= HARİTA ================= */
 MAPS.poligon = {
-  name: 'ATIŞ POLİGONU', half: 22, mmBg: '#4a4c50',
+  name: 'ATIŞ POLİGONU', half: 22, mmBg: '#4a4c50', verb: .34,
   fog: 0x14161a, sky: 0x101216, fogD: .01, hemi: [0xe8eef4, 0x3a3634], hemiI: .95, moon: 0xffffff, moonI: .45, pl: .3,
   lava: 0x24262a, flame: 0xffb050, light: 0xfff2e0, ember: 0xffffff, floor: 0xb4b4b4, wall: 0xa8acb0, noEmbers: true,
   floorTex: () => asphaltTex, wallTex: () => concreteTex,

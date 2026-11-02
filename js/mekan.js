@@ -227,7 +227,7 @@ function drawVenueBoard() {
 
 /* ================= ORMAN KAMPI ================= */
 MAPS.kamp = {
-  name: 'ORMAN KAMPI', lobby: true, open: true,
+  name: 'ORMAN KAMPI', lobby: true, open: true, verb: .05,
   fog: 0x080d18, sky: 0x060a14, fogD: .042, hemi: [0x55648a, 0x0c0a08], hemiI: .42, moon: 0x9fb4ff, moonI: .5, pl: .32,
   lava: 0x000000, flame: 0xff8a3a, light: 0xff8436, ember: 0xffa040, floor: 0xffffff, wall: 0xffffff, noEmbers: true,
   floorTex: () => forestTex,
@@ -368,7 +368,7 @@ MAPS.kamp = {
 
 /* ================= DAĞ EVİ ================= */
 MAPS.ev = {
-  name: 'DAĞ EVİ', lobby: true, open: true, ceil: 3.6,
+  name: 'DAĞ EVİ', lobby: true, open: true, ceil: 3.6, verb: .16,
   fog: 0x140e0a, sky: 0x05070d, fogD: .012, hemi: [0xffc89a, 0x2a1810], hemiI: .3, moon: 0x9fb4ff, moonI: .14, pl: .22,
   lava: 0x000000, flame: 0xff8a3a, light: 0xffb060, ember: 0xffa040, floor: 0xffffff, wall: 0xffffff, noEmbers: true,
   floorTex: () => plankTex,

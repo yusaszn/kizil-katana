@@ -25,7 +25,7 @@ const CM = {
   wood: new THREE.MeshStandardMaterial({ color: 0x5a3a22, roughness: .6 }),
 };
 MAPS.cati = {
-  name: 'ÇATI KATI', lobby: true, open: true, half: 11.5,
+  name: 'ÇATI KATI', lobby: true, open: true, half: 11.5, verb: .05,
   fog: 0x0c1020, sky: 0x080b18, fogD: .011, hemi: [0x6a7aa8, 0x1a1418], hemiI: .45, moon: 0xa8b8ff, moonI: .35, pl: .25,
   lava: 0x000000, flame: 0xff8a3a, light: 0xffc27a, ember: 0xffa040, floor: 0x9a7a5a, wall: 0xffffff, noEmbers: true,
   floorTex: () => deckTex,

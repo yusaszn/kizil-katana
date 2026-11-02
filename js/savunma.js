@@ -35,7 +35,7 @@ const swirlTex = canvasTex(128, (g, s) => {
   for (let i = 0; i < 260; i++) { const a = Math.random() * 6.28, r = Math.random() * s * .45; g.fillStyle = `rgba(255,${120 + Math.random() * 120 | 0},60,${Math.random() * .25})`; g.fillRect(s / 2 + Math.cos(a) * r, s / 2 + Math.sin(a) * r, 2, 2); }
 }, 1, 1, false);
 MAPS.kale = {
-  name: 'MÜHÜR KALESİ', half: 24,
+  name: 'MÜHÜR KALESİ', half: 24, verb: .2,
   fog: 0x0a0c15, fogD: .028, hemi: [0x5a6a9a, 0x1a0a08], hemiI: .62, moon: 0x9fb4ff, moonI: .42,
   lava: 0xff3a12, flame: 0xff7a22, light: 0xff7428, ember: 0xff7a2a, floor: 0xb4b0bc, wall: 0x9a9aae,
   spawn: () => new V3(rand(-2.5, 2.5), .6, rand(3.4, 5)),

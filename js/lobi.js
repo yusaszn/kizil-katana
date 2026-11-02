@@ -292,7 +292,7 @@ function lobbyAmbience(dt) {
       const o = c.createOscillator(), g = c.createGain(), t = t0 + i * .075;
       o.type = 'sine'; o.frequency.value = f0;
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.01 + Math.random() * .008, t + .008); g.gain.linearRampToValueAtTime(0, t + .045);
-      o.connect(g); g.connect(AU.master); o.start(t); o.stop(t + .06);
+      o.connect(g); g.connect(AU.fx || AU.master); o.start(t); o.stop(t + .06);
     }
   }
 }
@@ -451,7 +451,7 @@ function strum(ci, vol, pan = 0) {
   const c = AU.ctx; if (!c) return;
   const t0 = c.currentTime + .01, out = c.createGain(); out.gain.value = vol;
   let node = out; if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = pan; out.connect(p); node = p; }
-  node.connect(AU.master);
+  node.connect(AU.fx || AU.master);
   CHORDS_GTR[ci % CHORDS_GTR.length].forEach((m, i) => {
     const t = t0 + i * .028, f = 440 * Math.pow(2, (m - 69) / 12), o = c.createOscillator(), fl = c.createBiquadFilter(), g = c.createGain();
     o.type = 'sawtooth'; o.frequency.value = f; fl.type = 'lowpass'; fl.frequency.setValueAtTime(f * 8, t); fl.frequency.exponentialRampToValueAtTime(f * 1.5, t + .6); fl.Q.value = 1.5;

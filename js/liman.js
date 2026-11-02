@@ -59,7 +59,7 @@ function ubox(x0, x1, z0, z1, h, mat, y0 = 0, tw = 2.4, th = 2.6, solid = true) 
   return m;
 }
 MAPS.liman = {
-  name: 'LİMAN', half: 36, open: true, mmBg: '#5a5e62',
+  name: 'LİMAN', half: 36, open: true, mmBg: '#5a5e62', verb: .11,
   fog: 0xa6b0bc, sky: 0x9aa8b8, fogD: .0075, hemi: [0xe2e8f0, 0x5a5248], hemiI: 1.05, moon: 0xffe2c4, moonI: 1.15, pl: .25,
   lava: 0x000000, flame: 0xffb050, light: 0xfff0d8, ember: 0xffffff, floor: 0xffffff, wall: 0xc8c4bc, noEmbers: true,
   floorTex: () => asphaltTex, wallTex: () => concreteTex,
