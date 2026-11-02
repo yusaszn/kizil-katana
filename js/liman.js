@@ -96,6 +96,9 @@ MAPS.liman = {
     box(-.1, 2.5, 8.2, 10.4, 2.1, LM.steel);  // kamyon kabini
     barrier(-4.2, -8.5, true, 2); barrier(4.5, 13.5, false, 1); barrier(-5.5, 18, true, 1);
     crates(8.2, -3, 2); crates(9.4, -1.8, 1); crates(-7.5, 4, 1);
+    // ortanın savunma ucunda zikzak duvar (konteyner + beton): saldıranlar orta yoldan savunma üssünü göremesin; arası geçilir
+    cont(-4.47, -24.2, true, 3, 2); ubox(-1.44, 1.6, -24.6, -23.8, 3.2, LM.concrete, 0, 2.4, 3.2);
+    cont(4.47, -20.6, true, 1, 2); ubox(-1.6, 1.44, -21, -20.2, 3.2, LM.concrete, 0, 2.4, 3.2);
     // orta yol çizgileri
     for (let z = -24; z < 24; z += 4) { const l = mapMesh(new THREE.Mesh(new THREE.PlaneGeometry(.18, 2), LM.paint)); l.rotation.x = -Math.PI / 2; l.position.set(-1.6, .012, z); }
     /* ---- B ara sokak: iki ofis bloğu ---- */

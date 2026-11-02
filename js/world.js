@@ -24,7 +24,7 @@ const boneMat = new THREE.MeshStandardMaterial({ color: 0xd9cfbd, roughness: .7 
 
 // haritaya ait (harita değişince silinen) parçalar
 const mapStuff = { meshes: [], bodies: [] };
-let curMap = null, baseStatics = 0;
+let curMap = null, curMapKey = null, baseStatics = 0;
 function addBlock(w, h, d, x, y, z, mat, solidForRays = true, forMap = false) {
   if (mat) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); scene.add(m); if (forMap) mapStuff.meshes.push(m); }
   const b = new CANNON.Body({ mass: 0, material: mWorld, collisionFilterGroup: G_STATIC, collisionFilterMask: -1 });
@@ -90,6 +90,11 @@ const MAPS = {
       }
       [[-9, -9], [9, -9], [-9, 9], [9, 9]].forEach(([x, z], i) => makeBrazier(x, z, i));
       const rune = mapMesh(new THREE.Mesh(new THREE.PlaneGeometry(10, 10), runeMat)); rune.rotation.x = -Math.PI / 2; rune.position.y = .02;
+      // VS: iki üssün önünde siper duvarı; takımlar doğar doğmaz birbirini görmesin (çıkışlar yanlardan). Co-op'ta yok
+      if (typeof isVS === 'function' && isVS()) for (const s of [-1, 1]) {
+        addBlock(23, 3.4, 1, 0, 1.7, s * 14.6, wallMat, true, true);
+        for (const x of [-11, -5.5, 0, 5.5, 11]) mapMesh(new THREE.Mesh(new THREE.BoxGeometry(1.2, .5, 1.3), ironMat)).position.set(x, 3.65, s * 14.6);
+      }
     },
   },
   avlu: { verb: .2,
@@ -113,7 +118,7 @@ const MAPS = {
           mapMesh(new THREE.Mesh(new THREE.SphereGeometry(.42, 10, 8), boneMat)).position.set(4 * sx, 5.25, 10 * s);
         }
       }
-      B(4, 3, 4, 0, 0);                                                    // merkez blok
+      B(6.4, 3, 4, 0, 0);                                                  // merkez blok (üslerin orta kapıları birbirini görmesin)
       B(4, 1.1, .8, -7, 0, lowStoneMat); B(4, 1.1, .8, 7, 0, lowStoneMat);
       for (const sx of [1, -1]) B(1.6, 2.2, 1.6, 17 * sx, 0);
       [[-18, -9], [18, 9], [-18, 9], [18, -9]].forEach(([x, z], i) => makeBrazier(x, z, i));
@@ -198,6 +203,8 @@ const MAPS = {
       dustBox(-18, -17, -28, -25, 3.4, 7, sandWallMat);                                  // B kapıları
       dustBox(-20, -18, -28, -27.88, 0, 3.35, blueDoorMat); dustBox(-20, -18, -25.12, -25, 0, 3.35, blueDoorMat);
       dustBox(-2, 0, -24, -23, 3.3, 7, sandWallMat);                                     // orta kapılar
+      // orta kapıların önünde birbirini örten iki kapı kanadı: ortanın dibinden savunma üssü görünmesin
+      dustBox(-4, -.5, -21.8, -21.4, 0, 3.2, blueDoorMat); dustBox(-1.5, 2, -19.2, -18.8, 0, 3.2, blueDoorMat);
       dustBox(-2, -1.88, -26, -24, 0, 3.25, blueDoorMat); dustBox(-.12, 0, -26, -24, 0, 3.25, blueDoorMat);
       dustBox(-4, 2, 21.5, 22.5, 3.8, 7.2, sandWallMat);                                 // orta girişinde kemer (suicide)
       dustBox(10, 11, 26, 34, 3.8, 7.2, sandWallMat);                                    // dış uzun yola kemer
@@ -300,7 +307,9 @@ function siteLetter(k) {
   return siteLetters[k] || (siteLetters[k] = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, map: canvasTex(128, (g, s) => { g.clearRect(0, 0, s, s); g.strokeStyle = 'rgba(255,190,60,.85)'; g.lineWidth = 8; g.strokeRect(8, 8, s - 16, s - 16); g.fillStyle = 'rgba(255,190,60,.9)'; g.font = 'bold 92px Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(k, s / 2, s / 2 + 4); }, 1, 1, false) }));
 }
 function buildMap(id) {
-  if (!MAPS[id] || curMap === id) return;
+  const key = id + (typeof isVS === 'function' && isVS() ? '|vs' : '');   // aynı harita VS'de başka siperlerle kurulabilir
+  if (!MAPS[id] || curMapKey === key) return;
+  curMapKey = key;
   for (const m of mapStuff.meshes) scene.remove(m);
   for (const b of mapStuff.bodies) world.remove(b);
   mapStuff.meshes = []; mapStuff.bodies = []; statics.length = baseStatics; braziers.length = 0;
