@@ -16,7 +16,12 @@ function shake(a) { trauma = Math.min(1, trauma + a); }
 function toast(txt) { const el = $('toast'); el.textContent = txt; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
 function banner(big, small) { const el = $('banner'); el.innerHTML = big + (small ? `<small>${small}</small>` : ''); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
 let hitMarkT = 0;
-function hitMarker(head) { hitMarkT = .09; $('cross').classList.toggle('head', !!head); }
+function hitMarker(head) {
+  hitMarkT = .09; $('cross').classList.toggle('head', !!head);
+  hitMarkShow(head ? 'head' : '');
+  if (AU.ctx && gate('tick', 35)) tn('square', head ? 3200 : 2500, head ? 2900 : 2200, .025, head ? .05 : .035);   // kısa vuruş tıkı
+}
+function hitMarkShow(kind) { const el = $('hitm'); el.className = ''; void el.offsetWidth; el.className = 'show' + (kind ? ' ' + kind : ''); }
 
 const COMBO_NAMES = [[10, 'ŞEYTAN AVCISI'], [7, 'KANLI HASAT'], [5, 'KATLİAM'], [3, 'ÜÇLÜ DOĞRAMA'], [2, 'ÇİFT KESİK'], [1, 'KESİK']];
 function registerKill(T, close) {
@@ -125,6 +130,7 @@ function killFx(e, push, cutN, opts) {
   const d = Math.hypot(c.x - camera.position.x, c.z - camera.position.z);
   if (mine) {
     registerKill(T, d < (isBoss ? 8 : 3.4));
+    hitMarkShow('kill'); player.fov -= 2.2;   // öldürme: kızıl işaret ve küçük bir yakınlaşma vuruşu
     hitStop = Math.max(hitStop, opts.big ? .11 : opts.bullet ? .03 : .07);
     if (!opts.bullet) sword.blood = Math.min(1, sword.blood + .35);
   }
@@ -212,6 +218,7 @@ function checkDeath() {
 function die() {
   if (state === 'upgrade') $('upgrade').hidden = true;
   player.hp = 0; player.alive = false; state = 'dead'; player.deathT = 0;
+  musStinger('death');
   if (isVS()) { pvpDie(); return; }
   if (isDefense()) { defPlayerDied(); return; }   // savunma: mühürde yeniden doğulur
   if (net.mode === 'solo') {
@@ -309,7 +316,7 @@ function onWaveStart(n, count) {
   const bk = waveBoss(n);
   if (bk) {
     if (isBigBoss(bk)) bossCount = n / 10;
-    banner(BOSS_INFO[bk].name, 'Dalga ' + n + ' · ' + BOSS_HINT[bk]); sfx.roar();
+    banner(BOSS_INFO[bk].name, 'Dalga ' + n + ' · ' + BOSS_HINT[bk]); sfx.roar(); musStinger('boss');
   }
   else banner('DALGA ' + n, n === 1 ? 'Hepsini doğra' : (count ? count + ' iblis geliyor' : ''));
   sfx.wave();
@@ -345,6 +352,7 @@ function updateWaves(dt) {
 let waitingFor = [];
 function onWaveClear() {
   const boss = !!waveBoss(waveN);
+  musStinger('clear');
   if (isDefense()) {
     if (net.mode !== 'guest') def.scrap += 60 + waveN * 10;
     banner('DALGA TEMİZ', 'Kurma zamanı · ' + DEF_BUILD_T + ' sn · B ile taret ve barikat kur');
@@ -549,6 +557,7 @@ function openPause() {
 }
 function play(noLock) {
   initAudio(); if (!noLock) lock();
+  hideMenuScene();
   $('start').hidden = true; $('pause').hidden = true; $('dead').hidden = true; $('upgrade').hidden = true; $('settings').hidden = true; $('hud').hidden = false;
   state = player.alive ? 'play' : 'dead'; last = performance.now();
 }
@@ -710,13 +719,11 @@ function frame(now) {
     drawSplats(rdt);
     syncCamera(dt, rdt);
   } else if (state === 'lobby') updateLobby(rdt);   // lobi.js: sosyal buluşma alanı
-  else if (state === 'menu') {
-    gameTime += rdt;
-    const t = now / 1000 * .08; camera.position.set(Math.sin(t) * 12, 4, Math.cos(t) * 12); camera.rotation.set(-.18, t, 0);
-  }
+  else if (state === 'menu') updateMenuScene(rdt);   // lobi.js: kamp ateşi başında oturan karakter
   updateAmbience(rdt, gameTime);
   updateVoice(rdt);
   updateChat(rdt);
+  updateMusic(rdt);
   if (typeof updateTouch === 'function') updateTouch();
   renderFrame(state !== 'menu' && state !== 'lobby' && !SETTINGS.thirdPerson && awp.scopeK < .6, rdt);   // efektler.js (parlama, renk, vinyet)
 }

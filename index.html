@@ -57,6 +57,7 @@
   <div id="killfeed"></div>
   <div id="respawnHint"></div>
   <div id="cross"></div>
+  <div id="hitm" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
   <div id="reload"></div>
   <div id="reviveHint"></div>
   <div id="waitHint"></div>
@@ -96,14 +97,34 @@
 </div>
 
 <div id="start" class="screen">
-  <div class="panel">
+  <div class="panel menu">
     <h1>Kızıl Katana</h1>
-    <p>Cehennemin kapıları açıldı. Bir katana, iki uzi. Ne gelirse doğra, içinden geç, kanla yıkan. Her 5 dalgada bir ara boss, her 10 dalgada büyük boss gelir.</p>
+    <p class="tag">Cehennemin kapıları açıldı. Katanan, silahların ve yanında dostların var. Tek başına dalgaları doğra, mührü taretlerle savun ya da arkadaşlarınla kamp ateşinde buluşup maça gir.</p>
     <div class="namerow">
       <label for="nameIn">ADIN</label>
       <input id="nameIn" maxlength="16" placeholder="Oyuncu" autocomplete="off" spellcheck="false">
     </div>
-    <div class="keys">
+    <div class="mbtns">
+      <button class="btn" id="startBtn" type="button">TEK KİŞİ OYNA</button>
+      <button class="btn" id="defBtn" type="button">SAVUNMA</button>
+    </div>
+    <div class="mp" id="mpBox">
+      <span class="mpt">ARKADAŞLA OYNA · EN FAZLA 4 KİŞİ · KAMP ATEŞİNDE BULUŞUN</span>
+      <div class="mprow">
+        <button class="btn" id="hostBtn" type="button">ODA KUR</button>
+        <div class="join">
+          <input id="codeIn" maxlength="12" placeholder="ODA KODU" autocomplete="off" spellcheck="false" aria-label="Oda kodu">
+          <button class="btn ghost" id="joinBtn" type="button">KATIL</button>
+        </div>
+      </div>
+      <p id="lobbyMsg" role="status"></p>
+    </div>
+    <p class="note" id="mpOff" hidden>Arkadaşla oynamak için Kızıl Katana.exe ile ya da yusaszn.github.io/kizil-katana adresinden aç.</p>
+    <div class="btns mfoot">
+      <button class="btn ghost" id="setBtnStart" type="button">AYARLAR</button>
+      <button class="btn ghost nontouch" id="keysBtn" type="button" aria-expanded="false" aria-controls="keysBox">KONTROLLER</button>
+    </div>
+    <div class="keys" id="keysBox" hidden>
       <div><kbd>W A S D</kbd><span>Hareket</span></div>
       <div><kbd>SOL TIK</kbd><span>Kesik / ateş (basılı tut)</span></div>
       <div><kbd>SAĞ TIK</kbd><span>Savunma (tam zamanında: kusursuz)</span></div>
@@ -131,23 +152,6 @@
       <div><kbd>ENTER</kbd><span>Odada yazılı sohbet</span></div>
       <div><kbd>B (SAVUNMA)</kbd><span>Taret, havan, barikat kur</span></div>
     </div>
-    <div class="btns">
-      <button class="btn" id="startBtn" type="button">TEK KİŞİ OYNA</button>
-      <button class="btn" id="defBtn" type="button">SAVUNMA</button>
-      <button class="btn ghost" id="setBtnStart" type="button">AYARLAR</button>
-    </div>
-    <div class="mp" id="mpBox">
-      <span class="mpt">ARKADAŞLA OYNA · EN FAZLA 4 KİŞİ</span>
-      <div class="mprow">
-        <button class="btn" id="hostBtn" type="button">ODA KUR</button>
-        <div class="join">
-          <input id="codeIn" maxlength="12" placeholder="ODA KODU" autocomplete="off" spellcheck="false" aria-label="Oda kodu">
-          <button class="btn ghost" id="joinBtn" type="button">KATIL</button>
-        </div>
-      </div>
-      <p id="lobbyMsg" role="status"></p>
-    </div>
-    <p class="note" id="mpOff" hidden>Arkadaşla oynamak için Kızıl Katana.exe ile ya da yusaszn.github.io/kizil-katana adresinden aç.</p>
     <p class="note nontouch">Klavye ve fare gerekir. Ekrana tıklayınca fare kilitlenir, Esc duraklatır.</p>
     <p class="note touchonly">Telefonu yan tut. Sol başparmak: hareket (sonuna kadar it: koş) · sağ taraf: kaydırıp nişan al · tuşlar ekranda.</p>
   </div>
@@ -283,6 +287,7 @@
 <script src="js/voice.js"></script>
 <script src="js/lobi.js"></script>
 <script src="js/savunma.js"></script>
+<script src="js/muzik.js"></script>
 <script src="js/gunanim.js"></script>
 <script src="js/mermiler.js"></script>
 <script src="js/efektler.js"></script>

@@ -375,3 +375,31 @@ body.inlobby #chatBox{bottom:44px}
 #defMenu button.on{border-color:#5ad8ff;background:rgba(90,216,255,.12)}
 #defMenu .dmHint{margin-top:8px;font-size:11px;letter-spacing:.12em;color:var(--ash)}
 @media (max-width:700px){#defMenu .dmRow{grid-template-columns:repeat(2,1fr)}}
+
+/* ================= ANA MENÜ (3D kamp ateşi arka planı) ================= */
+#start{background:linear-gradient(90deg,rgba(8,2,2,.95) 0,rgba(8,2,2,.86) 30%,rgba(8,2,2,.35) 56%,rgba(8,2,2,0) 74%);place-items:center start;padding-left:max(20px,5vw)}
+#start .panel.menu{max-width:540px;text-align:left;align-items:stretch;gap:16px}
+#start .panel.menu h1{font-size:clamp(52px,8.5vw,104px)}
+#start .tag{color:var(--bone)!important;opacity:.82;max-width:48ch}
+#start .namerow,#start .btns,#start .mprow{justify-content:flex-start}
+#start .mbtns{display:flex;gap:10px;flex-wrap:wrap}
+#start .mbtns .btn{flex:1 1 200px;align-self:stretch}
+#start #defBtn{background:#14506e}
+#start #defBtn:hover{background:#1d74a0}
+#start .mp{align-items:flex-start}
+#start .keys{margin-top:-4px;padding:12px;background:rgba(0,0,0,.35);border:1px solid rgba(239,225,205,.12);font-size:13px}
+#start .mfoot .btn{padding:10px 22px;font-size:14px}
+body.touchdev #start .keys{display:none}
+@media (max-width:820px){#start{background:rgba(8,2,2,.86);place-items:center;padding-left:16px}#start .panel.menu{text-align:center}#start .namerow,#start .btns,#start .mprow{justify-content:center}#start .mp{align-items:center}}
+
+/* ================= VURUŞ İŞARETİ ================= */
+#hitm{position:absolute;left:50%;top:50%;width:0;height:0;opacity:0;pointer-events:none}
+#hitm i{position:absolute;width:2px;height:8px;background:#fff;box-shadow:0 0 2px rgba(0,0,0,.9)}
+#hitm i:nth-child(1){left:-9px;top:-13px;transform:rotate(-45deg)}
+#hitm i:nth-child(2){left:7px;top:-13px;transform:rotate(45deg)}
+#hitm i:nth-child(3){left:-9px;top:5px;transform:rotate(45deg)}
+#hitm i:nth-child(4){left:7px;top:5px;transform:rotate(-45deg)}
+#hitm.head i{background:#ffd23a}
+#hitm.kill i{background:var(--blood-hi);height:11px;box-shadow:0 0 6px rgba(255,40,20,.8)}
+#hitm.show{animation:hitm .24s ease-out}
+@keyframes hitm{0%{opacity:1;transform:scale(1.35)}60%{opacity:1}100%{opacity:0;transform:scale(1)}}

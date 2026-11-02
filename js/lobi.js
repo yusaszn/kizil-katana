@@ -27,6 +27,7 @@ function enterLobby() {
   document.body.classList.add('inlobby');
   lobbyWalk(false);
   renderLobby();
+  hideMenuScene();
 }
 function lobbyBuild() {
   buildMap(lobbyVenue());
@@ -288,6 +289,31 @@ function lobbyAmbience(dt) {
   }
 }
 
+/* ================= ANA MENÜ SAHNESİ: kamp ateşinin başında oturan karakter ================= */
+const menuCam = { t: 0, friend: null };
+function updateMenuScene(dt) {
+  if (curMap !== 'kamp') {
+    buildMap('kamp');
+    for (const p of pieces.slice()) removePiece(p);   // arenadan kalan sandıklar menüde görünmesin
+  }
+  gameTime += dt;
+  for (const f of venue.fx) f(dt, gameTime);
+  const sit = (av, s, look, col) => { av.g.visible = true; av.cloth.color.setHex(col); animateAvatar(av, dt, { x: s.x, y: .5, z: s.z, yaw: s.yaw, pitch: 0, speed: 0, w: 'none', alive: true, crouch: 0, slide: 0, air: false, sit: s.y, look, emote: '', emoteT: 0 }); };
+  if (!myAvatar) myAvatar = buildAvatar(0xb3110d, '');
+  sit(myAvatar, venue.seats[0], Math.sin(gameTime * .23) * .35, 0xb3110d);
+  if (!menuCam.friend && charSource()) menuCam.friend = buildAvatar(0x2f6f8f, '');
+  if (menuCam.friend) sit(menuCam.friend, venue.seats[6], .5 + Math.sin(gameTime * .17 + 2) * .3, 0x2f6f8f);
+  // kamera ateşin karşı tarafında yavaşça süzülür; ateş ve karakter ekranın sağında kalır (menü solda)
+  menuCam.t += dt * .045;
+  const a = Math.sin(menuCam.t) * .45, r = 6.4;
+  camera.position.set(Math.sin(a) * r, 1.45 + Math.sin(menuCam.t * .7) * .12, Math.cos(a) * r);
+  camera.lookAt(0, 1, -1.2); camera.rotateY(.34);
+  if (camera.fov !== 62) { camera.fov = 62; camera.updateProjectionMatrix(); }
+  eyePos.copy(camera.position);
+  lobbyAmbience(dt);
+}
+function hideMenuScene() { if (menuCam.friend) menuCam.friend.g.visible = false; }
+
 /* ================= YAZILI SOHBET (lobide ve maçta) ================= */
 const chat = { open: false, lastSent: 0 };
 function chatOpen() {
@@ -344,6 +370,7 @@ $('chatIn').addEventListener('blur', () => { if (chat.open) setTimeout(() => { i
 
 /* ================= PANEL DÜĞMELERİ ================= */
 $('lobbyWalkBtn').addEventListener('click', () => lobbyWalk(true));
+$('keysBtn').addEventListener('click', () => { const b = $('keysBox'); b.hidden = !b.hidden; $('keysBtn').setAttribute('aria-expanded', String(!b.hidden)); });
 $('venueKamp').addEventListener('click', () => setVenue('kamp'));
 $('venueEv').addEventListener('click', () => setVenue('ev'));
 $('setBtnLobby').addEventListener('click', () => openSettings('lobby'));

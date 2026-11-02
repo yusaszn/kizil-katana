@@ -188,7 +188,7 @@ function initAudio() {
 
     // Arka plan karanlık cehennem uğultusu (sub drone)
     const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 120;
-    const dg = c.createGain(); dg.gain.value = state === 'lobby' ? 0 : .06; lp.connect(dg); dg.connect(AU.master); AU.drone = dg;
+    const dg = c.createGain(); dg.gain.value = state === 'lobby' || state === 'menu' ? 0 : .06; lp.connect(dg); dg.connect(AU.master); AU.drone = dg;
     for (const f of [40, 40.8, 60.5]) { const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.connect(lp); o.start(); }
   } catch (e) { AU.ctx = null; }
 }

@@ -1,7 +1,7 @@
 'use strict';
 /* Ayarlar: FPS göstergesi, fare hassasiyeti, ses, görüş açısı, grafik kalitesi, kan miktarı. Tarayıcıda saklanır. */
 
-const SETTINGS_DEFAULT = { showFps: false, thirdPerson: false, alwaysSprint: false, sens: 1, volume: .5, fov: 80, quality: 1.5, gore: 1, voice: 'ptt', voiceVol: .9, minimap: true, fx: !('ontouchstart' in window) };
+const SETTINGS_DEFAULT = { showFps: false, thirdPerson: false, alwaysSprint: false, sens: 1, volume: .5, fov: 80, quality: 1.5, gore: 1, voice: 'ptt', voiceVol: .9, minimap: true, fx: !('ontouchstart' in window), music: .45 };
 const SETTINGS = Object.assign({}, SETTINGS_DEFAULT);
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('kk-ayarlar') || '{}')); } catch (e) { /* kayıt yoksa varsayılanlar */ }
 
@@ -20,6 +20,7 @@ const SETTING_ROWS = [
   { key: 'alwaysSprint', label: 'Sürekli koş (Shift = atılma)', type: 'toggle' },
   { key: 'sens', label: 'Fare hassasiyeti', type: 'range', min: .2, max: 3, step: .05, fmt: v => v.toFixed(2) + '×' },
   { key: 'volume', label: 'Ses', type: 'range', min: 0, max: 1, step: .05, fmt: v => Math.round(v * 100) + '%' },
+  { key: 'music', label: 'Müzik', type: 'range', min: 0, max: 1, step: .05, fmt: v => Math.round(v * 100) + '%' },
   { key: 'fov', label: 'Görüş açısı', type: 'range', min: 60, max: 110, step: 1, fmt: v => v + '°' },
   { key: 'quality', label: 'Çözünürlük', type: 'choice', options: [[.6, 'Düşük'], [1, 'Orta'], [1.5, 'Yüksek'], [2, 'Çok yüksek']] },
   { key: 'voice', label: 'Sesli sohbet', type: 'choice', options: [['ptt', 'Bas-konuş (K)'], ['open', 'Açık mikrofon'], ['off', 'Kapalı']] },
