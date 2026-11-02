@@ -69,6 +69,7 @@ function pvpHit(id, dmg, dir, opts = {}) {
   if (net.mode === 'host') deliverPhit(msg); else toHost(msg);
 }
 function deliverPhit(d) {
+  if (isBot(d.to)) { botHit(d); return; }   // botlar hostta yaşar
   if (d.to === 'h') applyPhit(d);
   else { const p = net.players[d.to]; if (p && p.conn && p.conn.open) p.conn.send(d); }
 }
@@ -206,6 +207,7 @@ function onRound(d) {
   if (d.ph === 'buy') {
     if (isBomb()) resetBomb();
     pvpRespawn();
+    if (net.mode === 'host') for (const b of bots.list) botSpawn(b);
     ecoRoundBuy(d.n);
     if (isBomb() && d.n === BOMB.half + 1) banner('DEVRE ARASI', 'Taraflar değişti · ' + (myTeam() === attackTeam() ? 'artık SALDIRIYORSUN' : 'artık SAVUNUYORSUN'));
     else if (isTDM()) banner('TAKIM ÖLÜM MAÇI', 'İlk ' + KILLS_WIN + ' leşe ulaşan takım kazanır · ölünce ' + TDM_RESPAWN + ' sn sonra doğarsın');

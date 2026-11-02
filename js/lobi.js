@@ -19,6 +19,7 @@ function enterLobby() {
   for (const p of pieces.slice()) removePiece(p);     // arena sandıkları lobide olmasın
   while (typeof corpses !== 'undefined' && corpses.length) removeCorpse(corpses[0]);
   state = 'lobby';
+  for (const b of bots.list) removeProxy(b.id);   // botlar lobide dolaşmaz (maçta yeniden belirir)
   for (const id of ['dead', 'pause', 'upgrade', 'hud', 'start', 'settings', 'scope', 'bossbar', 'minimap']) $(id).hidden = true;
   closeBuy(); closeTeamPick(); clearUtils();
   if (AU.drone) AU.drone.gain.value = 0;              // cehennem uğultusu lobide susar

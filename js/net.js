@@ -3,7 +3,7 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 23;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 24;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 // çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
@@ -78,6 +78,7 @@ function leaveRoom(silent) {
     if (net.mode === 'host') bcast({ t: 'closed' });
   } catch (e) { /* bağlantı zaten kopmuş */ }
   if (typeof exitLobby === 'function') exitLobby();
+  if (typeof botsReset === 'function') botsReset();
   const peer = net.peer;
   if (peer) setTimeout(() => { try { peer.destroy(); } catch (e) { /* zaten kapalı */ } }, 150);
   for (const id in net.players) removeProxy(id);
@@ -100,7 +101,7 @@ function addPlayer(id, name, conn) {
   const team = n.red <= n.blue ? 'red' : 'blue';
   net.players[id] = { id, name, conn, kills: 0, deaths: 0, score: 0, lv: 1, alive: true, hp: 100, proxy: null, color, team, lastSeen: performance.now(), ping: null };
 }
-function setGameMode(m) { if (net.mode !== 'host' || net.inMatch) return; net.gameMode = m; if (m === 'bomb' && !(MAPS[net.vsMap] || {}).sites) net.vsMap = 'col'; sendRoster(); }
+function setGameMode(m) { if (net.mode !== 'host' || net.inMatch) return; net.gameMode = m; if (m === 'bomb' && !(MAPS[net.vsMap] || {}).sites) net.vsMap = 'col'; if (!botsAllowed()) removeBots(); sendRoster(); }
 function setVsMap(m) { if (net.mode !== 'host' || net.inMatch) return; net.vsMap = m; sendRoster(); }
 function setMoney(m) { if (net.mode !== 'host' || net.inMatch) return; net.money = m; sendRoster(); }
 function setVenue(v) { if (net.mode !== 'host' || net.inMatch || !MAPS[v] || net.venue === v) return; net.venue = v; sendRoster(); if (state === 'lobby') lobbyBuild(); }
@@ -120,6 +121,7 @@ function dropGuest(conn, why) {
   if (net.inMatch) checkAllDead();
 }
 function kickPlayer(id) {
+  if (net.mode === 'host' && isBot(id)) { removeBot(id); return; }
   const p = net.players[id]; if (net.mode !== 'host' || !p || !p.conn) return;
   try { p.conn.send({ t: 'kicked' }); } catch (e) { /* kopmuş */ }
   setTimeout(() => dropGuest(p.conn, ' odadan atıldı'), 100);
@@ -164,6 +166,7 @@ function renderLobby() {
   $('mapPick').hidden = gm !== 'vs' && gm !== 'bomb' && gm !== 'tdm';
   for (const [id, m] of [['mapArena', 'arena'], ['mapAvlu', 'avlu'], ['mapCol', 'col'], ['mapLiman', 'liman']]) { $(id).classList.toggle('on', net.vsMap === m); $(id).disabled = !host; $(id).hidden = gm === 'bomb' && !MAPS[m].sites; }
   $('moneyPick').hidden = gm === 'coop' || gm === 'defense';
+  $('botRow').hidden = !(host && botsAllowed());
   $('moneyNormal').classList.toggle('on', net.money !== 'inf'); $('moneyInf').classList.toggle('on', net.money === 'inf');
   $('moneyNormal').disabled = $('moneyInf').disabled = !host;
   const ven = lobbyVenue();
@@ -186,7 +189,7 @@ function fillPlayerList(ul) {
     const li = document.createElement('li');
     const ping = pingOf(p.id);
     const col = vsMode ? TEAMS[p.team].color : p.color;
-    li.innerHTML = `<i style="background:#${col.toString(16).padStart(6, '0')}"></i>${escapeHtml(p.name)}${p.id === net.myId ? ' <small>(sen)</small>' : ''}${vsMode ? ` <small class="tm ${p.team}">${TEAMS[p.team].name}</small>` : ''} <small>${ping === 'host' ? 'HOST' : ping != null ? ping + ' ms' : ''}</small>`;
+    li.innerHTML = `<i style="background:#${col.toString(16).padStart(6, '0')}"></i>${escapeHtml(p.name)}${p.id === net.myId ? ' <small>(sen)</small>' : ''}${p.bot ? ' <small>BOT</small>' : ''}${vsMode ? ` <small class="tm ${p.team}">${TEAMS[p.team].name}</small>` : ''} <small>${ping === 'host' ? 'HOST' : ping != null ? ping + ' ms' : ''}</small>`;
     if (vsMode && !net.inMatch && (p.id === net.myId || net.mode === 'host')) {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'kick'; b.textContent = 'TAKIM DEĞİŞTİR';
       b.addEventListener('click', () => switchTeam(p.id));

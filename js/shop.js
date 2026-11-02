@@ -273,6 +273,7 @@ function popFlash(p) {
 // siperin arkasındaysan korunursun; takım arkadaşının bombası zarar vermez, kendi bomban yarım hasar verir
 function popHE(p, by) {
   explodeAt(new V3(p.x, Math.max(.3, p.y), p.z), false, 4.5);
+  botsBlast(p, by);
   if (!player.alive || !isVS() || vs.over) return;
   const c = player.body.position, R = 6, to = new V3(c.x - p.x, c.y + .6 - p.y, c.z - p.z), d = to.length();
   if (d > R) return;

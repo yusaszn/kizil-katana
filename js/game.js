@@ -713,7 +713,7 @@ function frame(now) {
     updateShop(dt, rdt);
     updateBomb(rdt);
     updateMinimap(rdt);
-    if (isVS()) updateVS(dt, rdt);
+    if (isVS()) { updateVS(dt, rdt); updateBots(dt); }   // botlar.js
     else if (net.mode !== 'guest' && !matchOver && (state === 'play' || mp) && !isRange()) updateWaves(dt);
     if (isRange()) updateRange(dt, rdt);   // poligon.js: hedefler, refleks yarışı, sınırsız cephane
     if (isDefense()) updateDefense(dt, rdt);   // savunma.js: mühür, taretler, havan, kurma
