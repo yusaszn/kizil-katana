@@ -127,8 +127,9 @@ function cardHtml(it) {
   const cnt = it.max ? `<i class="cnt">${eco[it.id]}/${it.max}</i>` : '';
   const sellable = boughtNow(it.id) >= 0;
   const poor = !own && eco.cr < it.price;
+  const ic = iconFor(it.id);   // ikonlar.js: silahın kendi 3D modelinden görsel
   return `<button type="button" class="bc${own ? ' own' : ''}${poor ? ' poor' : ''}" data-id="${it.id}">
-    <em>${it.cat}</em><strong>${it.name}</strong><small>${it.info}</small>
+    <em>${it.cat}</em><strong>${it.name}</strong>${ic ? `<img class="bimg" src="${ic}" alt="">` : ''}<small>${it.info}</small>
     <span class="pr">${own && !it.max ? (sellable ? 'ALINDI · SAĞ TIK SAT' : 'ELİNDE') : it.price ? it.price + ' ◈' : 'ÜCRETSİZ'}</span>${cnt}${it.key ? `<kbd>${it.key}</kbd>` : ''}</button>`;
 }
 function renderBuy() {
@@ -139,7 +140,7 @@ function renderBuy() {
       <h3>TABANCA</h3><div class="bgrid">${col(SIDEARM_IDS)}</div></div>
     <div class="bcol"><h3>KALKAN</h3><div class="bgrid">${col(['light', 'heavy'])}</div>
       <h3>YETENEKLER</h3><div class="bgrid">${col(['smoke', 'flash', 'he'])}</div>
-      <h3>BIÇAK</h3><div class="bknife">${KNIFE_LIST.map(k => `<button type="button" class="bk${loadout.knife === k ? ' own' : ''}" data-knife="${k}">${WEAPON_SHORT[k]}</button>`).join('')}</div></div>`;
+      <h3>BIÇAK</h3><div class="bknife">${KNIFE_LIST.map(k => `<button type="button" class="bk${loadout.knife === k ? ' own' : ''}" data-knife="${k}">${iconFor(k) ? `<img src="${iconFor(k)}" alt="">` : ''}${WEAPON_SHORT[k]}</button>`).join('')}</div></div>`;
   if (buy.html !== html) { buy.html = html; $('buyBody').innerHTML = html; buy.hov = null; }
   const mates = Object.values(net.players).filter(p => p.team === myTeam() && p.id !== net.myId).map(p => `<span>${escapeHtml(p.name)} <b>${p.cr != null ? p.cr : '?'} ◈</b>${p.rd ? ' ✓' : ''}</span>`).join('');
   if (buy.mates !== mates) { buy.mates = mates; $('buyMates').innerHTML = mates || '<span>Takımında başka kimse yok</span>'; }

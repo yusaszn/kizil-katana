@@ -100,7 +100,7 @@ function swatchUrl(S) {
   return 'url(' + S.tex.image.toDataURL() + ')';
 }
 function renderSkins() {
-  const tabs = SKIN_WEAPONS.map(([w, n]) => `<button type="button" data-w="${w}" class="${w === skinUI.w ? 'on' : ''}">${n}</button>`).join('');
+  const tabs = SKIN_WEAPONS.map(([w, n]) => `<button type="button" data-w="${w}" class="${w === skinUI.w ? 'on' : ''}">${iconFor(w) ? `<img src="${iconFor(w)}" alt="">` : ''}${n}</button>`).join('');
   const cur = skinSel[skinUI.w] || 'std';
   const grid = SKINS.map(S => `<button type="button" class="sk${S.id === cur ? ' on' : ''}" data-s="${S.id}"><i style="background:${S.tex ? swatchUrl(S) + ' center/120px' : S.sw}"></i><b>${S.name}</b></button>`).join('');
   $('skinTabs').innerHTML = tabs; $('skinGrid').innerHTML = grid;

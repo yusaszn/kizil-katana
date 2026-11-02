@@ -444,3 +444,11 @@ body.touchdev.showboard #board{display:block;transform:scale(.8);transform-origi
 #sightRow button.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;background:rgba(255,194,58,.08)}
 #sightRow button.locked{opacity:.55;cursor:not-allowed}
 @media (max-width:640px){#sightRow{grid-template-columns:1fr}}
+
+/* ================= SİLAH GÖRSELLERİ ================= */
+#buy .bc .bimg{display:block;width:100%;height:46px;object-fit:contain;margin:3px 0 1px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.7))}
+#buy .bk{display:flex;flex-direction:column;align-items:center;gap:2px}
+#buy .bk img{width:84px;height:32px;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.7))}
+#skinTabs button{display:flex;flex-direction:column;align-items:center;gap:2px}
+#skinTabs button img{width:74px;height:28px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
+#buy .bc .bimg,#buy .bk img,#skinTabs button img{background:radial-gradient(ellipse at center,rgba(255,240,220,.16),rgba(255,240,220,0) 70%)}
