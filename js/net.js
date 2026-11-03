@@ -3,7 +3,7 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 25;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 26;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 // çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
@@ -164,7 +164,7 @@ function renderLobby() {
   $('modeCoop').classList.toggle('on', gm === 'coop'); $('modeVs').classList.toggle('on', gm === 'vs'); $('modeBomb').classList.toggle('on', gm === 'bomb'); $('modeDef').classList.toggle('on', gm === 'defense'); $('modeTdm').classList.toggle('on', gm === 'tdm');
   $('modeCoop').disabled = $('modeVs').disabled = $('modeBomb').disabled = $('modeDef').disabled = $('modeTdm').disabled = !host;
   $('mapPick').hidden = gm !== 'vs' && gm !== 'bomb' && gm !== 'tdm';
-  for (const [id, m] of [['mapArena', 'arena'], ['mapAvlu', 'avlu'], ['mapCol', 'col'], ['mapLiman', 'liman']]) { $(id).classList.toggle('on', net.vsMap === m); $(id).disabled = !host; $(id).hidden = gm === 'bomb' && !MAPS[m].sites; }
+  for (const [id, m] of [['mapArena', 'arena'], ['mapAvlu', 'avlu'], ['mapCol', 'col'], ['mapLiman', 'liman'], ['mapMardin', 'mardin']]) { $(id).classList.toggle('on', net.vsMap === m); $(id).disabled = !host; $(id).hidden = gm === 'bomb' && !MAPS[m].sites; }
   $('moneyPick').hidden = gm === 'coop' || gm === 'defense';
   $('botRow').hidden = !(host && botsAllowed());
   $('moneyNormal').classList.toggle('on', net.money !== 'inf'); $('moneyInf').classList.toggle('on', net.money === 'inf');
@@ -506,6 +506,7 @@ $('mapArena').addEventListener('click', () => setVsMap('arena'));
 $('mapAvlu').addEventListener('click', () => setVsMap('avlu'));
 $('mapCol').addEventListener('click', () => setVsMap('col'));
 $('mapLiman').addEventListener('click', () => setVsMap('liman'));
+$('mapMardin').addEventListener('click', () => setVsMap('mardin'));
 $('modeBomb').addEventListener('click', () => setGameMode('bomb'));
 $('modeDef').addEventListener('click', () => setGameMode('defense'));
 $('modeTdm').addEventListener('click', () => setGameMode('tdm'));

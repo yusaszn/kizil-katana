@@ -242,7 +242,7 @@ body.vsmode .bar.armor,body.vsmode #ecoHud{display:block}
 @media (max-width:720px){#buyBody{grid-template-columns:1fr}.buyhead b{font-size:20px}}
 
 /* ===== bomba modu ===== */
-#bombHud{position:absolute;left:50%;top:calc(66px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:5px 14px;background:rgba(10,4,3,.6);border:1px solid rgba(255,190,60,.4);font-weight:700;font-size:13px;letter-spacing:.14em;color:var(--gold);white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+#bombHud{position:absolute;left:50%;top:calc(122px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:5px 14px;background:rgba(10,4,3,.6);border:1px solid rgba(255,190,60,.4);font-weight:700;font-size:13px;letter-spacing:.14em;color:var(--gold);white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
 #bombHud.planted{color:#fff;background:rgba(150,10,5,.75);border-color:var(--blood-hi);animation:bombPulse 1s infinite}
 @keyframes bombPulse{50%{background:rgba(220,30,10,.85)}}
 #bombBar{position:absolute;left:50%;top:calc(50% + 70px);transform:translateX(-50%);width:min(320px,70vw);text-align:center;font-weight:700;font-size:13px;letter-spacing:.2em;color:var(--gold)}
@@ -313,6 +313,7 @@ body.touchdev #board{display:none}
 body.touchdev .hp{left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(4px + env(safe-area-inset-bottom,0px));transform:scale(.62);transform-origin:bottom left}
 body.touchdev #xpbox{left:calc(16px + env(safe-area-inset-left,0px));transform:none;width:120px;bottom:auto;top:calc(142px + env(safe-area-inset-top,0px))}
 body.touchdev #minimap{width:120px;height:120px}
+body.touchdev #bombHud{font-size:10px;letter-spacing:.05em;padding:3px 9px;max-width:calc(100vw - 300px)}
 body.touchdev #perks{display:none}
 body.touchdev #voiceHud{bottom:auto;top:calc(180px + env(safe-area-inset-top,0px))}
 body.touchdev #ecoHud{font-size:11px}
