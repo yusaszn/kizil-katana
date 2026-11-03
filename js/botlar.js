@@ -107,7 +107,7 @@ function botGoal(b) {
   const { N, g } = botGrid(), foe = b.p.team === 'red' ? 'blue' : 'red';
   for (let i = 0; i < 30; i++) {
     let x, z; const r = Math.random();
-    if (r < .45) { const sp = spawnPoint(foe); x = sp.x + rand(-8, 8); z = sp.z * rand(.2, .9); }
+    if (r < .45) { const sp = MAPS[curMap].spawn(foe), k = rand(.2, .9); x = sp.x * k + rand(-8, 8); z = sp.z * k; }   // rakip üssüne doğru (iki eksende de ortadan)
     else if (r < .75) { x = rand(-H * .4, H * .4); z = rand(-H * .4, H * .4); }
     else { x = rand(-H + 2, H - 2); z = rand(-H + 2, H - 2); }
     if (!g[cellOf(x, N) * N + cellOf(z, N)]) return new V3(x, .5, z);

@@ -396,6 +396,7 @@ function resetGame() {
   refreshPips();
   const vsMode = isVS();
   document.body.classList.toggle('vsmode', vsMode);
+  document.body.classList.toggle('bombmode', vsMode && typeof isBomb === 'function' && isBomb());   // bomba satırı varken ölüm akışı aşağı kayar
   document.body.classList.toggle('rangemode', isRange()); $('rangeHud').hidden = !isRange();
   if (vsMode) {
     // VS: takımının tarafında doğ, sandık yok, herkes eşit

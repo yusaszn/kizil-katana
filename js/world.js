@@ -24,7 +24,7 @@ const boneMat = new THREE.MeshStandardMaterial({ color: 0xd9cfbd, roughness: .7 
 
 // haritaya ait (harita değişince silinen) parçalar
 const mapStuff = { meshes: [], bodies: [] };
-let curMap = null, curMapKey = null, baseStatics = 0;
+let curMap = null, curMapKey = null, baseStatics = 0, mapOpen = false;
 function addBlock(w, h, d, x, y, z, mat, solidForRays = true, forMap = false) {
   if (mat) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); scene.add(m); if (forMap) mapStuff.meshes.push(m); }
   const b = new CANNON.Body({ mass: 0, material: mWorld, collisionFilterGroup: G_STATIC, collisionFilterMask: -1 });
@@ -46,7 +46,8 @@ function buildShell(h) {
     shell.bodies.push(world.bodies[world.bodies.length - 1]);
     if (mat) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, hh, d), mat); m.position.set(x, y, z); scene.add(m); shell.meshes.push(m); }
   };
-  const fl = new THREE.Mesh(new THREE.PlaneGeometry(H * 2, H * 2), floorMat); fl.rotation.x = -Math.PI / 2; scene.add(fl); shell.meshes.push(fl);
+  // zemin duvarlardan ve siperlerden sonra çizilsin: önündeki her şeyin arkasında kalan pikselleri baştan elenir (telefonda ucuz)
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(H * 2, H * 2), floorMat); fl.rotation.x = -Math.PI / 2; fl.renderOrder = 1; scene.add(fl); shell.meshes.push(fl);
   add(H * 2 + 4, 1, H * 2 + 4, 0, -0.5, 0, null, false);
   add(H * 2 + 2, WALLH, 1, 0, WALLH / 2, -H - .5, wallMat);
   add(H * 2 + 2, WALLH, 1, 0, WALLH / 2, H + .5, wallMat);
@@ -310,7 +311,8 @@ function buildMap(id) {
   const key = id + (typeof isVS === 'function' && isVS() ? '|vs' : '');   // aynı harita VS'de başka siperlerle kurulabilir
   if (!MAPS[id] || curMapKey === key) return;
   curMapKey = key;
-  for (const m of mapStuff.meshes) scene.remove(m);
+  // eski haritanın ağlarını sahneden kaldır ve GPU tamponlarını bırak (yoksa her maçta bellek birikir); malzemeler ortak, dokunulmaz
+  for (const m of mapStuff.meshes) { scene.remove(m); m.traverse(o => { if (o.geometry && !o.isSprite) o.geometry.dispose(); }); }
   for (const b of mapStuff.bodies) world.remove(b);
   mapStuff.meshes = []; mapStuff.bodies = []; statics.length = baseStatics; braziers.length = 0;
   curMap = id;
@@ -320,6 +322,9 @@ function buildMap(id) {
   moon.position.set(6, 20, 9);
   // açık mekân (lobi, liman): dış duvarlar ve ışıklı oluk görünmez, çarpışma kalır (harita isterse bazılarını geri açar)
   for (const m of shell.meshes) m.visible = !M.open || m.material === floorMat;
+  // açık haritada görünmeyen dış duvar mermiyi, kanı ve izi tutmasın (oyuncuyu yine tutar): ışın kutusu yerin altına alınır
+  mapOpen = !!M.open;
+  for (let i = 0; i < baseStatics; i++) { const s = statics[i]; if (s.wy1 === undefined) { s.wy0 = s.y0; s.wy1 = s.y1; } s.y0 = mapOpen ? -9 : s.wy0; s.y1 = mapOpen ? -8 : s.wy1; }
   M.build();
   scene.fog.color.setHex(M.fog); scene.background.setHex(M.sky || M.fog); scene.fog.density = M.fogD || .034;
   embers.visible = !M.noEmbers;
@@ -367,11 +372,14 @@ function raySphere(o, d, c, r) {
   const disc = b * b - cc; if (disc < 0) return -1;
   const t = -b - Math.sqrt(disc); return t >= 0 ? t : -1;
 }
-function hitsStatic(p) {
-  if (p.y < 0 || Math.abs(p.x) > H || Math.abs(p.z) > H) return true;
-  for (const s of statics) if (p.x > s.x0 && p.x < s.x1 && p.z > s.z0 && p.z < s.z1 && p.y < s.y1) return true;
-  return false;
+// noktayı içine alan katı kutu (yoksa null). Kutunun altı da sayılır: kemerin, tavanın altından el bombası geçer
+const EDGE_STATIC = { edge: true };
+function staticAt(p) {
+  if (p.y < 0 || Math.abs(p.x) > H || Math.abs(p.z) > H) return EDGE_STATIC;
+  for (const s of statics) if (p.x > s.x0 && p.x < s.x1 && p.z > s.z0 && p.z < s.z1 && p.y < s.y1 && p.y > s.y0) return s;
+  return null;
 }
+function hitsStatic(p) { return !!staticAt(p); }
 
 /* ================= KAN PARÇACIKLARI ================= */
 const PMAX = 8000;
@@ -437,6 +445,7 @@ function addDecal(x, y, z, s, rx, ry, sy = 1) {
 }
 const floorDecal = (x, z, s) => addDecal(x, .012 + Math.random() * .004, z, s, -Math.PI / 2, 0);
 function wallDecalNear(x, y, z, s) {
+  if (mapOpen) return;   // açık haritada kenarda duvar yok
   if (Math.abs(x) > H - 1.5) addDecal(Math.sign(x) * (H - .01), y, clamp(z, -H, H), s, 0, -Math.sign(x) * Math.PI / 2, 1.6);
   else if (Math.abs(z) > H - 1.5) addDecal(clamp(x, -H, H), y, Math.sign(z) * (H - .01), s, 0, z > 0 ? Math.PI : 0, 1.6);
 }
@@ -453,7 +462,7 @@ function updateParticles(dt) {
       if (pKind[i] === 1 && Math.random() < .22) floorDecal(x, z, rand(.12, .42));
       pLife[i] = 0;
     } else if (x > H - .02 || x < -H + .02 || z > H - .02 || z < -H + .02) {
-      if (pKind[i] === 1 && Math.random() < .35 && y < WALLH) {
+      if (pKind[i] === 1 && !mapOpen && Math.random() < .35 && y < WALLH) {
         if (Math.abs(x) >= H - .02) addDecal(Math.sign(x) * (H - .01), y, z, rand(.15, .45), 0, -Math.sign(x) * Math.PI / 2, 1.5);
         else addDecal(x, y, Math.sign(z) * (H - .01), rand(.15, .45), 0, z > 0 ? Math.PI : 0, 1.5);
       }

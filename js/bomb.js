@@ -169,7 +169,7 @@ function renderBombHud() {
   const atk = myTeam() === attackTeam();
   let txt = '', cls = '';
   if (bomb.st === 'planted') { txt = 'BOMBA ' + bomb.site + ' BÖLGESİNDE · ' + Math.max(0, Math.ceil(bomb.t)) + ' SN'; cls = 'planted'; }
-  else if (bomb.st === 'carried') txt = atk ? (bomb.carrier === net.myId ? 'BOMBA SENDE · A / B BÖLGESİNDE 4 BASILI TUT' + (siteAt(player.body.position) ? '  ◉ BÖLGEDESİN' : '') : 'BOMBA: ' + nameOf(bomb.carrier).toLocaleUpperCase('tr-TR')) : 'SAVUN · BOMBAYI KURDURMA';
+  else if (bomb.st === 'carried') txt = atk ? (bomb.carrier === net.myId ? (siteAt(player.body.position) ? '◉ BÖLGEDESİN · ' : '') + 'BOMBA SENDE · A / B BÖLGESİNDE 4 BASILI TUT' : 'BOMBA: ' + nameOf(bomb.carrier).toLocaleUpperCase('tr-TR')) : 'SAVUN · BOMBAYI KURDURMA';
   else if (bomb.st === 'dropped') txt = atk ? 'BOMBA YERDE · AL' : 'BOMBA YERDE';
   else if (bomb.st === 'defused') txt = 'İMHA EDİLDİ';
   txt = (atk ? 'SALDIRI · ' : 'SAVUNMA · ') + txt;

@@ -243,6 +243,7 @@ body.vsmode .bar.armor,body.vsmode #ecoHud{display:block}
 
 /* ===== bomba modu ===== */
 #bombHud{position:absolute;left:50%;top:calc(122px + env(safe-area-inset-top,0px));transform:translateX(-50%);padding:5px 14px;background:rgba(10,4,3,.6);border:1px solid rgba(255,190,60,.4);font-weight:700;font-size:13px;letter-spacing:.14em;color:var(--gold);white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+body.bombmode #killfeed{top:calc(160px + env(safe-area-inset-top,0px))}
 #bombHud.planted{color:#fff;background:rgba(150,10,5,.75);border-color:var(--blood-hi);animation:bombPulse 1s infinite}
 @keyframes bombPulse{50%{background:rgba(220,30,10,.85)}}
 #bombBar{position:absolute;left:50%;top:calc(50% + 70px);transform:translateX(-50%);width:min(320px,70vw);text-align:center;font-weight:700;font-size:13px;letter-spacing:.2em;color:var(--gold)}

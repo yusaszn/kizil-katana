@@ -179,7 +179,35 @@ function spectateTarget() {
 }
 
 /* ================= RAUNTLAR ================= */
-function spawnPoint(team) { return MAPS[curMap].spawn(team); }
+// takım ölüm maçında üssün içinden yaşayan rakiplerin görmediği, onlardan uzak bir nokta seçilir (doğar doğmaz vurulmasın)
+const _spO = new V3(), _spD = new V3();
+function livePos(id) {
+  if (id === net.myId) return player.alive ? player.body.position : null;
+  const p = net.players[id]; if (!p || !p.alive) return null;
+  const b = typeof botById === 'function' ? botById(id) : null;
+  return b ? b.pos : p.proxy ? p.proxy.pos : null;
+}
+function spawnPoint(team) {
+  const M = MAPS[curMap];
+  if (!isTDM()) return M.spawn(team);
+  const foes = [];
+  for (const id in net.players) { if (net.players[id].team === team) continue; const q = livePos(id); if (q) foes.push(q); }
+  if (!foes.length) return M.spawn(team);
+  let best = null, bs = -Infinity;
+  for (let i = 0; i < 10; i++) {
+    const c = M.spawn(team); let sc = 0;
+    for (const f of foes) {
+      const dx = c.x - f.x, dz = c.z - f.z, d = Math.hypot(dx, dz);
+      sc += Math.min(d, 30) * .05;
+      if (d < 75) {
+        _spO.set(f.x, f.y + 1.1, f.z); _spD.set(dx, c.y + 1 - _spO.y, dz); const L = _spD.length(); _spD.divideScalar(L);
+        if (rayStatic(_spO, _spD, L) >= L - .05) sc -= 10;   // rakip burayı görüyor
+      }
+    }
+    if (sc > bs) { bs = sc; best = c; }
+  }
+  return best;
+}
 function pvpRespawn() {
   const sp = spawnPoint(myTeam());
   const b = player.body; b.position.copy(sp); b.velocity.set(0, 0, 0);

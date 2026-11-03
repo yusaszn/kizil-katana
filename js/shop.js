@@ -305,6 +305,7 @@ function clearUtils() {
   for (const s of smokes) scene.remove(s.g); smokes.length = 0;
   flashBlind = 0; $('flashfx').style.opacity = 0;
 }
+const _ub = new V3();
 function updateShop(dt, rdt) {
   for (const u of utilShots.slice()) {
     u.t += dt;
@@ -312,7 +313,18 @@ function updateShop(dt, rdt) {
     const prev = u.pos.clone();
     u.pos.addScaledVector(u.vel, dt); u.m.rotation.x += dt * 9;
     if (u.pos.y < .08) { u.pos.y = .08; u.vel.y *= -.35; u.vel.x *= .6; u.vel.z *= .6; if (Math.abs(u.vel.y) > 1) sfx.shell(); }
-    if (hitsStatic(u.pos)) { u.pos.copy(prev); u.vel.x *= -.45; u.vel.z *= -.45; }
+    let hs = staticAt(u.pos);
+    if (!hs) { _ub.set(u.pos.x, u.pos.y - .08, u.pos.z); const hb = staticAt(_ub); if (hb && !hb.edge && prev.y >= hb.y1) hs = hb; }   // alt kenarı bir kutunun üstüne değdi
+    if (hs) {   // hangi yüzden çarptıysa o yönde sek: üstüne düşerse orada durur, tavana çarparsa aşağı iner
+      if (!hs.edge && prev.y >= hs.y1) { u.pos.y = hs.y1 + .08; u.vel.y *= -.35; u.vel.x *= .6; u.vel.z *= .6; }
+      else if (!hs.edge && prev.y <= hs.y0) { u.pos.copy(prev); u.vel.y = -Math.abs(u.vel.y) * .35; }
+      else {
+        u.pos.copy(prev);
+        const sx = hs.edge ? Math.abs(u.pos.x + u.vel.x * dt) > H : prev.x <= hs.x0 || prev.x >= hs.x1, sz = hs.edge ? Math.abs(u.pos.z + u.vel.z * dt) > H : prev.z <= hs.z0 || prev.z >= hs.z1;
+        if (sx || !sz) u.vel.x *= -.45;
+        if (sz || !sx) u.vel.z *= -.45;
+      }
+    }
     const spd = u.vel.length(); u.still = spd < 1.2 ? u.still + dt : 0;
     const pop = u.k === 'flash' ? u.t > .85 : u.k === 'he' ? u.t > 1.6 : (u.still > .25 || u.t > 2.2);
     if (pop) { scene.remove(u.m); utilShots.splice(utilShots.indexOf(u), 1); if (u.k === 'flash') popFlash(u.pos.clone()); else if (u.k === 'he') popHE(u.pos.clone(), u.by); else popSmoke(u.pos.clone()); }
