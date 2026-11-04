@@ -1,6 +1,9 @@
 'use strict';
-/* PvP silahları: AK-47 (ana silah) ve tabancalar: Deagle, USP-S (susturuculu), Glock.
-   Hepsi veriyle tanımlı: hasar, kafa çarpanı, isabet, geri tepme, ses ve model. Satın alma menüsünden alınır (shop.js). */
+/* PvP silahları: AK-47 ve FENEK (ana silah) ve tabancalar: Deagle, USP-S (susturuculu), Glock.
+   Hepsi veriyle tanımlı: hasar, kafa çarpanı, isabet, geri tepme, ses ve model. Satın alma menüsünden alınır (shop.js).
+   FENEK co-op'ta da baştan elde (6), cephanesi kutulardan dolar. İsteğe bağlı alanlar: carry (yüksek atış hızında kare başına
+   birden çok mermi, hız kare hızına bağlı kalmasın), kickRoll (atış başına kamera yalpası), move (elde tutarken koşu çarpanı),
+   adsMove (nişandayken koşu çarpanı), adsKick (nişanda silah tepmesi çarpanı), chBack (kurma kolunun geri gidişi), poseR (dinlenme pozunun açısı). */
 
 const GUNS = {
   ak47: {
@@ -23,34 +26,47 @@ const GUNS = {
     dmg: 1.2, pvp: 19, head: 2.6, falloff: 18, spread: .016, ads: .007, moveMul: 1.6, bloom: .25, bloomMax: 1.6,
     recoil: .014, recoilYaw: .005, shake: .025, pose: [.15, -.15, -.47], adsPose: [0, -.098, -.36], adsFov: 12, slideBack: .04,
   },
+  // FENEK: dakikada ~1150 mermi, mermi başına hafif; geri tepmesi düşük ama sert, şarjör çabuk değişir, 18 m sonrası hasar düşer
+  fenek: {
+    name: 'FENEK', slot: 'primary', mag: 30, rounds: 120, rate: 19.2, auto: true, reload: 1.7, carry: true,
+    dmg: .48, pvp: 12, head: 2.5, falloff: 18, spread: .03, ads: .011, moveMul: 1.6, bloom: .21, bloomMax: .9,
+    recoil: .0052, recoilYaw: .0032, kickRoll: .004, shake: .02, pose: [.17, -.165, -.4], poseR: [0, .07, 0], adsPose: [0, -.074, -.33], adsFov: 12, slideBack: .02, chBack: .07,
+    move: 1.06, adsMove: .78, adsKick: .4,
+  },
 };
 const isGun = w => !!GUNS[w];
 const PISTOL_TYPES = ['pistol', 'deagle', 'usps', 'glock'];
 const gst = {};
 for (const id in GUNS) gst[id] = { mag: GUNS[id].mag, reserve: GUNS[id].rounds, reloadT: 0, cd: 0, adsK: 0, kick: 0, flashT: 0, slide: 0, bloom: 0, held: false };
-Object.assign(WEAPON_NAMES, { ak47: 'AK-47', deagle: 'DEAGLE', usps: 'USP-S', glock: 'GLOCK' });
-Object.assign(WEAPON_SHORT, { ak47: 'AK-47', deagle: 'DEAGLE', usps: 'USP-S', glock: 'GLOCK' });
+Object.assign(WEAPON_NAMES, { ak47: 'AK-47', deagle: 'DEAGLE', usps: 'USP-S', glock: 'GLOCK', fenek: 'FENEK' });
+Object.assign(WEAPON_SHORT, { ak47: 'AK-47', deagle: 'DEAGLE', usps: 'USP-S', glock: 'GLOCK', fenek: 'FENEK' });
 
 /* ================= SESLER ================= */
 sfx.ak47 = () => { if (!gate('ak', 40)) return; punch(120, .2, .95); nz(.2, 2600, 380, .7, .75); tn('sawtooth', 160, 45, .14, .3); };
 sfx.deagle = () => { punch(90, .35, 1.2); nz(.35, 2200, 240, .6, .95); tn('square', 120, 35, .25, .4); nz(.5, 600, 120, .5, .25, 'lowpass'); };
 sfx.usps = () => { if (!gate('usp', 40)) return; nz(.09, 1600, 500, 1.2, .35); punch(240, .06, .28); clink(2600, 3400, .04, .06); };
+// FENEK: tok .45 vuruşu, çok hızlı seri ("vızıltı"); her mermi kısa ki seri birbirine karışmasın
+sfx.fenek = () => { if (!gate('fnk', 30)) return; punch(125, .07, .5); nz(.075, 2300, 650, .9, .5); tn('square', 185, 52, .05, .2); clink(2900, 3900, .025, .05); };
 sfx.glock = () => { if (!gate('glk', 40)) return; punch(200, .1, .5); nz(.1, 3800, 900, .8, .5); tn('square', 260, 70, .08, .22); };
 
 /* ================= MODELLER ================= */
 const gunRoots = {}, gunModels = {};
-// modeller: gunmodels.js (AK-47, Deagle, USP-S, Glock)
+// modeller: gunmodels.js (AK-47, FENEK, Deagle, USP-S, Glock)
 for (const id in GUNS) {
   const root = new THREE.Group(); root.visible = false; vmScene.add(root);
   const m = GM[id === 'ak47' ? 'ak' : id]();
   if (m.sight) GUNS[id].adsPose[1] = -m.sight;   // nişanda gez ve arpacık tam göz hizasında
   root.add(m.g); gunRoots[id] = root; gunModels[id] = m;
-  GUNS[id].restP = P(GUNS[id].pose, [0, .03, 0]); GUNS[id].adsP = P(GUNS[id].adsPose, [0, 0, 0]);
+  GUNS[id].restP = P(GUNS[id].pose, GUNS[id].poseR || [0, .03, 0]); GUNS[id].adsP = P(GUNS[id].adsPose, [0, 0, 0]);   // poseR: dinlenme açısı (isteğe bağlı)
 }
 const gunPose = P([0, 0, 0], [0, 0, 0]);
 
 /* ================= ATEŞ VE ŞARJÖR ================= */
 function resetGuns() { for (const id in GUNS) Object.assign(gst[id], { mag: GUNS[id].mag, reserve: GUNS[id].rounds, reloadT: 0, cd: 0, adsK: 0, bloom: 0 }); }
+// co-op: cephane kutusu, dalga başı ve boss leşi co-op listesindeki (WEAPONS) veriyle tanımlı silahları da doldurur
+const COOP_GUNS = WEAPONS.filter(isGun);
+const gunAmmoWanted = () => COOP_GUNS.some(id => gst[id].reserve < GUNS[id].rounds);
+function gunAmmoPickup(full) { for (const id of COOP_GUNS) gst[id].reserve = full ? GUNS[id].rounds : Math.min(GUNS[id].rounds, gst[id].reserve + GUNS[id].mag); }
 function gunReload() {
   const id = wpn.cur; if (!isGun(id)) return;
   const s = gst[id], G = GUNS[id];
@@ -95,11 +111,13 @@ function updateSpray(dt) { if (performance.now() - spray.last > 110) spray.i = M
 function fireGun(id) {
   const G = GUNS[id], s = gst[id], m = gunModels[id];
   s.mag--; netFx.sh++; netFx.ft = 0;
-  s.kick = 1; s.slide = 1; s.flashT = G.silenced ? .03 : .05;
+  s.kick = G.adsKick ? 1 - (1 - G.adsKick) * s.adsK : 1; s.slide = 1; s.flashT = G.silenced ? .03 : .05;
   m.flash.material.rotation = rand(0, 6.28); m.flash.scale.setScalar(G.silenced ? rand(.08, .12) : rand(.22, .34) * (G.heavy ? 1.4 : 1));
   muzzleGlow = G.silenced ? .25 : G.heavy ? 1.6 : 1;
   sfx[id](); shake(G.shake);
-  ejectCasing(m, id === 'ak47' ? 'rifle' : 'pistol'); playerCasing(id); gunKickFor(id);
+  // adsKick: nişandayken yaylı tepme ve silah sarsıntısı bu kadarına iner (hızlı seride gez-arpacık hizası dağılmasın)
+  const kickSc = G.adsKick ? 1 - (1 - G.adsKick) * s.adsK : 1;
+  ejectCasing(m, id === 'ak47' ? 'rifle' : 'pistol'); playerCasing(id); gunKickFor(id, kickSc);
   if (!G.silenced && typeof flashWorld === 'function') flashWorld(G.heavy ? 3 : 2, 0xffa850, .05);
   const ads = s.adsK > .6;
   if (SPRAY[id]) {
@@ -111,7 +129,7 @@ function fireGun(id) {
     return;
   }
   player.pitch = Math.min(1.45, player.pitch + G.recoil * (ads ? .75 : 1)); player.yaw += rand(-1, 1) * G.recoilYaw;
-  kickView(rand(-.01, .01), G.recoil * .7);
+  const kr = G.kickRoll || .01; kickView(rand(-kr, kr), G.recoil * .7);
   camVectors();
   const moving = Math.hypot(player.body.velocity.x, player.body.velocity.z) > 2;
   const spr = (ads ? G.ads : G.spread) * (moving ? G.moveMul : 1) * (player.grounded ? 1 : 2.5) * (1 + s.bloom);
@@ -130,15 +148,20 @@ function updateGuns(dt) {
     if (s.reloadT > 0) { s.reloadT -= dt; if (s.reloadT <= 0) { s.reloadT = 0; const n = Math.min(G.mag - s.mag, s.reserve); s.mag += n; s.reserve -= n; } }
     const on = wpn.cur === id;
     root.visible = on && !SETTINGS.thirdPerson;
-    if (!on) { s.held = false; continue; }
+    if (!on) { s.held = false; if (s.cd < 0) s.cd = 0; continue; }
     const playing = !wpn.next && player.alive && state === 'play' && !vsFrozen() && s.reloadT <= 0;
     if (playing) {
       const want = G.auto ? (mouse.left || rifClick) : (rifClick || (mouse.left && !s.held));
       if (want && s.cd <= 0) {
-        if (s.mag > 0) { fireGun(id); s.cd = 1 / G.rate; }
+        if (s.mag > 0) {
+          // carry: süre birikir, bu karede düşen her mermi atılır (en çok 3)
+          if (G.carry) { let n = 0; while (s.cd <= 0 && s.mag > 0 && n++ < 3) { fireGun(id); s.cd += 1 / G.rate; } if (s.cd < 0) s.cd = 0; }
+          else { fireGun(id); s.cd = 1 / G.rate; }
+        }
         else if (s.reserve > 0) gunReload(); else { sfx.empty(); s.cd = .3; }
       }
     }
+    if (G.carry && s.cd < 0) s.cd = 0;
     s.held = mouse.left;
     if (s.mag <= 0 && s.reserve > 0 && s.reloadT <= 0 && !wpn.next) gunReload();
     // ---- animasyon ----
@@ -154,6 +177,8 @@ function updateGuns(dt) {
     }
     const slap = applyMagSwap(m, rp);   // destek eli şarjörü değiştirir (gunanim.js)
     if (m.slide && cock) m.slide.position.z = Math.max(m.slide.position.z, cock * G.slideBack);
+    if (m.ch) m.ch.position.z = cock * (G.chBack || .04);   // kurma kolu yalnız kurarken geri çekilir
+    if (m.rearMat) m.rearMat.opacity = 1 - s.adsK * .8;    // nişanda arka gez saydamlaşır, göz arpacığa odaklanır
     lerpPose(G.restP, G.adsP, s.adsK, gunPose);
     const sprint = player.sprinting && player.grounded ? 1 - s.adsK : 0, bk = 1 - s.adsK * .8;
     root.position.set(gunPose.p.x + sword.swayX + bob.x * bk, gunPose.p.y + sword.swayY + bob.y * bk - low - tilt * .07 - sprint * .06 + Math.sin(t * 1.4) * .0015 + slap * .013,

@@ -18,15 +18,15 @@ function gunKick(back = 1, up = 1, roll = 1) {
   gunSpring.w.z += rand(-1, 1) * 3.2 * roll;
 }
 const GUN_KICK = {
-  uzi: [.22, .28, .5], m4: [.42, .42, .45], awp: [1.5, 1.6, .8], pistol: [.5, .8, .6], ak47: [.55, .58, .55],
+  uzi: [.22, .28, .5], fenek: [.24, .26, .32], m4: [.42, .42, .45], awp: [1.5, 1.6, .8], pistol: [.5, .8, .6], ak47: [.55, .58, .55],
   deagle: [1, 1.5, .9], usps: [.32, .5, .4], glock: [.4, .6, .5], shotgun: [1.3, 1.5, .9], rocket: [1.4, .9, .5], launcher: [1, 1.1, .6],
 };
-function gunKickFor(w) { const k = GUN_KICK[w]; if (k) gunKick(k[0], k[1], k[2]); handLife.pull = 1; handLife.squeeze = 1; }
+function gunKickFor(w, sc = 1) { const k = GUN_KICK[w]; if (k) gunKick(k[0] * sc, k[1] * sc, k[2] * sc); handLife.pull = 1; handLife.squeeze = 1; }
 
 /* ================= CANLI ELLER ================= */
 // elde tutulan silahın elleri her karede hafifçe canlandırılır (el.js animateHand)
 const handLife = { pull: 0, squeeze: 0, relax: 0, release: 0, extend: 0 };   // release / extend: bıçak hareketleri her karede ayarlar
-const AUTO_FIRE = { uzi: 1, m4: 1, ak47: 1 };
+const AUTO_FIRE = { uzi: 1, m4: 1, ak47: 1, fenek: 1 };
 function shownIn(o, root) { for (let p = o; p && p !== root; p = p.parent) if (!p.visible) return false; return root.visible; }
 function updateHands(dt) {
   const root = gunRootOf(wpn.cur); if (!root || !root.visible) return;

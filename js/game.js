@@ -141,7 +141,7 @@ function killFx(e, push, cutN, opts) {
   if (isBoss) {
     slowMo = bigBoss ? 1.6 : 1; hitStop = 0;
     $('bossbar').hidden = true;
-    ammo.reserve = ST.maxMags; shells.reserve = ST.maxShells;
+    ammo.reserve = ST.maxMags; shells.reserve = ST.maxShells; gunAmmoPickup(true);
     // boss özel silah düşürür: büyük boss roketatar, ara boss bombaatar (herkes kendi ekranında alır)
     dropSpecial(new V3(c.x, 1.2, c.z), bigBoss ? 'rocket' : 'launcher');
     const name = BOSS_INFO[e.kind].name;
@@ -322,7 +322,7 @@ function onWaveStart(n, count) {
   else banner('DALGA ' + n, n === 1 ? 'Hepsini doğra' : (count ? count + ' iblis geliyor' : ''));
   sfx.wave();
   ammo.reserve = Math.min(ST.maxMags, ammo.reserve + 1);
-  shells.reserve = Math.min(ST.maxShells, shells.reserve + 6);
+  shells.reserve = Math.min(ST.maxShells, shells.reserve + 6); gunAmmoPickup(false);
   m4.gren = Math.min(ST.grenMax, m4.gren + 1);
   phoenixReady = ST.phoenix;
   if (!isDefense()) for (let i = 0; i < 3 + Math.min(4, n); i++) spawnCrate(rand(-H + 3, H - 3), rand(7, 12), rand(-H + 3, H - 3), rand(.35, .55));
@@ -391,7 +391,7 @@ function resetGame() {
   wave.active = false; wave.between = isDefense() ? DEF_BUILD_T + 5 : 1.2; wave.list = []; waitingFor = [];
   kickAnim = 0; Object.assign(viewKick, { roll: 0, pitch: 0, yaw: 0 });
   $('bossbar').hidden = true;
-  resetRifles(); resetSpecials(); resetVS();
+  resetRifles(); resetGuns(); resetSpecials(); resetVS();
   for (const g of grenades) scene.remove(g.m); grenades.length = 0;
   refreshPips();
   const vsMode = isVS();
@@ -471,7 +471,7 @@ window.addEventListener('keydown', e => {
   if (state !== 'play') return;
   if (e.repeat) return;
   if (defKey(e)) return;   // savunma: B menü, 1-4 seçim, R döndür
-  if (rangeKey(e)) return;   // poligon: 1-7 silah, E yarış
+  if (rangeKey(e)) return;   // poligon: 1-8 silah, E yarış
   // VS: satın alma menüsü fareyle kullanılır (B), raunt içinde 1 / 2 / 3 yuvalar, Z sis, X flaş
   if (isVS() && e.code === 'KeyB') { toggleBuy(); return; }
   if (isVS() && e.code === 'Digit4') return;   // VS: 4 = bomba kur / imha et (basılı tutulur)
@@ -491,7 +491,8 @@ window.addEventListener('keydown', e => {
   if (e.code === 'Digit3') switchWeapon('shotgun');
   if (e.code === 'Digit4') switchWeapon('m4');
   if (e.code === 'Digit5') switchWeapon('awp');
-  if (e.code === 'Digit6' && special.kind) switchWeapon(special.kind);
+  if (e.code === 'Digit6') switchWeapon('fenek');
+  if (e.code === 'Digit7' && special.kind) switchWeapon(special.kind);
   if (e.code === 'KeyR') { startReload(); startShellReload(); rifleReload(); pistolReload(); gunReload(); }
   if (e.code === 'KeyT' && !isVS()) openPick();
   if (e.code === 'KeyV') { SETTINGS.thirdPerson = !SETTINGS.thirdPerson; saveSettings(); toast(SETTINGS.thirdPerson ? '3. ŞAHIS KAMERA' : '1. ŞAHIS KAMERA'); }
@@ -650,6 +651,7 @@ function updateHUD(dt) {
   if ((w === 'm4' && m4.reloadT > 0) || (w === 'awp' && awp.reloadT > 0) || (isGun(w) && gst[w].reloadT > 0)) rl = 'ŞARJÖR DEĞİŞİYOR';
   else if (w === 'uzi' && ammo.reloadT > 0) rl = 'ŞARJÖR DEĞİŞİYOR';
   else if (w === 'uzi' && ammo.mag <= 0 && ammo.reserve <= 0) rl = 'MERMİ BİTTİ · SARI KUTULARI TOPLA';
+  else if (COOP_GUNS.includes(w) && !isVS() && !isRange() && gst[w].mag <= 0 && gst[w].reserve <= 0) rl = 'MERMİ BİTTİ · SARI KUTULARI TOPLA';
   else if (w === 'shotgun' && shells.loading) rl = 'FİŞEK DOLDURULUYOR';
   else if (w === 'shotgun' && shells.tube <= 0 && shells.reserve <= 0) rl = 'FİŞEK BİTTİ · SARI KUTULARI TOPLA';
   setText('reload', rl);

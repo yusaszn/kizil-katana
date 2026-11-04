@@ -48,7 +48,7 @@ function spawnTracer(a, b, opts = {}) {
   trSlot = (trSlot + 1) % TR_MAX;
 }
 // silah başına iz: 0 = görünmez (susturuculu sesaltı mermi), küçük değer = pompalı saçmasında seyrek; diğerlerinde her mermi görünür
-const TRACER_CHANCE = { uzi: .22, m4: .3, ak47: .3, pistol: .15, deagle: .25, usps: 0, glock: .15, shotgun: .05 };
+const TRACER_CHANCE = { uzi: .22, fenek: .18, m4: .3, ak47: .3, pistol: .15, deagle: .25, usps: 0, glock: .15, shotgun: .05 };
 // eski adla çağrılar (uzi, tüfekler, ağ): her atış iz değildir
 function addTracer(a, b, opts) { spawnTracer(a, b, opts); }
 const _th = new V3(), _tt = new V3(), _ts = new V3(), _tc = new V3();
@@ -134,7 +134,7 @@ function updateWorldCasings(dt) {
   }
 }
 // yerel oyuncu: silahtan dünyaya kovan. Birinci şahısta silah sahnesindeki kovan ekrandan çıkınca ayak dibine düşer
-const CASING_KIND = { uzi: 'pistol', pistol: 'pistol', deagle: 'pistol', usps: 'pistol', glock: 'pistol', m4: 'rifle', ak47: 'rifle', awp: 'rifle', shotgun: 'shotgun' };
+const CASING_KIND = { uzi: 'pistol', fenek: 'pistol', pistol: 'pistol', deagle: 'pistol', usps: 'pistol', glock: 'pistol', m4: 'rifle', ak47: 'rifle', awp: 'rifle', shotgun: 'shotgun' };
 const pendingCasings = [];
 function playerCasing(w, side = 1) {
   const kind = CASING_KIND[w]; if (!kind) return;

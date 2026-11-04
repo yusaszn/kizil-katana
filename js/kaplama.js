@@ -53,7 +53,7 @@ const SKINS = [
       for (let i = 0; i < 40; i++) wrapBlob(g, s, Math.random() * s, Math.random() * s, 8 + Math.random() * 20, 'rgba(40,110,160,.25)');
     }), rough: .18, metal: .6 },
 ];
-const SKIN_WEAPONS = [['ak47', 'AK-47'], ['m4', 'M4'], ['awp', 'AWP'], ['deagle', 'DEAGLE'], ['usps', 'USP-S'], ['glock', 'GLOCK'], ['pistol', 'TABANCA'], ['shotgun', 'POMPALI'], ['uzi', 'UZİ'], ['knife', 'BIÇAK'], ['karambit', 'KARAMBİT'], ['butterfly', 'KELEBEK']];
+const SKIN_WEAPONS = [['ak47', 'AK-47'], ['m4', 'M4'], ['awp', 'AWP'], ['deagle', 'DEAGLE'], ['usps', 'USP-S'], ['glock', 'GLOCK'], ['pistol', 'TABANCA'], ['shotgun', 'POMPALI'], ['uzi', 'UZİ'], ['fenek', 'FENEK'], ['knife', 'BIÇAK'], ['karambit', 'KARAMBİT'], ['butterfly', 'KELEBEK']];
 // tüfeklerde namlu ve çelik parçalar kaplanmaz (kontrast kalsın); tabancalarda sürgü çelik olduğundan o da kaplanır
 const SKIN_BASE = new Set([GK.black, GK.blued, GK.poly, GK.fde, GK.od, GK.sniper, GK.bakelite, GK.wood, GK.woodDark, GK.grip]);
 const SKIN_BASE_P = new Set([...SKIN_BASE, GK.steel]);
@@ -63,7 +63,7 @@ const skinSel = (() => { try { return JSON.parse(localStorage.getItem('kk-kaplam
 const skinMats = new Map();
 function skinRoot(w) {
   const k = typeof knifeModels !== 'undefined' ? knifeModels : {};
-  return { ak47: gunRoots.ak47, deagle: gunRoots.deagle, usps: gunRoots.usps, glock: gunRoots.glock, m4: m4Root, awp: awpRoot, pistol: pisRoot, shotgun: sgRoot, uzi: uziRoot, knife: k.knife && k.knife.g, karambit: k.karambit && k.karambit.g, butterfly: k.butterfly && k.butterfly.g }[w];
+  return { ak47: gunRoots.ak47, fenek: gunRoots.fenek, deagle: gunRoots.deagle, usps: gunRoots.usps, glock: gunRoots.glock, m4: m4Root, awp: awpRoot, pistol: pisRoot, shotgun: sgRoot, uzi: uziRoot, knife: k.knife && k.knife.g, karambit: k.karambit && k.karambit.g, butterfly: k.butterfly && k.butterfly.g }[w];
 }
 function skinMat(base, S) {
   const key = base.uuid + S.id; if (skinMats.has(key)) return skinMats.get(key);

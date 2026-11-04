@@ -7,6 +7,7 @@
 const ECON = { start: 800, max: 9000, kill: 200, win: 3000, loss: [1900, 2400, 2900] };
 const SHOP = [
   { id: 'uzi', cat: 'HAFİF', name: 'ÇİFT UZİ', price: 1600, info: 'Yakın mesafede eritir · 2×30 mermi' },
+  { id: 'fenek', cat: 'HAFİF', name: 'FENEK', price: 2100, info: 'Saniyede 19 mermi, az teper · 18 m sonrası zayıflar' },
   { id: 'shotgun', cat: 'HAFİF', name: 'POMPALI', price: 1850, info: 'Köşe tutucu · sağ tık odaklı atış' },
   { id: 'ak47', cat: 'TÜFEK', name: 'AK-47', price: 2700, info: 'Sert vurur, kafaya tek mermi · geri tepmesi güçlü' },
   { id: 'm4', cat: 'TÜFEK', name: 'M4', price: 2900, info: 'Her mesafede güvenilir · sağ tık nişan' },
@@ -22,7 +23,7 @@ const SHOP = [
   { id: 'flash', cat: 'YETENEK', name: 'FLAŞ', price: 250, max: 2, key: 'X', info: 'Bakanı birkaç saniye kör eder' },
   { id: 'he', cat: 'YETENEK', name: 'EL BOMBASI', price: 300, max: 1, key: 'H', info: '1.6 sn sonra patlar, siper arkası korur' },
 ];
-const PRIMARY_IDS = ['uzi', 'shotgun', 'ak47', 'm4', 'awp', 'katana'];
+const PRIMARY_IDS = ['uzi', 'fenek', 'shotgun', 'ak47', 'm4', 'awp', 'katana'];
 const SIDEARM_IDS = ['pistol', 'glock', 'usps', 'deagle'];
 const eco = { cr: ECON.start, primary: null, sidearm: null, armor: 0, armorKind: null, smoke: 0, flash: 0, he: 0, bought: [], streak: 0, keep: false, roundKills: 0, ready: false, taken: {}, deathInfo: '' };
 const shopItem = id => SHOP.find(s => s.id === id);

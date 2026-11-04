@@ -849,13 +849,13 @@ function updateProjectiles(dt) {
     p.x = clamp(p.x, -H + .3, H - .3); p.z = clamp(p.z, -H + .3, H - .3);
     const pb = player.body.position;
     tmp.set(pb.x - p.x, pb.y + .3 - p.y, pb.z - p.z); const d = tmp.length();
-    const wanted = o.kind === 'hp' ? player.hp < ST.maxHp : (ammo.reserve < ST.maxMags || shells.reserve < ST.maxShells || m4.reserve < RIF.m4.mags + 2 || awp.reserve < 25);
+    const wanted = o.kind === 'hp' ? player.hp < ST.maxHp : (ammo.reserve < ST.maxMags || shells.reserve < ST.maxShells || m4.reserve < RIF.m4.mags + 2 || awp.reserve < 25 || gunAmmoWanted());
     if (player.alive && wanted && d < 6 * ST.magnet && o.life < (o.kind === 'hp' ? 13.6 : 21.6)) { o.vel.addScaledVector(tmp.normalize(), 45 * ST.magnet * dt); o.vel.multiplyScalar(1 - Math.min(1, dt * 2)); }
     if (player.alive && wanted && d < .9) {
       if (o.kind === 'hp') { player.hp = Math.min(ST.maxHp, player.hp + 4); sfx.pickup(); }
       else {
         ammo.reserve = Math.min(ST.maxMags, ammo.reserve + 1); shells.reserve = Math.min(ST.maxShells, shells.reserve + 6);
-        m4.reserve = Math.min(RIF.m4.mags + 2, m4.reserve + 1); awp.reserve = Math.min(25, awp.reserve + 3);
+        m4.reserve = Math.min(RIF.m4.mags + 2, m4.reserve + 1); awp.reserve = Math.min(25, awp.reserve + 3); gunAmmoPickup(false);
         // bomba nadiren çıkar (%12), böylece bomba atar sürekli kullanılamaz
         const gren = m4.gren < ST.grenMax && Math.random() < .12;
         if (gren) m4.gren++;

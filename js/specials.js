@@ -1,6 +1,6 @@
 'use strict';
 /* Boss silahları: büyük boss roketatar, ara boss bombaatar düşürür.
-   Mermisi sınırlı; cephane kutuları bu silahları doldurmaz. Mermi bitince silah elden çıkar. 6 ile seçilir. */
+   Mermisi sınırlı; cephane kutuları bu silahları doldurmaz. Mermi bitince silah elden çıkar. 7 ile seçilir. */
 
 const SPECIALS = {
   rocket: { name: 'ROKETATAR', ammo: 5, cd: 1.15, R: 5.5, base: 8, vari: 16 },
@@ -36,7 +36,7 @@ function takeSpecial(kind) {
   if (special.kind === kind) special.ammo = Math.min(def.ammo * 2, special.ammo + def.ammo);
   else { special.kind = kind; special.ammo = def.ammo; }
   special.cd = 0;
-  sfx.upgrade(); toast(def.name + ' · ' + special.ammo + ' MERMİ · 6');
+  sfx.upgrade(); toast(def.name + ' · ' + special.ammo + ' MERMİ · 7');
   switchWeapon(kind);
 }
 function resetSpecials() {

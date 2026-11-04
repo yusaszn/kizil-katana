@@ -13,6 +13,8 @@ const botById = id => bots.list.find(b => b.id === id);
 const botsAllowed = () => net.gameMode === 'vs' || net.gameMode === 'tdm';
 const _bv1 = new V3(), _bv2 = new V3();
 
+// bot silahı: çoğu AK-47 ya da M4, bazıları FENEK (yakın mesafede çok hızlı)
+const botWeapon = () => { const r = Math.random(); return r < .4 ? 'ak47' : r < .8 ? 'm4' : 'fenek'; };
 function addBot() {
   if (net.mode !== 'host' || !botsAllowed()) return;
   if (Object.keys(net.players).length >= 8) { lobbyMsg('Oda dolu (bot dahil en fazla 8).'); return; }
@@ -20,7 +22,7 @@ function addBot() {
   addPlayer(id, 'BOT ' + BOT_NAMES[(bots.seq - 1) % BOT_NAMES.length], null);
   const p = net.players[id]; p.bot = true; p.rd = 1;
   const b = { id, p, pos: new V3(0, .5, 0), yaw: 0, pitch: 0, vel: new V3(), hp: 100, path: [], repathT: 0, tgt: null, react: 0, burst: 0, pause: 0, cd: 0, sh: 0, respawnT: 0,
-    w: Math.random() < .5 ? 'ak47' : 'm4', skill: .45 + Math.random() * .35, stuckT: 0, lastPos: new V3(), kills: 0, deaths: 0, aware: 0, awareYaw: 0 };
+    w: botWeapon(), skill: .45 + Math.random() * .35, stuckT: 0, lastPos: new V3(), kills: 0, deaths: 0, aware: 0, awareYaw: 0 };
   bots.list.push(b);
   if (net.inMatch) botSpawn(b);
   sendRoster();
@@ -139,14 +141,14 @@ function botSee(b) {
 }
 function botFire(b, id, d) {
   const pos = botTargetPos(id); if (!pos) return;
-  b.sh++; b.cd = b.w === 'ak47' ? 1 / 9.6 : 1 / 10; b.burst++;
+  b.sh++; b.cd = isGun(b.w) ? 1 / GUNS[b.w].rate : 1 / 10; b.burst++;
   const tv = id === net.myId ? player.body.velocity : (botById(id) || {}).vel || (net.players[id].proxy || {}).vel || _bv2.set(0, 0, 0);
   const moving = Math.hypot(tv.x, tv.z) > 2, crouch = id === net.myId && player.crouchK > .5;
-  let p = (.66 - d * .0085) * (b.skill + .25) * (moving ? .65 : 1) * (crouch ? .8 : 1) * (b.burst > 4 ? .65 : 1);
+  let p = (.66 - d * .0085) * (b.skill + .25) * (moving ? .65 : 1) * (crouch ? .8 : 1) * (b.burst > (b.w === 'fenek' ? 8 : 4) ? .65 : 1);
   if (Math.random() > clamp(p, .04, .75)) return;
   const head = Math.random() < .05 + b.skill * .07;
-  const G = GUNS.ak47, fall = clamp(1 - (d - G.falloff) / 14, .3, 1);
-  const dmg = (b.w === 'ak47' ? G.pvp : RIF.m4.pvp) * fall * (head ? (b.w === 'ak47' ? G.head : 3.5) : 1);
+  const own = isGun(b.w), G = own ? GUNS[b.w] : GUNS.ak47, fall = clamp(1 - (d - G.falloff) / 14, .3, 1);
+  const dmg = (own ? G.pvp : RIF.m4.pvp) * fall * (head ? (own ? G.head : 3.5) : 1);
   const dir = new V3(pos.x - b.pos.x, 0, pos.z - b.pos.z).normalize();
   const msg = { t: 'phit', to: id, dmg: Math.round(dmg), dir: arr(dir), head, melee: false, kn: 0, w: b.w, by: b.id, fx: head ? 'hs' : '' };
   if (isBot(id)) botHit(msg); else deliverPhit(msg);
@@ -197,7 +199,7 @@ function updateBots(dt) {
         moveSpeed = d < 12 ? 0 : 2;   // yakında durup ateş eder, uzaktaysa yavaşça yaklaşır
         if (b.react <= 0 && b.cd <= 0 && b.pause <= 0 && Math.abs(angDiff(wantYaw, b.yaw)) < .14) {
           botFire(b, b.tgt.id, d);
-          if (b.burst >= 3 + (Math.random() * 5 | 0)) { b.burst = 0; b.pause = rand(.22, .5); }
+          if (b.burst >= (b.w === 'fenek' ? 6 : 3) + (Math.random() * (b.w === 'fenek' ? 8 : 5) | 0)) { b.burst = 0; b.pause = rand(.22, .5); }
         }
       }
     } else if (b.aware > 0) wantYaw = b.awareYaw;

@@ -15,7 +15,7 @@ function katanaIconModel() {
   return g;
 }
 const ICON_MAKERS = {
-  ak47: () => GM.ak({ hands: false }).g, m4: () => { const m = GM.m4({ hands: false }); m.gl.visible = false; return m.g; }, awp: () => GM.awp({ hands: false }).g,
+  ak47: () => GM.ak({ hands: false }).g, fenek: () => GM.fenek({ hands: false }).g, m4: () => { const m = GM.m4({ hands: false }); m.gl.visible = false; return m.g; }, awp: () => GM.awp({ hands: false }).g,
   deagle: () => GM.deagle({ hands: false }).g, usps: () => GM.usps({ hands: false }).g, glock: () => GM.glock({ hands: false }).g,
   pistol: () => GM.beretta({ hands: false }).g, shotgun: () => GM.r870({ hands: false }).g,
   uzi: () => { const g = new THREE.Group(), a = GM.uzi(1, { hands: false }).g, b = GM.uzi(-1, { hands: false }).g; b.position.set(0, .07, .06); g.add(a, b); return g; },

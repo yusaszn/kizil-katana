@@ -18,7 +18,7 @@ function wsMake(w) {
   if (w === 'knife') return { g: GM.knife().g };
   if (w === 'karambit') return { g: GM.karambit().b };
   if (w === 'butterfly') return { g: GM.butterfly().held };
-  const mk = { ak47: GM.ak, m4: GM.m4, awp: GM.awp, deagle: GM.deagle, usps: GM.usps, glock: GM.glock, pistol: GM.beretta, shotgun: GM.r870 }[w];
+  const mk = { ak47: GM.ak, fenek: GM.fenek, m4: GM.m4, awp: GM.awp, deagle: GM.deagle, usps: GM.usps, glock: GM.glock, pistol: GM.beretta, shotgun: GM.r870 }[w];
   if (mk) { const m = mk({ hands: false }); if (m.gl) m.gl.visible = false; return m; }
   if (w === 'uzi') { const g = new THREE.Group(), a = GM.uzi(1, { hands: false }).g; g.add(a); return { g }; }
   return null;

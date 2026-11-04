@@ -13,6 +13,8 @@ const INSPECT = {
   m4: { dur: 4.2, keys: [[0, 0, 0, 0, 0, 0, 0], [0.14, -0.06, 0.07, -0.04, 0.12, 0.55, -0.675], [0.3, -0.08, 0.08, -0.03, 0.18, 0.62, -0.7875], [0.44, -0.02, 0.1, -0.04, 0.32, -0.38, 0.4125], [0.56, -0.03, 0.1, -0.04, 0.28, -0.42, 0.465], [0.67, -0.04, 0.05, -0.04, -0.05, 0.15, -0.285], [0.8, -0.04, 0.05, -0.04, -0.08, 0.12, -0.315], [0.9, 0, 0.02, -0.07, 0.05, 0.05, -0.075], [1, 0, 0, 0, 0, 0, 0]] },
   awp: { dur: 4.4, keys: [[0, 0, 0, 0, 0, 0, 0], [0.14, -0.1, 0.09, -0.03, 0.12, 0.58, -0.6375], [0.3, -0.12, 0.1, -0.03, 0.16, 0.62, -0.7125], [0.44, -0.04, 0.11, -0.03, 0.36, -0.22, 0.2625], [0.66, -0.04, 0.11, -0.03, 0.34, -0.26, 0.3], [0.74, -0.04, 0.05, -0.04, -0.05, 0.12, -0.2625], [0.86, -0.04, 0.05, -0.04, -0.08, 0.1, -0.3], [1, 0, 0, 0, 0, 0, 0]] },
   ak47: { dur: 4.2, keys: [[0, 0, 0, 0, 0, 0, 0], [0.14, -0.06, 0.07, -0.04, 0.12, 0.55, -0.675], [0.3, -0.08, 0.08, -0.03, 0.18, 0.62, -0.7875], [0.44, -0.02, 0.1, -0.04, 0.32, -0.38, 0.4125], [0.56, -0.03, 0.1, -0.04, 0.28, -0.42, 0.465], [0.67, -0.04, 0.05, -0.04, -0.05, 0.15, -0.285], [0.8, -0.04, 0.05, -0.04, -0.08, 0.12, -0.315], [0.9, -0.01, 0.04, -0.06, 0.1, -0.2, 0.225], [1, 0, 0, 0, 0, 0, 0]] },
+  // fenek: sol yüz (kurma kolu) → çevirip sağ yüz (fişek penceresi) → şarjöre bakış → kurma kolu çekilir → dinlen
+  fenek: { dur: 3.8, keys: [[0, 0, 0, 0, 0, 0, 0], [0.13, -0.05, 0.07, -0.05, 0.1, 0.6, -0.7], [0.29, -0.07, 0.08, -0.04, 0.16, 0.66, -0.8], [0.43, -0.02, 0.1, -0.05, 0.3, -0.42, 0.45], [0.56, -0.03, 0.1, -0.05, 0.26, -0.46, 0.5], [0.67, -0.04, 0.05, -0.05, -0.08, 0.15, -0.3], [0.8, -0.04, 0.05, -0.05, -0.1, 0.12, -0.33], [0.9, -0.01, 0.04, -0.06, 0.08, 0.22, -0.25], [1, 0, 0, 0, 0, 0, 0]] },
   // tabancalar: sol yüz → sağ yüz (fişek penceresi) → namlu kontrolü (kızak hafif geri) → dinlen
   deagle: { dur: 3.4, keys: [[0, 0, 0, 0, 0, 0, 0], [0.14, -0.04, 0.05, -0.05, 0.05, 0.72, -0.75], [0.3, -0.05, 0.06, -0.04, 0.08, 0.78, -0.825], [0.46, -0.03, 0.07, -0.04, 0.06, -0.58, 0.69], [0.6, -0.03, 0.07, -0.04, 0.04, -0.62, 0.75], [0.74, 0, 0.05, -0.06, 0.12, 0.14, -0.165], [0.88, 0, 0.05, -0.06, 0.14, 0.1, -0.15], [1, 0, 0, 0, 0, 0, 0]] },
   usps: { dur: 3.4, keys: [[0, 0, 0, 0, 0, 0, 0], [0.14, -0.04, 0.05, -0.05, 0.05, 0.72, -0.75], [0.3, -0.05, 0.06, -0.04, 0.08, 0.78, -0.825], [0.46, -0.03, 0.07, -0.04, 0.06, -0.58, 0.69], [0.6, -0.03, 0.07, -0.04, 0.04, -0.62, 0.75], [0.74, 0, 0.05, -0.06, 0.12, 0.14, -0.165], [0.88, 0, 0.05, -0.06, 0.14, 0.1, -0.15], [1, 0, 0, 0, 0, 0, 0]] },
@@ -44,6 +46,7 @@ const DRAW = {
   karambit: { dur: .75, keys: [[0, 0, -.4, 0, 0, 0, 0], [.35, 0, .02, 0, 0, .3, 0], [1, 0, 0, 0, 0, 0, 0]] },
   butterfly: { dur: .9, keys: [[0, 0, -.4, 0, 0, 0, 0], [.3, 0, .02, 0, 0, .2, -.2], [1, 0, 0, 0, 0, 0, 0]] },
   ak47: { dur: .8, keys: [[0, .05, -.5, .1, -1.0, .4, -.5], [.45, 0, .02, 0, .1, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
+  fenek: { dur: .7, keys: [[0, .05, -.5, .1, -1.0, .4, -.5], [.45, 0, .02, 0, .1, 0, -.12], [1, 0, 0, 0, 0, 0, 0]] },
   deagle: { dur: .65, keys: [[0, 0, -.45, .05, -1.2, 0, 1.0], [.5, 0, .02, 0, .1, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
   usps: { dur: .6, keys: [[0, 0, -.45, .05, -1.2, 0, 1.0], [.5, 0, .02, 0, .1, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
   glock: { dur: .5, keys: [[0, 0, -.45, .05, -1.2, 0, 1.0], [.5, 0, .02, 0, .1, 0, 0], [1, 0, 0, 0, 0, 0, 0]] },
@@ -74,7 +77,7 @@ function keyOffset(def, t) {
   const u2 = u * u, u3 = u2 * u;
   return [1, 2, 3, 4, 5, 6].map(j => .5 * (2 * a[j] + (-p0[j] + b[j]) * u + (2 * p0[j] - 5 * a[j] + 4 * b[j] - p3[j]) * u2 + (-p0[j] + 3 * a[j] - 3 * b[j] + p3[j]) * u3));
 }
-const WEAPON_ROOTS = () => ({ katana: swordRoot, uzi: uziRoot, shotgun: sgRoot, m4: m4Root, awp: awpRoot, pistol: pisRoot, ak47: gunRoots.ak47, deagle: gunRoots.deagle, usps: gunRoots.usps, glock: gunRoots.glock, rocket: rocketRoot, launcher: launcherRoot, knife: knifeRoot, karambit: knifeRoot, butterfly: knifeRoot });
+const WEAPON_ROOTS = () => ({ katana: swordRoot, uzi: uziRoot, shotgun: sgRoot, m4: m4Root, awp: awpRoot, pistol: pisRoot, ak47: gunRoots.ak47, fenek: gunRoots.fenek, deagle: gunRoots.deagle, usps: gunRoots.usps, glock: gunRoots.glock, rocket: rocketRoot, launcher: launcherRoot, knife: knifeRoot, karambit: knifeRoot, butterfly: knifeRoot });
 function addOffset(w, o) {
   const root = WEAPON_ROOTS()[w];
   if (root === uziRoot) { uziRoot.position.set(uziRoot.position.x + o[0], uziRoot.position.y + o[1], uziRoot.position.z + o[2]); uziRoot.rotation.x += o[3]; uziRoot.rotation.y += o[4]; uziRoot.rotation.z += o[5]; return; }
@@ -144,6 +147,7 @@ function applyInspect(dt) {
     if (w === 'm4') { if (t > .55 && t < .85) m4Root.position.z += Math.sin((t - .55) / .3 * Math.PI) * .03; if (cross(.6)) sfx.bolt(); }
     if (w === 'awp') { if (t > .5 && t < .95) { const k = Math.sin((t - .5) / .45 * Math.PI); awpm.bolt.rotation.z = k * 1.2; awpm.bolt.position.z = .1 + k * .1; } if (cross(.55)) sfx.bolt(); }
     if (isGun(w) && gunModels[w].slide && t > .55 && t < .8) gunModels[w].slide.position.z = Math.sin((t - .55) / .25 * Math.PI) * GUNS[w].slideBack;
+    if (isGun(w) && gunModels[w].ch && t > .55 && t < .8) gunModels[w].ch.position.z = Math.sin((t - .55) / .25 * Math.PI) * (GUNS[w].chBack || .04);   // kurma kolu
     if (isGun(w) && cross(.6)) sfx.bolt();
     if (w === 'pistol') { if (t > .55 && t < .8) pism.slide.position.z = Math.sin((t - .55) / .25 * Math.PI) * .045; if (cross(.6)) sfx.shell(); }
     if (w === 'uzi') { for (let i = 0; i < 2; i++) uzis[i].rotation.z += (1 - smooth(Math.min(1, t * 1.6))) * TAU * uzis[i].userData.side; if (cross(.7)) sfx.shell(); }
@@ -174,6 +178,11 @@ function applyInspect(dt) {
   };
   if (insp.w === 'm4') magCheck(m4m, .66, .84);
   if (insp.w === 'ak47') { magCheck(gunModels.ak47, .66, .82); if (t > .84 && t < .95) gunModels.ak47.slide.position.z = Math.sin((t - .84) / .11 * Math.PI) * .03; }
+  // fenek: şarjör kontrolü, sonra kurma kolu yarım çekilip namluya bakılır (sürgü de geri gelir)
+  if (insp.w === 'fenek') {
+    const fm = gunModels.fenek; magCheck(fm, .64, .8);
+    if (t > .83 && t < .96) { const k = Math.sin((t - .83) / .13 * Math.PI); fm.ch.position.z = k * .045; fm.slide.position.z = k * .018; }
+  }
   if (insp.w === 'awp') { if (t > .47 && t < .64) { const k = Math.sin((t - .47) / .17 * Math.PI); awpm.bolt.rotation.z = k * 1.2; awpm.bolt.position.z = .1 + k * .05; } magCheck(awpm, .72, .88); }
   // tabancalar: destek eli tabancayı bırakır, aşağı iner; tabanca tek elle çevrilir, sonda el geri gelir
   const pm = insp.w === 'pistol' ? pism : isGun(insp.w) && GUNS[insp.w].slot === 'pistol' ? gunModels[insp.w] : null;

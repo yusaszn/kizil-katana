@@ -109,6 +109,7 @@ function charInstance(color) {
 const TP_GUN = {
   m4: { make: () => GM.m4({ hands: false }), grip: [0, -.088, .093], sup: [0, .012, -.3], butt: .44, s: .73, rifle: true },
   ak47: { make: () => GM.ak({ hands: false }), grip: [0, -.075, .135], sup: [0, -.006, -.28], butt: .452, s: .73, rifle: true },
+  fenek: { make: () => GM.fenek({ hands: false }), grip: [0, -.09, .07], sup: [0, .012, -.238], butt: .424, s: .73, rifle: true },
   awp: { make: () => GM.awp({ hands: false }), grip: [0, -.07, .118], sup: [0, -.022, -.23], butt: .475, s: .73, rifle: true },
   shotgun: { make: () => GM.r870({ hands: false }), grip: [0, -.088, .235], sup: [0, -.022, -.3], butt: .482, s: .73, rifle: true },
   launcher: { make: () => GM.m79({ hands: false }), grip: [0, -.045, .135], sup: [0, -.05, -.16], butt: .47, s: .73, rifle: true },

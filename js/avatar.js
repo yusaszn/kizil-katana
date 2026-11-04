@@ -99,6 +99,7 @@ function buildBlockyAvatar(color, name) {
   const uziL = new THREE.Group(); L.add(uziL); along(.05, .26, .07, M.armor, uziL, -.02);
   const sgun = new THREE.Group(); R.add(sgun); along(.05, .9, .07, M.armor, sgun, -.1); mesh(new THREE.BoxGeometry(.05, .22, .07), new THREE.MeshStandardMaterial({ color: 0x4a2a16 }), 0, .12, 0, sgun);
   const rifle = new THREE.Group(); R.add(rifle); along(.055, .85, .09, M.armor, rifle, -.1); mesh(new THREE.BoxGeometry(.035, .12, .06), M.dark, 0, -.15, .06, rifle);
+  const smg = new THREE.Group(); R.add(smg); along(.055, .58, .1, M.armor, smg, -.12); mesh(new THREE.BoxGeometry(.03, .16, .05), M.dark, 0, -.2, .09, smg);   // fenek: kısa, şarjörü uzun
   const sniper = new THREE.Group(); R.add(sniper); along(.05, 1.25, .08, M.green, sniper, -.15); mesh(new THREE.CylinderGeometry(.03, .03, .26, 8), M.armor, 0, -.2, .07, sniper);
   const pistol = new THREE.Group(); R.add(pistol); along(.04, .18, .07, M.armor, pistol, .0);
   const blade = new THREE.Group(); R.add(blade); along(.01, .22, .03, M.steel, blade, .06); along(.02, .08, .025, M.dark, blade, -.02);
@@ -110,7 +111,7 @@ function buildBlockyAvatar(color, name) {
   let label = null;
   if (name) { label = nameSprite(name, color); label.position.y = 2.25; g.add(label); }
   scene.add(g);
-  return { g, root, legs, knees, arms, elbows, hands, spine, neck, head, scarf, tails, katana, uziL, uziR, sgun, rifle, sniper, pistol, blade, rocket, launcher, sheathBlade, label, cloth, parts, phase: 0, swingK: 0, crouchK: 0, kickK: 0 };
+  return { g, root, legs, knees, arms, elbows, hands, spine, neck, head, scarf, tails, katana, uziL, uziR, sgun, rifle, smg, sniper, pistol, blade, rocket, launcher, sheathBlade, label, cloth, parts, phase: 0, swingK: 0, crouchK: 0, kickK: 0 };
 }
 
 // s: { x,y,z, yaw, pitch, speed, w, block, alive, crouch, swing, kick }
@@ -146,10 +147,10 @@ function animateBlockyAvatar(av, dt, s) {
   av.scarf.rotation.x = .3 + sl * .5 + mv * .6 + Math.sin(ph * 2) * .15 * mv + Math.sin(performance.now() / 400) * .05;
   av.tails.rotation.x = .3 + mv * .5;
   // ---- silah görünürlüğü ----
-  const w = s.w, melee = w === 'katana' || isKnife(w), uzi = w === 'uzi', two = w === 'shotgun' || w === 'm4' || w === 'ak47' || w === 'awp' || w === 'rocket' || w === 'launcher';
+  const w = s.w, melee = w === 'katana' || isKnife(w), uzi = w === 'uzi', two = w === 'shotgun' || w === 'm4' || w === 'ak47' || w === 'fenek' || w === 'awp' || w === 'rocket' || w === 'launcher';
   av.katana.visible = w === 'katana'; av.uziL.visible = av.uziR.visible = uzi; av.sgun.visible = w === 'shotgun';
   const pis = PISTOL_TYPES.includes(w);
-  av.rifle.visible = w === 'm4' || w === 'ak47'; av.sniper.visible = w === 'awp'; av.pistol.visible = pis; av.blade.visible = isKnife(w);
+  av.rifle.visible = w === 'm4' || w === 'ak47'; av.smg.visible = w === 'fenek'; av.sniper.visible = w === 'awp'; av.pistol.visible = pis; av.blade.visible = isKnife(w);
   av.rocket.visible = w === 'rocket'; av.launcher.visible = w === 'launcher';
   if (av.sheathBlade) av.sheathBlade.visible = w !== 'katana';
   // ---- kollar ----

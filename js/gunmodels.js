@@ -439,6 +439,84 @@ GM.uzi = (side = 1, { hands = true } = {}) => {
   return { g, mag, flash: GK.flash(g, Y, -.24, 0xffc860), port: new V3(.032, .008, -.035), sight: SL };
 };
 
+/* ================= FENEK (.45 hafif makineli, köşeli gövde) =================
+   Köşeli üst gövde ve tam boy üst ray; geri tepme bloğu gövdenin önünde aşağı düşen eğik yuvada (alt gövde öne sarkar).
+   Kısa namlu kare muhafazanın içinde, yandan katlanan gez ve arpacık, sağa katlanan iskelet dipçik, kabzanın önünde uzun düz şarjör.
+   Kurma kolu solda ve atışta gidip gelmez (yalnız kurarken çekilir); fişek penceresi sağda. Ölçek tüfeklerle aynı (~1.3). */
+GM.fenek = ({ hands = true } = {}) => {
+  const g = new THREE.Group(), Y = .012, SL = .074;
+  // ---- üst gövde ve tam boy ray ----
+  GK.prof(g, GK.black, [[-.165, -.024], [-.165, .028, .004], [-.158, .034, .003], [.19, .034, .003], [.196, .026, .004], [.196, -.024]], .05);
+  GK.rail(g, GK.black, -.288, .186, .034, .021, .008);
+  // ---- kare namlu muhafazası: yanlarda soğutma yarıkları, altında kısa ray ----
+  GK.rbox(g, GK.black, .036, .042, .126, 0, .013, -.227, .005);
+  for (const s of [-1, 1]) for (let i = 0; i < 3; i++) GK.box(g, GK.hole, .001, .007, .024, s * .0182, .015, -.198 - i * .031);
+  GK.mesh(GK.railGeo(-.284, -.196, .019, .007), GK.black, g, 0, -.008, 0, 0, 0, Math.PI);
+  // ---- dişli namlu ucu ve koruma somunu ----
+  GK.lathe(g, GK.steel, [[.0085, -.285], [.0085, -.297], [.011, -.299], [.011, -.321], [.0098, -.325], [.0058, -.325], [.0058, -.317]], 0, Y, 16);
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; GK.box(g, GK.dark, .0025, .0025, .016, Math.cos(a) * .011, Y + Math.sin(a) * .011, -.31, 0, 0, a); }
+  GK.bore(g, .0058, Y, -.3252);
+  // ---- polimer alt gövde: önde eğik inen geri tepme yuvası, şarjör ağzı, kabzanın arkasından dipçiğe uzanan alt kısım ----
+  GK.prof(g, GK.poly, [[-.165, -.022], [-.162, -.036, .006], [-.118, -.116, .008], [-.11, -.124, .003], [-.052, -.124, .003], [-.046, -.112], [-.044, -.05], [.046, -.05],
+    [.06, -.044, .006], [.13, -.04, .012], [.194, -.03, .004], [.194, -.022]], .048);
+  GK.box(g, GK.dark, .0495, .004, .074, 0, -.07, -.128, 1.07);                          // eğik yuvanın kapak çizgisi
+  GK.prof(g, GK.poly, [[-.114, -.118], [-.048, -.118], [-.048, -.13, .003], [-.114, -.13, .003]], .052);   // genişleyen şarjör ağzı
+  GK.guard(g, GK.poly, -.044, .04, -.05, -.1, .014, .007);
+  GK.trigger(g, GK.steel, -.05, -.005);
+  GK.screws(g, GK.steel, .05, [[-.032, -.142], [-.012, .17], [.016, -.15]], .0034);       // sökme pimleri
+  GK.pin(g, GK.dark, .0052, .004, -.0245, -.042, -.05, 12);                              // şarjör bırakma düğmesi
+  GK.pin(g, GK.steel, .006, .003, -.0255, -.036, .064, 12);                              // şalter göbeği
+  GK.box(g, GK.steel, .003, .005, .022, -.027, -.034, .054, -.6);                        // şalter kolu
+  // ---- kabza: arkaya ~12° yatık, önünde parmak yuvaları ----
+  GK.prof(g, GK.grip, [[.03, -.048], [.078, -.048], [.084, -.06], [.106, -.168, .008], [.1, -.176, .005], [.064, -.176, .006], [.052, -.12], [.046, -.104, .004], [.05, -.092],
+    [.044, -.08, .004], [.048, -.068], [.034, -.06]], .031);
+  // ---- fişek penceresi (sağda) ve içinde gidip gelen sürgü ----
+  GK.box(g, GK.hole, .001, .016, .048, .0255, .008, .02);
+  const slide = new THREE.Group(); g.add(slide);
+  GK.box(slide, GK.steel, .001, .009, .038, .0262, .008, .022);
+  // ---- kurma kolu (solda, öne yakın): kanal ve katlanır topuz ----
+  GK.box(g, GK.hole, .001, .007, .1, -.0255, .006, -.085);
+  const ch = new THREE.Group(); g.add(ch);
+  GK.rbox(ch, GK.dark, .012, .012, .022, -.03, .006, -.126, .003);
+  GK.box(ch, GK.steel, .003, .011, .005, -.0365, .006, -.132);
+  // ---- yandan katlanan arka gez: ray kelepçesi, eğik gövde, kulaklı delikli levha (delik nişan çizgisinde); nişan alınca saydamlaşır ----
+  const rear = new THREE.Group(); g.add(rear);
+  const rearMat = GK.black.clone(); rearMat.transparent = true;
+  GK.rbox(rear, GK.black, .025, .007, .03, 0, .0455, .16, .002);
+  GK.prof(rear, GK.black, [[.147, .048], [.175, .048], [.173, SL - .012, .003], [.155, SL - .012, .003]], .017);
+  GK.plate(rear, rearMat, [[-.0105, SL - .013], [.0105, SL - .013], [.0105, SL + .006, .004], [.006, SL + .01, .003], [-.006, SL + .01, .003], [-.0105, SL + .006, .004]], .008, 0, 0, .166,
+    { holes: [GK.circle(0, SL, .0058, 16)] });
+  GK.tube(rear, GK.steel, .0022, .022, .013, .05, .16, 8);                               // katlanma menteşesi
+  // ---- yandan katlanan arpacık: eğik kule, koruma kulakları ve direk (ucu nişan çizgisinde) ----
+  const front = new THREE.Group(); g.add(front);
+  GK.rbox(front, GK.black, .023, .007, .028, 0, .0455, -.268, .002);
+  GK.prof(front, GK.black, [[-.283, .048], [-.253, .048], [-.258, .058, .003], [-.278, .058, .003]], .019);
+  for (const s of [-1, 1]) GK.prof(front, GK.black, [[-.276, .056], [-.26, .056], [-.262, SL + .006, .002], [-.274, SL + .006, .002]], .0032, s * .0086);
+  GK.box(front, GK.dark, .0026, SL - .056, .003, 0, (SL + .056) / 2, -.268);
+  GK.tube(front, GK.steel, .0022, .02, .0122, .05, -.268, 8);
+  // ---- sağa katlanan iskelet dipçik (menteşe gövdenin arkasında) ----
+  GK.rbox(g, GK.black, .04, .036, .016, 0, Y - .006, .203, .004);
+  const stock = new THREE.Group(); stock.position.set(0, Y, .2); g.add(stock);
+  GK.mesh(new THREE.CylinderGeometry(.0065, .0065, .036, 10), GK.steel, stock, .021, -.004, .012);
+  GK.prof(stock, GK.poly, [[.008, .016, .004], [.17, .02, .004], [.2, .03, .006], [.212, .03, .004], [.212, -.09, .004], [.196, -.09, .006], [.1, -.026, .02], [.008, -.018, .004]], .032, 0,
+    { holes: [[[.115, .004], [.178, .01, .004], [.182, -.048, .006], [.165, -.055, .004], [.12, -.024, .006]]] });
+  GK.prof(stock, GK.rubber, [[.21, .031, .003], [.224, .031, .003], [.224, -.092, .004], [.21, -.092, .004]], .036);
+  // ---- uzun düz şarjör (kabzanın önündeki yuvada) ----
+  const mag = new THREE.Group(); mag.position.set(0, -.118, -.081); g.add(mag);
+  GK.rbox(mag, GK.poly, .026, .195, .042, 0, -.0875, 0, .005);
+  GK.rbox(mag, GK.dark, .0275, .13, .006, 0, -.08, .016, .002);                          // arka sırt
+  GK.rbox(mag, GK.dark, .031, .016, .048, 0, -.189, .003, .004);                         // uzatma tabanı
+  // ---- eller ----
+  let lh = null, magHand = null;
+  if (hands) {
+    gmGripHand(g, { r: .021, rake: .21, y: -.09, z: .07, trigger: true });
+    lh = gmBarHand(g, { r: .028, y: .012, z: -.238 });
+    magHand = gmMagHand(mag, { r: .022, y: -.07, z: 0 });
+  }
+  const flash = GK.flash(g, Y, -.35);
+  return { g, mag, slide, ch, lh, magHand, rear, rearMat, front, stock, flash, port: new V3(.026, Y - .002, .02), sight: SL, muzzleZ: -.325 };
+};
+
 /* ================= ROKETATAR (RPG tipi) ================= */
 GM.rpg = ({ hands = true } = {}) => {
   const g = new THREE.Group();

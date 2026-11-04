@@ -1,13 +1,13 @@
 'use strict';
 /* ATIŞ POLİGONU (tek kişi): CS tarzı nişan ve sprey çalışması.
-   - 1 AK-47 · 2 M4 · 3 AWP · 4 Deagle · 5 USP-S · 6 Glock · 7 Pompalı; cephane sınırsız
+   - 1 AK-47 · 2 M4 · 3 AWP · 4 Deagle · 5 USP-S · 6 Glock · 7 Pompalı · 8 Fenek; cephane sınırsız
    - Sprey duvarı (solda, 12 m): beyaz kareli duvar, mermi delikleri deseni gösterir. Otomatik tüfekte fareyi aşağı çekip
      salınıma ters yöne kaydırarak deseni karşıla; delikler kırmızı artıda toplanmalı
    - Çelik hedefler 10 / 15 / 20 / 30 m'de: vurulunca devrilir, kalkar; kafa bölgesi ayrı sayılır
    - E: 30 saniyelik refleks yarışı: hedefler rastgele kalkar, vurana kadar geçen süre ölçülür; en iyi skor saklanır */
 
 const isRange = () => net.gameMode === 'range';
-const RANGE_W = ['ak47', 'm4', 'awp', 'deagle', 'usps', 'glock', 'shotgun'];
+const RANGE_W = ['ak47', 'm4', 'awp', 'deagle', 'usps', 'glock', 'shotgun', 'fenek'];
 const rng = { targets: [], shots: 0, hits: 0, heads: 0, chal: null, best: 0, hudT: 0 };
 try { rng.best = +localStorage.getItem('kk-poligon-en') || 0; } catch (e) { /* kayıt yok */ }
 
@@ -131,11 +131,11 @@ function rangeReset() {
   wpn.cur = 'ak47'; wpn.next = null; wpn.drawing = false;
   document.body.classList.add('rangemode');
   $('rangeHud').hidden = false;
-  banner('ATIŞ POLİGONU', '1-7 silah · solda sprey duvarı · E: refleks yarışı');
+  banner('ATIŞ POLİGONU', '1-8 silah · solda sprey duvarı · E: refleks yarışı');
 }
 function rangeKey(e) {
   if (!isRange() || state !== 'play') return false;
-  const i = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7'].indexOf(e.code);
+  const i = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8'].indexOf(e.code);
   if (i >= 0) { switchWeapon(RANGE_W[i]); return true; }
   if (e.code === 'KeyE') { rangeChallenge(); return true; }
   if (e.code === 'KeyT') return true;
