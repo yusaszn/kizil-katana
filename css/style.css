@@ -565,3 +565,17 @@ body.touchdev.showboard #board{display:block;transform:scale(.8);transform-origi
 #skins .apR .btns{flex-direction:column}
 #skins .apR .btns .btn{flex:0 0 auto;width:100%}
 @media (max-height:520px),(max-width:820px){#skins #wsHint span{display:none}}
+
+/* silah listesi: kategoriler, iki sütun büyük kartlar */
+#skins #skinTabs{display:flex;flex-direction:column;gap:10px;overflow-y:auto}
+#skins .wcat>b{display:block;font-family:var(--hud);font-size:10px;letter-spacing:.3em;color:var(--gold);margin:0 0 5px}
+#skins .wgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+#skins .wgrid button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 6px 8px;min-height:78px;font-size:11px;letter-spacing:.14em;text-align:center}
+#skins .wgrid button img{width:100%;max-width:120px;height:40px;object-fit:contain}
+@media (max-height:520px),(max-width:820px){
+  #skins #skinTabs{gap:6px}#skins .wcat>b{font-size:8px;margin-bottom:3px}#skins .wgrid{gap:4px}
+  #skins .wgrid button{min-height:48px;padding:5px 3px;gap:3px;font-size:8px}#skins .wgrid button img{height:22px}
+}
+#skins #skinTabs .wgrid button{flex-direction:column;justify-content:center;gap:6px;padding:10px 6px 8px;font-size:11px;text-align:center}
+#skins #skinTabs .wgrid button img{width:100%;max-width:120px;height:40px}
+@media (max-height:520px),(max-width:820px){#skins #skinTabs .wgrid button{padding:5px 3px;gap:3px;font-size:8px}#skins #skinTabs .wgrid button img{height:22px}}

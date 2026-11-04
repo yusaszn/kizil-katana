@@ -60,6 +60,16 @@ for (const id in GUNS) {
   GUNS[id].restP = P(GUNS[id].pose, GUNS[id].poseR || [0, .03, 0]); GUNS[id].adsP = P(GUNS[id].adsPose, [0, 0, 0]);   // poseR: dinlenme açısı (isteğe bağlı)
 }
 const gunPose = P([0, 0, 0], [0, 0, 0]);
+// ÇİFTE FENEK bonusu (aparat.js): sol elde aynalanmış ikinci FENEK, sırayla ateş eder; ilk gerektiğinde kurulur
+let fenDual = null;
+function fenekDualModel() {
+  if (fenDual) return fenDual;
+  const root = new THREE.Group(); root.visible = false; vmScene.add(root);
+  const m = GM.fenek(); m.g.scale.x = -1; root.add(m.g); if (m.lh) m.lh.visible = false;
+  fenDual = { root, m };
+  apDress('fenek', m); skinTo(root, 'fenek', skinEff('fenek')); linearizeViewmodel();
+  return fenDual;
+}
 
 /* ================= ATEŞ VE ŞARJÖR ================= */
 function resetGuns() { for (const id in GUNS) Object.assign(gst[id], { mag: GUNS[id].mag, reserve: GUNS[id].rounds, reloadT: 0, cd: 0, adsK: 0, bloom: 0 }); }
@@ -109,9 +119,9 @@ function sprayFire(w, ads) {
 }
 function updateSpray(dt) { if (performance.now() - spray.last > 110) spray.i = Math.max(0, spray.i - dt * 16); }
 function fireGun(id) {
-  const G = GUNS[id], s = gst[id], m = gunModels[id];
+  const G = GUNS[id], s = gst[id], alt = id === 'fenek' && A(id).dual && (s.alt = !s.alt), m = alt ? fenekDualModel().m : gunModels[id];   // çiftte sırayla
   s.mag--; netFx.sh++; netFx.ft = 0;
-  s.kick = G.adsKick ? 1 - (1 - G.adsKick) * s.adsK : 1; s.slide = 1; s.flashT = G.silenced ? .03 : .05;
+  s.kick = G.adsKick ? 1 - (1 - G.adsKick) * s.adsK : 1; s.slide = 1; s[alt ? 'flashT2' : 'flashT'] = G.silenced ? .03 : .05;
   m.flash.material.rotation = rand(0, 6.28); m.flash.scale.setScalar(G.silenced ? rand(.08, .12) : rand(.22, .34) * (G.heavy ? 1.4 : 1));
   muzzleGlow = G.silenced ? .25 : G.heavy ? 1.6 : 1;
   (G.silenced && id !== 'usps' ? sfx.usps : sfx[id])(); shake(G.shake);   // susturucu eklentisi: USP-S gibi kısık ses
@@ -165,7 +175,8 @@ function updateGuns(dt) {
     s.held = mouse.left;
     if (s.mag <= 0 && s.reserve > 0 && s.reloadT <= 0 && !wpn.next) gunReload();
     // ---- animasyon ----
-    s.adsK += (((mouse.right && playing) ? 1 : 0) - s.adsK) * Math.min(1, dt * 14 * A(id).ads);
+    const dual = id === 'fenek' && A(id).dual;   // çifte FENEK: nişan yok, iki el iki silah
+    s.adsK += (((mouse.right && playing && !dual) ? 1 : 0) - s.adsK) * Math.min(1, dt * 14 * A(id).ads);
     s.kick = Math.max(0, s.kick - dt * (G.heavy ? 6 : 11)); s.slide = Math.max(0, s.slide - dt * 15);
     s.flashT -= dt; m.flash.visible = s.flashT > 0;
     const rp = s.reloadT > 0 ? 1 - s.reloadT / G.reload : -1;
@@ -185,5 +196,16 @@ function updateGuns(dt) {
       gunPose.p.z + s.kick * (G.heavy ? .09 : .05) - cock * .03);
     root.rotation.set(gunPose.r.x + s.kick * (G.heavy ? .45 : G.slot === 'pistol' ? .25 : .07) - wpn.off * .8 + tilt * .35 - sprint * .5,
       gunPose.r.y + sprint * .4, gunPose.r.z - tilt * .8 + sprint * .3, 'YXZ');
+    if (id === 'fenek') {
+      if (m.lh) m.lh.visible = !dual;
+      if (dual || fenDual) {
+        const D = fenekDualModel(); D.root.visible = root.visible && dual;
+        if (dual) {
+          root.position.x += .03;
+          D.root.position.set(-root.position.x, root.position.y, root.position.z); D.root.rotation.set(root.rotation.x, -root.rotation.y, -root.rotation.z, 'YXZ');
+          s.flashT2 = (s.flashT2 || 0) - dt; D.m.flash.visible = s.flashT2 > 0;
+        }
+      }
+    }
   }
 }

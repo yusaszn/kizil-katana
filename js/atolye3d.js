@@ -34,6 +34,7 @@ function wsBuild(w) {
   if (ws.model) { ws.root.remove(ws.model.g); ws.model.g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); ws.model = null; }
   const m = wsMake(w); if (!m) return;
   if (AP_CLS[w]) apDress(w, m.sub || m);   // eklentiler büyük modelde de
+  if (w === 'fenek' && A('fenek').dual) { const b = GM.fenek({ hands: false }); b.g.scale.x = -1; b.g.position.set(-.1, -.03, .05); m.g.add(b.g); apDress('fenek', b); }   // çifte FENEK
   m.g.traverse(o => { if (o.isSprite) o.visible = false; });
   skinTo(m.g, w, sk);
   const S = SIGHTS.find(s => s.id === (sightSel[w] || 'iron')), C = SIGHT_GUNS[w];

@@ -103,10 +103,13 @@ function swatchUrl(S) {
   if (!S.tex) return S.sw;
   return 'url(' + S.tex.image.toDataURL() + ')';
 }
+const SKIN_CATS = [['TÜFEKLER', ['ak47', 'm4', 'awp']], ['HAFİF VE POMPALI', ['fenek', 'uzi', 'shotgun']], ['TABANCALAR', ['pistol', 'deagle', 'usps', 'glock']], ['BIÇAKLAR', ['knife', 'karambit', 'butterfly']]];
 const apBar = (v, n) => `<span class="apb"><i style="width:${Math.round(Math.min(1, v / Math.max(1, n)) * 100)}%"></i></span>`;
 function renderSkins() {
   const w = skinUI.w;
-  const tabs = SKIN_WEAPONS.map(([q, n]) => `<button type="button" data-w="${q}" class="${q === w ? 'on' : ''}">${iconFor(q) ? `<img src="${iconFor(q)}" alt="">` : ''}${n}</button>`).join('');
+  // silahlar kategorilere ayrılmış büyük kartlarda
+  const nm = Object.fromEntries(SKIN_WEAPONS);
+  const tabs = SKIN_CATS.map(([cat, ids]) => `<div class="wcat"><b>${cat}</b><div class="wgrid">` + ids.filter(q => nm[q]).map(q => `<button type="button" data-w="${q}" class="${q === w ? 'on' : ''}">${iconFor(q) ? `<img src="${iconFor(q)}" alt="">` : ''}<span>${nm[q]}</span></button>`).join('') + '</div></div>').join('');
   // yuvalar: KAPLAMA, silahın eklenti yuvaları, M4 ve AK-47'de DÜRBÜN
   const slots = [['kaplama', 'KAPLAMA']].concat(apSlotsOf(w).map(s => AP_SLOTS.find(q => q[0] === s)));
   if (SIGHT_GUNS[w]) slots.splice(slots.length - (apSlotsOf(w).includes('bonus') ? 1 : 0), 0, ['durbun', 'DÜRBÜN']);

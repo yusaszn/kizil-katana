@@ -35,7 +35,7 @@ const AP_OPTS = {
     { id: 'std', name: 'STANDART ŞARJÖR', m: {} },
     { id: 'hizli', name: 'HIZLI ŞARJÖR', m: { reload: .7, mag: .85 }, t: { s: 'kills', n: 35 } },
     { id: 'uzun', name: 'UZATILMIŞ ŞARJÖR', m: { mag: 1.5, reload: 1.2, ads: .92 }, t: { s: 'kills', n: 50 } },
-    { id: 'davul', name: 'DAVUL ŞARJÖR', m: { mag: 2.2, reload: 1.6, move: .9, ads: .8 }, only: ['ak47', 'uzi', 'fenek'], t: { s: 'kills', n: 100 } },
+    { id: 'davul', name: 'DAVUL ŞARJÖR', m: { mag: 2.2, reload: 1.6, move: .9, ads: .8 }, only: ['ak47', 'm4', 'uzi', 'fenek'], t: { s: 'kills', n: 100 } },
   ],
   bonus: [
     { id: 'yok', name: 'BONUS YOK', m: {} },
@@ -49,6 +49,7 @@ const AP_OPTS = {
     { id: 'agir', name: 'AĞIR SAÇMA', m: { dmg: 1.25, range: .75, reload: 1.1 }, only: ['shotgun'], t: { s: 'kills', n: 120 } },
     { id: 'cift', name: 'ÇİFT UZİ', m: { rate: 1.65, mag: 2, spread: 1.25, move: .95 }, dual: true, note: ['iki elde iki UZİ', ''], only: ['uzi'], t: { s: 'kills', n: 100 } },
     { id: 'hiz', name: 'HIZ KİTİ', m: { rate: 1.15, recoil: 1.2, spread: 1.1 }, only: ['fenek'], t: { s: 'kills', n: 200 } },
+    { id: 'cift', name: 'ÇİFTE FENEK', m: { rate: 1.6, mag: 2, spread: 1.3, move: .95 }, dual: true, note: ['iki elde iki FENEK', 'nişan alınmaz'], only: ['fenek'], t: { s: 'kills', n: 300 } },
   ],
 };
 // kaplamalar o silahla yapılan leşle açılır (kötüden iyiye)
@@ -170,16 +171,18 @@ const skinEff = w => { const id = (typeof skinSel !== 'undefined' && skinSel[w])
    Namlu ucuna susturucu / kompansatör / uzun namlu, namlu altına tutamaç, şarjörün altına uzatma ya da davul.
    Parçalar seçim değişince bir kez kurulur. Ağız alevi eklentinin ucuna taşınır. */
 let apTabMat = null;
-function apLocalBox(root, part) {   // parçanın kendi ekseninde sınır kutusu
+function apLocalBox(root, part, skip) {   // parçanın kendi ekseninde sınır kutusu (skip: sayılmayacak alt dal, ör. şarjörü tutan el)
   root.updateMatrixWorld(true);
   const inv = new THREE.Matrix4().copy(part.matrixWorld).invert(), box = new THREE.Box3(), tb = new THREE.Box3(), mm = new THREE.Matrix4();
-  part.traverse(o => { if (!o.isMesh || o.userData.ap || !o.geometry) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); mm.multiplyMatrices(inv, o.matrixWorld); tb.copy(o.geometry.boundingBox).applyMatrix4(mm); box.union(tb); });
+  part.traverse(o => { if (!o.isMesh || o.userData.ap || !o.geometry) return; if (skip) for (let q = o; q && q !== part; q = q.parent) if (q === skip) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); mm.multiplyMatrices(inv, o.matrixWorld); tb.copy(o.geometry.boundingBox).applyMatrix4(mm); box.union(tb); });
   return box;
 }
 function apDress(w, m) {
   if (!m || !m.g || typeof GK === 'undefined' || !GK.black) return;
   const ud = m.g.userData;
   for (const c of ud.apG || []) if (c.parent) c.parent.remove(c);
+  for (const o of ud.apHid || []) o.visible = true;   // davul için gizlenen asıl şarjör geri gelir
+  ud.apHid = [];
   ud.apG = [];
   const add = (mesh, parent) => { mesh.userData.ap = true; parent.add(mesh); ud.apG.push(mesh); return mesh; };
   const pist = AP_CLS[w] === 'tabanca', r = pist ? .0105 : w === 'awp' ? .017 : .015;
@@ -207,11 +210,23 @@ function apDress(w, m) {
   // şarjör: uzatma ya da davul, şarjörün altına (şarjör değiştirirken onunla iner)
   const sj = apSlotsOf(w).includes('sarjor') ? apCur(w, 'sarjor').id : 'std';
   if (m.mag && sj !== 'std') {
-    const bb = apLocalBox(m.g, m.mag); if (bb.isEmpty()) return;
+    const bb = apLocalBox(m.g, m.mag, m.magHand); if (bb.isEmpty()) return;
     const cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2, wx = Math.max(.012, bb.max.x - bb.min.x), wz = Math.max(.02, bb.max.z - bb.min.z), hy = bb.max.y - bb.min.y;
     let sjm = null;
     if (sj === 'uzun') { const e = sjm = add(new THREE.Mesh(new THREE.BoxGeometry(wx * .96, hy * .32, wz * .92), GK.black), m.mag); e.position.set(cx, bb.min.y - hy * .16 + .002, cz); }
-    else if (sj === 'davul') { const R = Math.max(wz, hy * .45) * .7, d = sjm = add(new THREE.Mesh(new THREE.CylinderGeometry(R, R, wx * 2.4, 22), GK.black), m.mag); d.rotation.z = Math.PI / 2; d.position.set(cx, bb.min.y - R * .55, cz); }
+    else if (sj === 'davul') {   // asıl şarjör gizlenir: gövdenin hemen altında kısa besleme boynu ve büyük davul; AK-47 ve M4'te iki yanda çift davul
+      m.mag.traverse(o => { if (!o.isMesh || o.userData.ap) return; for (let q = o; q && q !== m.mag; q = q.parent) if (q === m.magHand) return; o.visible = false; ud.apHid.push(o); });
+      const top = bb.max.y, nh = Math.min(.05, hy * .28), twin = w === 'ak47' || w === 'm4';
+      const neck = add(new THREE.Mesh(new THREE.BoxGeometry(wx * 1.05, nh + .01, wz * 1.02), GK.black), m.mag); neck.position.set(cx, top - nh / 2, cz);
+      const drum = (R, L, x, y) => { const d = add(new THREE.Mesh(new THREE.CylinderGeometry(R, R, L, 26), GK.black), m.mag); d.rotation.z = Math.PI / 2; d.position.set(x, y, cz);
+        for (const s of [-1, 1]) { const c = add(new THREE.Mesh(new THREE.CylinderGeometry(R * .55, R * .55, .004, 18), GK.dark || GK.black), m.mag); c.rotation.z = Math.PI / 2; c.position.set(x + s * (L / 2 + .001), y, cz); }   // kapak göbeği
+        return d; };
+      if (twin) {
+        const R = Math.max(.05, wz * 1.2), L = Math.max(.03, wx * 1.25), y = top - nh - R * .78;
+        sjm = drum(R, L, cx - (wx / 2 + L / 2 - .003), y); drum(R, L, cx + (wx / 2 + L / 2 - .003), y);
+        const sp = add(new THREE.Mesh(new THREE.BoxGeometry(wx, R * 1.3, R * 1.1), GK.black), m.mag); sp.position.set(cx, y + R * .1, cz);   // ortadaki besleme kulesi
+      } else { const R = Math.max(.05, wz * 1.4); sjm = drum(R, Math.max(.034, wx * 2.1), cx, top - nh - R * .8); }
+    }
     else if (sj === 'hizli') {
       if (!apTabMat) apTabMat = new THREE.MeshStandardMaterial({ color: 0xb0281c, roughness: .8 });
       const tb = sjm = add(new THREE.Mesh(new THREE.BoxGeometry(wx * .5, .022, wz * .3), apTabMat), m.mag); tb.position.set(cx, bb.min.y - .01, cz);
@@ -227,6 +242,7 @@ function apDressAll() {
   if (typeof pism !== 'undefined') apDress('pistol', pism);
   if (typeof sg !== 'undefined') apDress('shotgun', sg);
   if (typeof uzis !== 'undefined') for (const g of uzis) apDress('uzi', { g, flash: g.userData.flash, mag: g.userData.mag });
+  if (typeof fenDual !== 'undefined' && fenDual) apDress('fenek', fenDual.m);
   if (typeof SKIN_WEAPONS !== 'undefined' && typeof applySkin === 'function') for (const [w] of SKIN_WEAPONS) applySkin(w, skinEff(w));   // yeni parçalar da kaplanır; kilitli kaplama fabrikaya döner
   else if (typeof linearizeViewmodel === 'function') linearizeViewmodel();
 }
