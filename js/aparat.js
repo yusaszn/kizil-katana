@@ -218,14 +218,16 @@ function apDress(w, m) {
       m.mag.traverse(o => { if (!o.isMesh || o.userData.ap) return; for (let q = o; q && q !== m.mag; q = q.parent) if (q === m.magHand) return; o.visible = false; ud.apHid.push(o); });
       const top = bb.max.y, nh = Math.min(.05, hy * .28), twin = w === 'ak47' || w === 'm4';
       const neck = add(new THREE.Mesh(new THREE.BoxGeometry(wx * 1.05, nh + .01, wz * 1.02), GK.black), m.mag); neck.position.set(cx, top - nh / 2, cz);
-      const drum = (R, L, x, y) => { const d = add(new THREE.Mesh(new THREE.CylinderGeometry(R, R, L, 26), GK.black), m.mag); d.rotation.z = Math.PI / 2; d.position.set(x, y, cz);
-        for (const s of [-1, 1]) { const c = add(new THREE.Mesh(new THREE.CylinderGeometry(R * .55, R * .55, .004, 18), GK.dark || GK.black), m.mag); c.rotation.z = Math.PI / 2; c.position.set(x + s * (L / 2 + .001), y, cz); }   // kapak göbeği
+      // davulun yuvarlak yüzü öne (namlu yönüne) bakar: ekseni z boyunca
+      const drum = (R, L, x, y) => { const d = add(new THREE.Mesh(new THREE.CylinderGeometry(R, R, L, 26), GK.black), m.mag); d.rotation.x = Math.PI / 2; d.position.set(x, y, cz);
+        for (const s of [-1, 1]) { const c = add(new THREE.Mesh(new THREE.CylinderGeometry(R * .55, R * .55, .004, 18), GK.dark || GK.black), m.mag); c.rotation.x = Math.PI / 2; c.position.set(x, y, cz + s * (L / 2 + .001)); }   // kapak göbeği
         return d; };
+      const L = Math.max(.034, wz * 1.15);
       if (twin) {
-        const R = Math.max(.05, wz * 1.2), L = Math.max(.03, wx * 1.25), y = top - nh - R * .78;
-        sjm = drum(R, L, cx - (wx / 2 + L / 2 - .003), y); drum(R, L, cx + (wx / 2 + L / 2 - .003), y);
-        const sp = add(new THREE.Mesh(new THREE.BoxGeometry(wx, R * 1.3, R * 1.1), GK.black), m.mag); sp.position.set(cx, y + R * .1, cz);   // ortadaki besleme kulesi
-      } else { const R = Math.max(.05, wz * 1.4); sjm = drum(R, Math.max(.034, wx * 2.1), cx, top - nh - R * .8); }
+        const R = Math.max(.036, wz * .88), L2 = Math.max(.052, wz * 1.7), y = top - nh - R * .8;   // ikili: daha küçük, daha kalın
+        sjm = drum(R, L2, cx - R * .98, y); drum(R, L2, cx + R * .98, y);
+        const sp = add(new THREE.Mesh(new THREE.BoxGeometry(wx * 1.2, R * 1.2, L * .9), GK.black), m.mag); sp.position.set(cx, y + R * .2, cz);   // ortadaki besleme kulesi
+      } else { const R = Math.max(.05, wz * 1.4); sjm = drum(R, L, cx, top - nh - R * .8); }
     }
     else if (sj === 'hizli') {
       if (!apTabMat) apTabMat = new THREE.MeshStandardMaterial({ color: 0xb0281c, roughness: .8 });
