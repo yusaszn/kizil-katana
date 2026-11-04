@@ -4,11 +4,11 @@
 
 const IS_TOUCH = (('ontouchstart' in window) || navigator.maxTouchPoints > 0) && matchMedia('(pointer: coarse)').matches;
 const touch = { stick: null, look: null, sx: 0, sy: 0, kx: 0, ky: 0, btn: {} };
-const LOBBY_TB = new Set(['jump', 'talk', 'cam', 'pause', 'sit', 'wave', 'dance', 'chat', 'kick']);   // lobide görünen tuşlar
+const LOBBY_TB = new Set(['jump', 'talk', 'cam', 'pause', 'sit', 'wave', 'dance', 'chat', 'kick', 'crouch']);   // lobide görünen tuşlar (TUT topun yanındayken)
 // yerleşim: üst sırada küçük tuşlar (sağdan sola), ana kümenin solunda duruma göre çıkan tuşlar (iki sütun);
 // yalnız görünenler yer kaplar, böylece hiçbir tuş başka bir tuşun altında kalmaz
 const TOP_TB = ['pause', 'cam', 'talk', 'chat', 'score', 'inspect', 'team', 'buy'];
-const EXTRA_TB = ['sit', 'heavy', 'smoke', 'flash', 'heg', 'bomb', 'build', 'cancel', 'rotate', 'race', 'wave', 'dance'];
+const EXTRA_TB = ['sit', 'grab', 'heavy', 'smoke', 'flash', 'heg', 'bomb', 'build', 'cancel', 'rotate', 'race', 'wave', 'dance'];
 // lobide E tuşunun o anki işi (yakında bir şey yoksa boş: tuş gizlenir)
 function lobbyActionName() {
   if (!lobby.walking) return '';
@@ -29,9 +29,10 @@ const TBTN = [
   ['fire', 'ATEŞ', () => true, () => { mouse.left = true; sgClick = true; rifClick = true; attackInput('L'); }, () => { mouse.left = false; }],
   ['aim', 'NİŞAN', () => true, () => { aimPress(); sgClickR = true; rifClickR = true; if (isKnife(wpn.cur)) knifeAttack(true); }, () => { aimRelease(); }],
   ['jump', 'ZIPLA', () => true, () => { player.jumpBuf = .15; }],
-  ['crouch', 'EĞİL', () => true, () => { keys.ControlLeft = true; crouchInput(); }, () => { keys.ControlLeft = false; }],
+  ['crouch', 'EĞİL', () => true, () => { if (state === 'lobby') { lobbySlide(); return; } keys.ControlLeft = true; crouchInput(); }, () => { keys.ControlLeft = false; }],
   ['dash', 'ATIL', () => !isVS(), () => dash()],
-  ['kick', 'TEKME', () => true, () => { if (state === 'lobby') lobbyKick(); else kick(); }],
+  ['kick', 'TEKME', () => true, () => { if (state === 'lobby') lobbyKickStart(); else kick(); }, () => { if (state === 'lobby') lobbyKickRelease(); }],   // lobide basılı tut: sert şut
+  ['grab', 'TUT', () => false, () => lobbyGrab()],   // lobide topun yanında: TUT / AT
   ['reload', 'ŞARJÖR', () => true, () => { startReload(); startShellReload(); rifleReload(); pistolReload(); gunReload(); }],
   ['swap', 'SİLAH', () => true, () => { switchWeapon(); touch.stripUntil = performance.now() + 3000; }],   // sıradaki silah + 3 sn silah şeridi (istediğine dokun)
   ['inspect', 'İNCELE', () => true, () => startInspect()],
@@ -128,7 +129,10 @@ function updateTouch() {
   // moda göre görünen tuşlar
   const act = state === 'lobby' ? lobbyActionName() : '';
   if (act && touch.act !== act) { touch.act = act; $('tb_sit').textContent = act; }
-  for (const [id, , cond] of TBTN) { const el = $('tb_' + id), on = state === 'lobby' ? (id === 'sit' ? !!act : LOBBY_TB.has(id)) : !!cond(); if (el.hidden === on) el.hidden = !on; }
+  const grab = state === 'lobby' ? lobbyGrabName() : '';
+  if (grab && touch.grab !== grab) { touch.grab = grab; $('tb_grab').textContent = grab; }
+  const cr = state === 'lobby' ? 'KAY' : 'EĞİL'; if (touch.cr !== cr) { touch.cr = cr; $('tb_crouch').textContent = cr; }
+  for (const [id, , cond] of TBTN) { const el = $('tb_' + id), on = state === 'lobby' ? (id === 'sit' ? !!act : id === 'grab' ? !!grab : LOBBY_TB.has(id)) : !!cond(); if (el.hidden === on) el.hidden = !on; }
   layoutTouch();
   updateWeaponStrip();
   $('tRotate').hidden = innerWidth >= innerHeight;

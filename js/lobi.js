@@ -7,7 +7,7 @@
      konuşanın başında hoparlör işareti yanar
    - Tab / Esc: oda paneli (mekân, mod, harita, oyuncular, BAŞLAT). Host maç bitince herkesi lobiye geri çağırabilir */
 
-const lobby = { walking: false, sit: -1, emote: '', emoteT: 0, tp: true, near: null, nearT: 0, stepPh: 0, crT: 0, ckT: 2, chatT: 0 };
+const lobby = { walking: false, sit: -1, emote: '', emoteT: 0, tp: true, near: null, nearT: 0, stepPh: 0, crT: 0, ckT: 2, chatT: 0, slideK: 0, slideV: 0, slideCd: 0, slid: false, kickT: 0 };
 const EMOTE_DUR = { wave: 2.6, dance: 7 };
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 const lobbyVenue = () => (MAPS[net.venue] && MAPS[net.venue].lobby ? net.venue : 'kamp');
@@ -74,11 +74,13 @@ function lobbyKey(e) {
   if (e.repeat) return;
   if (e.code === 'Tab') { lobbyWalk(!lobby.walking); return; }
   if (!lobby.walking) return;
-  if (e.code === 'KeyE') lobbyUse();
+  if (e.code === 'KeyE') { if (lobby.near || lobby.sit >= 0) lobbyUse(); else lobbyKickStart(); }   // yanında oturak yoksa E de şut
+  else if (e.code === 'KeyQ') lobbyGrab();
+  else if (e.code === 'KeyC' || e.code === 'ControlLeft') lobbySlide();
   else if (e.code === 'KeyG') lobbyEmote('wave');
   else if (e.code === 'KeyH') lobbyEmote('dance');
   else if (e.code === 'KeyV') { lobby.tp = !lobby.tp; }
-  else if (e.code === 'KeyF') lobbyKick();
+  else if (e.code === 'KeyF') lobbyKickStart();
   else if (e.code === 'Space') { if (lobby.sit >= 0) lobbyStand(); else player.jumpBuf = .15; }
 }
 function lobbyEmote(k) {
@@ -127,17 +129,32 @@ function updateLobby(dt) {
     player.pitch = clamp(player.pitch, -.9, .8);
   } else {
     const run = keys.ShiftLeft || keys.ShiftRight || (shiftDown && performance.now() - shiftDown > 0);
-    const sp = run ? 5.4 : 3;
+    const holding = ball.holder === net.myId, sp = holding ? 3.4 : run ? 7.4 : 3.6;
     let dx = flatF.x * mz + rightV.x * mx, dz = flatF.z * mz + rightV.z * mx; const l = Math.hypot(dx, dz);
     if (l > 0) { dx /= l; dz /= l; if (lobby.emote) lobby.emote = ''; }
-    const acc = Math.min(1, dt * (player.grounded ? 11 : 2.5));
-    v.x += (dx * sp - v.x) * acc; v.z += (dz * sp - v.z) * acc;
-    if (player.jumpBuf > 0 && player.grounded) { v.y = 7.2; player.jumpBuf = 0; }
+    lobby.slideCd -= dt;
+    if (player.slideT > 0) {   // kayarak müdahale: yön kilitli, hız azalarak; topa değerse önüne iter, topu tutanı düşürür
+      player.slideT -= dt;
+      const f = Math.max(0, player.slideT / LOBBY_SLIDE_T), s2 = 2.5 + (lobby.slideV - 2.5) * f, d = player.slideDir;
+      v.x = d.x * s2; v.z = d.z * s2;
+      if (!lobby.slid && ball.mesh && ball.body) {
+        const p = ball.mesh.position, bp = b.position;
+        if (Math.hypot(p.x - bp.x, p.z - bp.z) < 1.1 && p.y < 1.8) { lobby.slid = true; lobbyTackle(d.x, d.z, s2 + 3); }
+      }
+      if (player.slideT <= 0) lobby.slideCd = .45;
+    } else {
+      const acc = Math.min(1, dt * (player.grounded ? 11 : 2.5));
+      v.x += (dx * sp - v.x) * acc; v.z += (dz * sp - v.z) * acc;
+    }
+    if (player.jumpBuf > 0 && player.grounded && player.slideT <= 0) { v.y = 7.2; player.jumpBuf = 0; }
     // ayak sesleri
     const hs = Math.hypot(v.x, v.z);
     if (player.grounded && hs > 1) { lobby.stepPh += dt * hs * 1.15; if (lobby.stepPh > Math.PI) { lobby.stepPh -= Math.PI; stepSound(run ? .3 : .2, 0, curMap === 'ev' ? 1.25 : .8); } }
     if (lobby.tp) player.pitch = clamp(player.pitch, -1.05, 1.0);
   }
+  lobby.slideK += ((player.slideT > 0 ? 1 : 0) - lobby.slideK) * Math.min(1, dt * (player.slideT > 0 ? 14 : 7));
+  lobby.kickT -= dt;
+  if (kickCh.t >= 0) { kickCh.t += dt; kickBar(Math.min(1, kickCh.t / KICK_FULL)); }
   world.step(1 / 60, dt, 4);
   updateBall(dt); updateSaha(dt);
   if (lobby.emote) { lobby.emoteT += dt; if (lobby.emoteT > EMOTE_DUR[lobby.emote]) lobby.emote = ''; }
@@ -153,7 +170,7 @@ function updateLobby(dt) {
 }
 function lobbyCamera() {
   const b = player.body.position, s = lobby.sit >= 0 ? venue.seats[lobby.sit] : null;
-  eyePos.set(b.x, s ? s.y + .76 : b.y + EYE, b.z);
+  eyePos.set(b.x, s ? s.y + .76 : b.y + EYE - lobby.slideK * .5, b.z);
   camera.position.copy(eyePos);
   camera.rotation.set(player.pitch, player.yaw, 0);
   if (lobby.tp) {
@@ -175,7 +192,7 @@ function lobbyMyAvatar(dt) {
   myAvatar.g.visible = true;
   animateAvatar(myAvatar, dt, {
     x: s ? s.x : b.x, y: s ? .5 : b.y, z: s ? s.z : b.z, yaw: s ? s.yaw : player.yaw, pitch: s ? player.pitch * .3 : player.pitch,
-    speed: Math.hypot(v.x, v.z), w: 'none', alive: true, crouch: 0, slide: 0, air: !s && !player.grounded, legsOnly: legs,
+    speed: Math.hypot(v.x, v.z), w: 'none', alive: true, crouch: 0, slide: lobby.slideK, kick: lobby.kickT > 0, air: !s && !player.grounded && player.slideT <= 0, legsOnly: legs,
     sit: s ? s.y : 0, look: s ? clamp(angDiff(player.yaw, s.yaw), -1.3, 1.3) : 0, emote: lobby.emote, emoteT: lobby.emoteT,
   });
   if (legs && !s && myAvatar.char) { myAvatar.g.position.x -= flatF.x * .17; myAvatar.g.position.z -= flatF.z * .17; }
@@ -185,7 +202,7 @@ function lobbyProxyPose(pr, dt) {
   pr.emT = (pr.emT || 0) + dt;
   const s = pr.st ? venue.seats[pr.st - 1] : null;
   if (pr.label) pr.label.position.y = s ? 1.85 : 2.25;
-  const o = { w: 'none', emote: pr.em || '', emoteT: pr.emT, crouch: 0, slide: 0 };
+  const o = { w: 'none', emote: pr.em || '', emoteT: pr.emT, crouch: 0, slide: pr.sl || 0 };
   if (s) Object.assign(o, { x: s.x, y: .5, z: s.z, yaw: s.yaw, pitch: pr.pitch * .3, sit: s.y, look: clamp(angDiff(pr.yaw, s.yaw), -1.3, 1.3), speed: 0, air: false });
   return o;
 }
@@ -386,13 +403,15 @@ $('venueSaha').addEventListener('click', () => setVenue('saha'));
 $('setBtnLobby').addEventListener('click', () => openSettings('lobby'));
 $('lobbyBackBtn').addEventListener('click', hostBackToLobby);
 $('pauseLobbyBtn').addEventListener('click', hostBackToLobby);
-canvas.addEventListener('mousedown', () => { if (state === 'lobby' && !lobby.walking) lobbyWalk(true); });
+canvas.addEventListener('mousedown', e => { if (state === 'lobby' && !lobby.walking) lobbyWalk(true); else if (state === 'lobby' && e.button === 0 && document.pointerLockElement === canvas) lobbyKickStart(); });
+window.addEventListener('mouseup', e => { if (state === 'lobby' && e.button === 0) lobbyKickRelease(); });
 
 /* ================= LOBİ OYUNCAKLARI: top ve gitar =================
    Top: fiziği host yürütür. Host üstüne yürüyerek iter; herkes F ile şut çeker, konuklar yürüyerek de iter (istek hosta gider).
    Konum ve hız saniyede 10 kez herkese gider, konukta tahminle yumuşatılır.
    Gitar: yanında E → sıradaki akor çalınır (Am · F · C · G). Herkes duyar, uzaklaştıkça kısılır. */
-const ball = { body: null, mesh: null, tgt: new V3(), vel: new V3(), sendT: 0, reqT: 0, spot: null };
+const ball = { body: null, mesh: null, tgt: new V3(), vel: new V3(), sendT: 0, reqT: 0, spot: null, holder: null, holdT: 0 };
+const LOBBY_SLIDE_T = .62, KICK_FULL = .7, HOLD_MAX = 6;
 const ballTex = canvasTex(128, (g, s) => {
   g.fillStyle = '#f2efe6'; g.fillRect(0, 0, s, s);
   g.fillStyle = '#1c1c1e';
@@ -404,9 +423,9 @@ function lobbyBallSpawn() {
   const sp = BALL_SPOT[curMap]; if (!sp) return;
   ball.mesh = mapMesh(new THREE.Mesh(new THREE.SphereGeometry(.22, 22, 16), new THREE.MeshStandardMaterial({ map: ballTex, roughness: .5 })));
   const host = net.mode !== 'guest';
-  ball.body = new CANNON.Body({ mass: host ? .45 : 0, type: host ? CANNON.Body.DYNAMIC : CANNON.Body.KINEMATIC, material: mWorld, collisionFilterGroup: G_DEBRIS, collisionFilterMask: G_STATIC | G_PLAYER | G_DEBRIS, linearDamping: .32, angularDamping: .45 });
+  ball.body = new CANNON.Body({ mass: host ? .45 : 0, type: host ? CANNON.Body.DYNAMIC : CANNON.Body.KINEMATIC, material: mWorld, collisionFilterGroup: G_DEBRIS, collisionFilterMask: G_STATIC | G_PLAYER | G_DEBRIS, linearDamping: .42, angularDamping: .45 });   // biraz daha çabuk durur: koşan yetişebilsin
   ball.body.addShape(new CANNON.Sphere(.22)); ball.body.position.set(sp[0], .4, sp[1]); world.addBody(ball.body); mapStuff.bodies.push(ball.body);
-  ball.tgt.set(sp[0], .22, sp[1]); ball.vel.set(0, 0, 0);
+  ball.tgt.set(sp[0], .22, sp[1]); ball.vel.set(0, 0, 0); ball.holder = null; ball.holdT = 0;
 }
 // şut / itme: host doğrudan uygular, konuk hosta yollar
 function ballImpulse(dx, dz, up, sp) {
@@ -415,20 +434,113 @@ function ballImpulse(dx, dz, up, sp) {
   const v = ball.body.velocity; v.x = dx * sp; v.z = dz * sp; v.y = Math.max(v.y, up);
   ball.body.wakeUp();
 }
-function lobbyKick() {
+/* şut: F / E / sol tık basılı tutulur, bırakınca vurur (ne kadar uzun, o kadar sert); yukarı bakınca havadan gider.
+   Q: yakındaki topu ellerinle tut (kaleci, taç), bir daha Q ya da şut tuşu: fırlat. Koşarken C / CTRL: kayarak müdahale */
+const kickCh = { t: -1 };
+let kickBarEl = null;
+function kickBar(p) {
+  if (!kickBarEl) { kickBarEl = document.createElement('div'); kickBarEl.id = 'kickBar'; kickBarEl.innerHTML = '<i></i><b>ŞUT</b>'; document.body.appendChild(kickBarEl); }
+  kickBarEl.hidden = p < 0; if (p >= 0) kickBarEl.firstChild.style.width = Math.round(p * 100) + '%';
+}
+function lobbyKickStart() {
   if (!ball.body || lobby.sit >= 0) return;
+  if (ball.holder === net.myId) { lobbyThrow(); return; }
+  if (kickCh.t < 0) kickCh.t = 0;
+}
+function lobbyKickRelease() {
+  if (kickCh.t < 0) return;
+  const p = Math.min(1, kickCh.t / KICK_FULL); kickCh.t = -1; kickBar(-1);
+  lobbyKick(p);
+}
+function lobbyKick(power = .3) {
+  if (!ball.body || lobby.sit >= 0 || ball.holder) return;
+  lobby.kickT = .38; netFx.kc = (netFx.kc || 0) + 1;   // tekme hareketi herkeste görünsün
   const b = player.body.position, p = ball.mesh.position, d = Math.hypot(p.x - b.x, p.z - b.z);
-  if (d > 1.6) return;
-  const dx = (p.x - b.x) / (d || 1) * .4 + flatF.x * .6, dz = (p.z - b.z) / (d || 1) * .4 + flatF.z * .6, l = Math.hypot(dx, dz) || 1;
-  ballImpulse(dx / l, dz / l, 3.2, 9.5);
-  if (AU.ctx) { punch(150, .08, .35); nz(.05, 900, 300, 1, .2, 'lowpass'); }
+  if (d > 1.9 || p.y > 1.7) return;
+  const dx = (p.x - b.x) / (d || 1) * .3 + flatF.x * .7, dz = (p.z - b.z) / (d || 1) * .3 + flatF.z * .7, l = Math.hypot(dx, dz) || 1;
+  const lift = Math.max(0, Math.min(.9, player.pitch));
+  ballImpulse(dx / l, dz / l, 2 + power * 3 + lift * 7, 8 + power * 12);
+  if (AU.ctx) { punch(150 + power * 60, .08, .35 + power * .3); nz(.05, 900, 300, 1, .2 + power * .2, 'lowpass'); }
+}
+function lobbySlide() {
+  const v = player.body.velocity, hs = Math.hypot(v.x, v.z);
+  if (lobby.sit >= 0 || !player.grounded || hs < 4 || player.slideT > 0 || lobby.slideCd > 0 || ball.holder === net.myId) return;
+  player.slideT = LOBBY_SLIDE_T; player.slideDir.set(v.x / hs, 0, v.z / hs); lobby.slideV = Math.max(hs + 1.5, 8.5); lobby.slid = false;
+  sfx.slide();
+}
+// topu tutanın ellerinin önü (göğüs hizası)
+function ballHands(id, out) {
+  if (id === net.myId) { const b = player.body.position; return out.set(b.x + flatF.x * .45, b.y + .62, b.z + flatF.z * .45); }
+  const pr = net.players[id] && net.players[id].proxy; if (!pr || !pr.g.visible) return null;
+  return out.set(pr.pos.x - Math.sin(pr.yaw) * .45, pr.pos.y + .62, pr.pos.z - Math.cos(pr.yaw) * .45);
+}
+const _bh = new V3();
+function ballReachable(id) {
+  if (!ball.body || ball.holder) return false;
+  const pos = id === net.myId ? player.body.position : net.players[id] && net.players[id].proxy && net.players[id].proxy.pos; if (!pos) return false;
+  const p = ball.body.position;
+  return Math.hypot(p.x - pos.x, p.z - pos.z) < 1.5 && p.y < 2.5;
+}
+function lobbyGrab() {
+  if (!ball.body || lobby.sit >= 0) return;
+  if (ball.holder === net.myId) { lobbyThrow(); return; }
+  if (ball.holder || !ballReachable(net.myId)) return;
+  if (net.mode === 'guest') toHost({ t: 'bh', a: 1 }); else ballSetHolder(net.myId);
+}
+function lobbyThrow() {
+  const up = 3.2 + Math.max(-.3, Math.min(.9, player.pitch)) * 8;
+  if (net.mode === 'guest') toHost({ t: 'bh', a: 2, d: [r2(flatF.x), r2(flatF.z)], u: r2(up), s: 11 }); else ballThrowBy(net.myId, flatF.x, flatF.z, up, 11);
+  lobby.kickT = .3;
+}
+function lobbyTackle(dx, dz, sp) {
+  if (ball.holder && ball.holder !== net.myId) { if (net.mode === 'guest') toHost({ t: 'bh', a: 3, d: [r2(dx), r2(dz)] }); else ballTackleBy(net.myId, dx, dz); }
+  else if (!ball.holder) ballImpulse(dx, dz, 1.4, sp);
+}
+// host: topu tutma / atma / kapma (konuktan 'bh' mesajı ile de gelir)
+function ballSetHolder(id) {
+  ball.holder = id; ball.holdT = 0;
+  if (ball.body) { ball.body.collisionResponse = !id; ball.body.velocity.set(0, 0, 0); ball.body.angularVelocity.set(0, 0, 0); }
+  ball.sendT = 0;
+  if (id && curMap === 'saha') SAHA.outT = 0;
+}
+function ballThrowBy(id, dx, dz, up, sp) {
+  if (ball.holder !== id || !ball.body) return;
+  const l = Math.hypot(dx, dz) || 1;
+  ballSetHolder(null);
+  const v = ball.body.velocity; v.x = dx / l * sp; v.z = dz / l * sp; v.y = up; ball.body.wakeUp();
+}
+function ballTackleBy(id, dx, dz) {
+  if (!ball.holder || ball.holder === id || !ball.body) return;
+  const pos = id === net.myId ? player.body.position : net.players[id] && net.players[id].proxy && net.players[id].proxy.pos, p = ball.body.position;
+  if (!pos || Math.hypot(p.x - pos.x, p.z - pos.z) > 1.8) return;
+  const l = Math.hypot(dx, dz) || 1;
+  ballSetHolder(null);
+  const v = ball.body.velocity; v.x = dx / l * 6; v.z = dz / l * 6; v.y = 2.5; ball.body.wakeUp();
+}
+function ballHoldNet(id, d) {
+  if (d.a === 1 && ballReachable(id)) ballSetHolder(id);
+  else if (d.a === 2 && Array.isArray(d.d)) ballThrowBy(id, clamp(+d.d[0] || 0, -1, 1), clamp(+d.d[1] || 0, -1, 1), clamp(+d.u || 0, 0, 11), clamp(+d.s || 0, 0, 12));
+  else if (d.a === 3 && Array.isArray(d.d)) ballTackleBy(id, clamp(+d.d[0] || 0, -1, 1), clamp(+d.d[1] || 0, -1, 1));
+}
+function lobbyGrabName() {
+  if (!ball.body || lobby.sit >= 0) return '';
+  if (ball.holder === net.myId) return 'AT';
+  return ballReachable(net.myId) ? 'TUT' : '';
 }
 function updateBall(dt) {
   if (!ball.body || !ball.mesh.parent) return;
   const m = ball.mesh, b = ball.body;
   if (net.mode !== 'guest') {
+    if (ball.holder) {   // ellerdeki top: tutanın önünde taşınır; çok uzun tutulursa ya da tutan giderse düşer
+      ball.holdT += dt;
+      const hp = ballHands(ball.holder, _bh);
+      if (!hp || ball.holdT > HOLD_MAX) { ballSetHolder(null); b.velocity.set(0, 1, 0); }
+      else { b.position.set(hp.x, hp.y, hp.z); b.velocity.set(0, 0, 0); }
+    }
     m.position.set(b.position.x, b.position.y, b.position.z); m.quaternion.set(b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w);
-    if (net.mode === 'host') { ball.sendT -= dt; if (ball.sendT <= 0) { ball.sendT = .1; bcast({ t: 'bs', p: arr(b.position), v: arr(b.velocity), sc: curMap === 'saha' ? [SAHA.red, SAHA.blue] : null }); } }
+    if (net.mode === 'host') { ball.sendT -= dt; if (ball.sendT <= 0) { ball.sendT = .1; bcast({ t: 'bs', p: arr(b.position), v: arr(b.velocity), h: ball.holder || '', sc: curMap === 'saha' ? [SAHA.red, SAHA.blue] : null }); } }
+  } else if (ball.holder && ballHands(ball.holder, _bh)) {
+    m.position.copy(_bh); b.position.set(_bh.x, _bh.y, _bh.z); ball.tgt.copy(_bh); ball.vel.set(0, 0, 0);
   } else {
     // konuk: hostun gönderdiği konuma doğru tahminle ilerle, yuvarlanma görüntüsü hızdan
     ball.tgt.addScaledVector(ball.vel, dt); ball.vel.multiplyScalar(Math.max(0, 1 - dt * .4));
@@ -444,7 +556,7 @@ function updateBall(dt) {
 }
 const _dvb = new V3();
 function ballNet(d) {
-  if (!ball.body) return; ball.tgt.set(d.p[0], d.p[1], d.p[2]); ball.vel.set(d.v[0], d.v[1], d.v[2]);
+  if (!ball.body) return; ball.tgt.set(d.p[0], d.p[1], d.p[2]); ball.vel.set(d.v[0], d.v[1], d.v[2]); ball.holder = d.h || null;
   if (d.sc && curMap === 'saha' && (d.sc[0] !== SAHA.red || d.sc[1] !== SAHA.blue)) { SAHA.red = d.sc[0]; SAHA.blue = d.sc[1]; sahaTabelaDraw(); }   // sonradan gelen skoru görsün
 }
 // ---- gitar ----

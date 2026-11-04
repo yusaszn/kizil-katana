@@ -498,6 +498,7 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => {
   keys[e.code] = false;
+  if (state === 'lobby' && (e.code === 'KeyF' || e.code === 'KeyE')) lobbyKickRelease();   // şut: bırakınca vurur
   if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
     // kısa basış = atılma, basılı tutma = koşma
     if (shiftDown && performance.now() - shiftDown < SPRINT_HOLD && state === 'play') dash();

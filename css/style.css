@@ -440,6 +440,10 @@ body.rangemode #wave,body.rangemode #score,body.rangemode #xpbox,body.rangemode 
 #tWeapons button small{font-size:8px;color:var(--ash)}
 #tWeapons button.on{background:rgba(255,58,42,.55);border-color:var(--blood-hi)}
 #tb_sit{background:rgba(160,110,10,.6)!important;font-size:11px!important}
+#tb_grab{background:rgba(30,120,60,.6)!important}
+#kickBar{position:fixed;left:50%;bottom:calc(22% + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(240px,50vw);height:10px;border:1px solid rgba(255,230,180,.7);background:rgba(0,0,0,.45);pointer-events:none;z-index:30}
+#kickBar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd23a,#ff5a20)}
+#kickBar b{position:absolute;left:0;right:0;top:-18px;text-align:center;font-size:11px;letter-spacing:.3em;color:var(--bone)}
 body.touchdev.showboard #board{display:block;transform:scale(.8);transform-origin:top right}
 
 /* ================= ATÖLYE: nişangah seçimi ================= */

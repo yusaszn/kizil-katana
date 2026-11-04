@@ -1,9 +1,10 @@
 'use strict';
-/* Dördüncü lobi mekânı: HALI SAHA. Maç başlamadan beklerken topla futbol: F ile şut, üstüne yürüyerek sür.
+/* Dördüncü lobi mekânı: HALI SAHA. Maç başlamadan beklerken topla futbol: F / sol tık basılı tutup şut, üstüne yürüyerek sür,
+   Q ile topu eline al ve at (kaleci, taç), koşarken C ile kayarak müdahale. Yan çizgiden çıkan top taç, kale çizgisinden korner.
    24 x 15 m çim, kafes tel, iki fileli kale; gol hostta algılanır, herkese duyurulur, skor tabelası güncellenir,
    top ortaya döner. Kenarda yedek kulübesi (oturulur), çay ocağı, dört ışık direği. */
 
-const SAHA = { L: 12, W: 7.5, goalW: 1.55, goalH: 2.05, red: 0, blue: 0, resetT: 0, tabela: null };
+const SAHA = { L: 12, W: 7.5, goalW: 1.55, goalH: 2.05, red: 0, blue: 0, resetT: 0, outT: 0, tabela: null };
 const turfTex = canvasTex(256, (g, s) => {
   for (let x = 0; x < s; x++) { const band = x < s / 2; g.fillStyle = band ? '#2e7a2c' : '#286e27'; g.fillRect(x, 0, 1, s); }
   for (let i = 0; i < 9000; i++) { const v = Math.random(); g.fillStyle = v < .5 ? 'rgba(20,60,18,.35)' : 'rgba(120,190,90,.22)'; g.fillRect(Math.random() * s, Math.random() * s, 1, 2); }
@@ -145,7 +146,25 @@ function updateSaha(dt) {
     const msg = { t: 'gol', side, r: SAHA.red, b: SAHA.blue };
     if (net.mode === 'host') bcast(msg);
     sahaGoal(msg);
+    return;
   }
+  // taç ve korner: top yan çizgiyi geçerse çizgide durur (Q ile alıp atılır), kale çizgisini kalenin dışından geçerse köşeye
+  SAHA.outT -= dt;
+  if (ball.holder || SAHA.outT > 0 || p.y > 3) return;
+  let k = null, x = 0, z = 0;
+  if (Math.abs(p.z) > SAHA.W + .25) { k = 'tac'; x = clamp(p.x, -SAHA.L + .4, SAHA.L - .4); z = Math.sign(p.z) * (SAHA.W + .05); }
+  else if (Math.abs(p.x) > SAHA.L + .25) { k = 'korner'; x = Math.sign(p.x) * (SAHA.L - .35); z = Math.sign(p.z || 1) * (SAHA.W - .35); }
+  if (!k) return;
+  ball.body.position.set(x, .25, z); ball.body.velocity.set(0, 0, 0); ball.body.angularVelocity.set(0, 0, 0);
+  SAHA.outT = 1.5;
+  const msg = { t: 'out', k, p: [r2(x), r2(z)] };
+  if (net.mode === 'host') bcast(msg);
+  sahaOut(msg);
+}
+function sahaOut(d) {
+  if (curMap !== 'saha') return;
+  toast(d.k === 'tac' ? 'TAÇ · topu Q ile eline al, at' : 'KORNER · köşeden ortala');
+  if (AU.ctx) tn('sine', 2100, 2050, .16, .08);   // düdük
 }
 function sahaGoal(d) {
   SAHA.red = d.r; SAHA.blue = d.b; SAHA.resetT = 2.5; sahaTabelaDraw();
