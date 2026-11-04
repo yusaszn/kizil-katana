@@ -446,14 +446,17 @@ GM.uzi = (side = 1, { hands = true } = {}) => {
 GM.fenek = ({ hands = true } = {}) => {
   const g = new THREE.Group(), Y = .012, SL = .074;
   // ---- üst gövde ve tam boy ray ----
-  GK.prof(g, GK.black, [[-.165, -.024], [-.165, .028, .004], [-.158, .034, .003], [.19, .034, .003], [.196, .026, .004], [.196, -.024]], .05);
+  // tek parça uzun kutu gövde: önü namluyu örten muhafaza (aynı genişlik), yanlarda yuvarlak uçlu yarıklar
+  GK.prof(g, GK.black, [[-.292, -.02], [-.292, .027, .004], [-.286, .034, .003], [.19, .034, .003], [.196, .026, .004], [.196, -.024], [-.165, -.024], [-.17, -.02]], .05);
   GK.rail(g, GK.black, -.288, .186, .034, .021, .008);
-  // ---- kare namlu muhafazası: yanlarda soğutma yarıkları, altında kısa ray ----
-  GK.rbox(g, GK.black, .036, .042, .126, 0, .013, -.227, .005);
-  for (const s of [-1, 1]) for (let i = 0; i < 3; i++) GK.box(g, GK.hole, .001, .007, .024, s * .0182, .015, -.198 - i * .031);
-  GK.mesh(GK.railGeo(-.284, -.196, .019, .007), GK.black, g, 0, -.008, 0, 0, 0, Math.PI);
+  for (const s of [-1, 1]) {
+    for (let i = 0; i < 3; i++) GK.rbox(g, GK.hole, .0012, .0075, .026, s * .0252, .016, -.198 - i * .031, .0035);
+    GK.rbox(g, GK.hole, .0012, .006, .046, s * .0252, -.006, -.215, .003);
+    GK.box(g, GK.dark, .0012, .002, .3, s * .0252, -.016, -.06);                            // alt kenar çizgisi
+  }
+  GK.mesh(GK.railGeo(-.284, -.196, .019, .007), GK.black, g, 0, -.02, 0, 0, 0, Math.PI);
   // ---- dişli namlu ucu ve koruma somunu ----
-  GK.lathe(g, GK.steel, [[.0085, -.285], [.0085, -.297], [.011, -.299], [.011, -.321], [.0098, -.325], [.0058, -.325], [.0058, -.317]], 0, Y, 16);
+  GK.lathe(g, GK.steel, [[.0075, -.288], [.0075, -.3], [.0095, -.302], [.0095, -.321], [.0088, -.325], [.0055, -.325], [.0055, -.317]], 0, Y, 16);
   for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; GK.box(g, GK.dark, .0025, .0025, .016, Math.cos(a) * .011, Y + Math.sin(a) * .011, -.31, 0, 0, a); }
   GK.bore(g, .0058, Y, -.3252);
   // ---- polimer alt gövde: önde eğik inen geri tepme yuvası, şarjör ağzı, kabzanın arkasından dipçiğe uzanan alt kısım ----
@@ -498,9 +501,12 @@ GM.fenek = ({ hands = true } = {}) => {
   GK.rbox(g, GK.black, .04, .036, .016, 0, Y - .006, .203, .004);
   const stock = new THREE.Group(); stock.position.set(0, Y, .2); g.add(stock);
   GK.mesh(new THREE.CylinderGeometry(.0065, .0065, .036, 10), GK.steel, stock, .021, -.004, .012);
-  GK.prof(stock, GK.poly, [[.008, .016, .004], [.17, .02, .004], [.2, .03, .006], [.212, .03, .004], [.212, -.09, .004], [.196, -.09, .006], [.1, -.026, .02], [.008, -.018, .004]], .032, 0,
-    { holes: [[[.115, .004], [.178, .01, .004], [.182, -.048, .006], [.165, -.055, .004], [.12, -.024, .006]]] });
-  GK.prof(stock, GK.rubber, [[.21, .031, .003], [.224, .031, .003], [.224, -.092, .004], [.21, -.092, .004]], .036);
+  // ince düz kol (gövdenin üst hizasından geriye), ucunda uzun eğik pabuç; kolun altında hafif destek kemeri
+  GK.prof(stock, GK.poly, [[.006, .018, .003], [.186, .018, .003], [.186, -.002], [.12, -.004], [.04, -.008], [.006, -.006]], .024);
+  GK.prof(stock, GK.poly, [[.06, -.006], [.15, -.002], [.15, -.012, .004], [.09, -.02, .006], [.06, -.014]], .016);
+  GK.prof(stock, GK.poly, [[.17, .028, .004], [.212, .03, .004], [.226, -.112, .005], [.206, -.118, .005], [.192, -.06, .006], [.172, -.004, .004]], .038, 0,
+    { holes: [[[.188, .012], [.204, .014, .003], [.21, -.05, .004], [.198, -.054, .003]]] });
+  GK.prof(stock, GK.rubber, [[.211, .031, .003], [.222, .031, .003], [.236, -.112, .004], [.225, -.116, .004]], .04);
   // ---- uzun düz şarjör (kabzanın önündeki yuvada) ----
   const mag = new THREE.Group(); mag.position.set(0, -.118, -.081); g.add(mag);
   GK.rbox(mag, GK.poly, .026, .195, .042, 0, -.0875, 0, .005);
