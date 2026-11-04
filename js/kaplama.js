@@ -98,21 +98,68 @@ function setSkin(w, id) {
 }
 
 /* ================= SEÇİM EKRANI ================= */
-const skinUI = { w: 'ak47' };
+const skinUI = { w: 'ak47', slot: 'kaplama' };
 function swatchUrl(S) {
   if (!S.tex) return S.sw;
   return 'url(' + S.tex.image.toDataURL() + ')';
 }
+const apBar = (v, n) => `<span class="apb"><i style="width:${Math.round(Math.min(1, v / Math.max(1, n)) * 100)}%"></i></span>`;
 function renderSkins() {
-  const tabs = SKIN_WEAPONS.map(([w, n]) => `<button type="button" data-w="${w}" class="${w === skinUI.w ? 'on' : ''}">${iconFor(w) ? `<img src="${iconFor(w)}" alt="">` : ''}${n}</button>`).join('');
-  const cur = skinSel[skinUI.w] || 'std';
-  const grid = SKINS.map(S => `<button type="button" class="sk${S.id === cur ? ' on' : ''}" data-s="${S.id}"><i style="background:${S.tex ? swatchUrl(S) + ' center/120px' : S.sw}"></i><b>${S.name}</b></button>`).join('');
+  const w = skinUI.w;
+  const tabs = SKIN_WEAPONS.map(([q, n]) => `<button type="button" data-w="${q}" class="${q === w ? 'on' : ''}">${iconFor(q) ? `<img src="${iconFor(q)}" alt="">` : ''}${n}</button>`).join('');
+  // yuvalar: KAPLAMA, silahın eklenti yuvaları, M4 ve AK-47'de DÜRBÜN
+  const slots = [['kaplama', 'KAPLAMA']].concat(apSlotsOf(w).map(s => AP_SLOTS.find(q => q[0] === s)));
+  if (SIGHT_GUNS[w]) slots.splice(slots.length - (apSlotsOf(w).includes('bonus') ? 1 : 0), 0, ['durbun', 'DÜRBÜN']);
+  if (!slots.some(q => q[0] === skinUI.slot)) skinUI.slot = 'kaplama';
+  const sl = skinUI.slot;
+  $('apSlots').innerHTML = slots.map(([s, n]) => `<button type="button" data-slot="${s}" class="${s === sl ? 'on' : ''}">${n}</button>`).join('');
+  // kaplamalar: o silahla leş yaptıkça kötüden iyiye açılır
+  const cur = skinEff(w), kills = ((apStatsAll().w || {})[w] || {}).kills || 0;
+  const grid = SKINS.map(S => {
+    const open = skinOpen(w, S.id), n = skinNeed(S.id);
+    return `<button type="button" class="sk${S.id === cur ? ' on' : ''}${open ? '' : ' locked'}" data-s="${S.id}"><i style="background:${S.tex ? swatchUrl(S) + ' center/120px' : S.sw}"></i><b>${S.name}</b>${open ? '' : `<small>🔒 ${n} leş · ${Math.min(kills, n)}/${n}</small>${apBar(kills, n)}`}</button>`;
+  }).join('');
   $('skinTabs').innerHTML = tabs; $('skinGrid').innerHTML = grid;
+  $('skinGrid').hidden = sl !== 'kaplama';
+  // eklenti kartları: artılar yeşil, eksiler kırmızı, kilitliyse görevi ve ilerlemesi
+  const isAp = sl !== 'kaplama' && sl !== 'durbun';
+  $('apGrid').hidden = !isAp;
+  if (isAp) {
+    const on = apCur(w, sl).id;
+    $('apGrid').innerHTML = apOpts(w, sl).map(o => {
+      const T = apTask(w, o.t), pc = apProsCons(o);
+      return `<button type="button" class="apo${o.id === on ? ' on' : ''}${T.done ? '' : ' locked'}" data-o="${o.id}"><b>${o.name}</b>` +
+        (pc.pro.length || pc.con.length ? `<ul>${pc.pro.map(t => `<li class="pro">+ ${t}</li>`).join('')}${pc.con.map(t => `<li class="con">− ${t}</li>`).join('')}</ul>` : '<small>Silahın kendi parçası</small>') +
+        (T.done ? '' : `<small class="task">🔒 ${T.txt} · ${T.v}/${T.n}</small>${apBar(T.v, T.n)}`) + '</button>';
+    }).join('');
+  }
+  // değer çubukları: silahın tabanı ve eklentilerle değişim
+  const B = apBase(w);
+  $('apStats').hidden = !B;
+  if (B) {
+    const m = A(w);
+    $('apStats').innerHTML = AP_STATS.filter(([k]) => k !== 'rate' || m.rate !== 1 || B.rate).map(([k, name, dir]) => {
+      const mul = m[k], d = dir > 0 ? mul - 1 : 1 - mul, v = clamp(B[k] * (1 + d), 0, 1), p = Math.round(d * 100);
+      return `<div class="aps"><span>${name}</span><span class="apb${d > .001 ? ' up' : d < -.001 ? ' down' : ''}"><i style="width:${Math.round(v * 100)}%"></i></span><em class="${p > 0 ? 'pro' : p < 0 ? 'con' : ''}">${p ? (p > 0 ? '+' : '') + p + '%' : ''}</em></div>`;
+    }).join('');
+  }
   if (typeof renderSights === 'function') renderSights();
-  if (typeof ws !== 'undefined' && ws.open) wsBuild(skinUI.w);   // canlı 3D görünüm
+  if (sl !== 'durbun') $('sightRow').hidden = true;
+  if (typeof ws !== 'undefined' && ws.open) wsBuild(w);   // canlı 3D görünüm
 }
+$('apSlots').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; skinUI.slot = b.dataset.slot; renderSkins(); });
+$('apGrid').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const o = apOpts(skinUI.w, skinUI.slot).find(q => q.id === b.dataset.o); if (!o) return;
+  if (!apOpen(skinUI.w, o)) { sfx.empty(); toast('GÖREV: ' + apTask(skinUI.w, o.t).txt); return; }
+  setAparat(skinUI.w, skinUI.slot, o.id); sfx.swap(); renderSkins();
+});
 $('skinTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; skinUI.w = b.dataset.w; renderSkins(); });
-$('skinGrid').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; setSkin(skinUI.w, b.dataset.s); });
+$('skinGrid').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (!skinOpen(skinUI.w, b.dataset.s)) { sfx.empty(); toast('BU KAPLAMA ' + (WEAPON_NAMES_AP[skinUI.w] || '') + ' İLE ' + skinNeed(b.dataset.s) + ' LEŞTE AÇILIR'); return; }
+  setSkin(skinUI.w, b.dataset.s);
+});
 $('skinsBtn').addEventListener('click', () => { $('start').hidden = true; $('skins').hidden = false; wsShow(true); renderSkins(); });
 $('skinsBack').addEventListener('click', () => { wsShow(false); $('skins').hidden = true; $('start').hidden = false; });
 $('skinsTry').addEventListener('click', () => {
@@ -122,4 +169,4 @@ $('skinsTry').addEventListener('click', () => {
   if (RANGE_W.includes(w)) { wpn.cur = w; wpn.next = null; }
   toast('F İLE İNCELE · KAPLAMANI GÖR');
 });
-for (const [w] of SKIN_WEAPONS) if (skinSel[w] && skinSel[w] !== 'std') applySkin(w, skinSel[w]);
+// kayıtlı kaplamalar açılışta eklenti.js → applyAparat → apDressAll ile uygulanır (kilitliyse fabrika)

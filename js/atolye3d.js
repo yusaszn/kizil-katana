@@ -20,17 +20,22 @@ function wsMake(w) {
   if (w === 'butterfly') return { g: GM.butterfly().held };
   const mk = { ak47: GM.ak, fenek: GM.fenek, m4: GM.m4, awp: GM.awp, deagle: GM.deagle, usps: GM.usps, glock: GM.glock, pistol: GM.beretta, shotgun: GM.r870 }[w];
   if (mk) { const m = mk({ hands: false }); if (m.gl) m.gl.visible = false; return m; }
-  if (w === 'uzi') { const g = new THREE.Group(), a = GM.uzi(1, { hands: false }).g; g.add(a); return { g }; }
+  if (w === 'uzi') {   // tek UZİ; ÇİFT UZİ bonusunda yanında ikincisi
+    const g = new THREE.Group(), a = GM.uzi(1, { hands: false }); g.add(a.g);
+    if (A('uzi').dual) { const b = GM.uzi(-1, { hands: false }); b.g.position.set(-.09, -.02, .03); g.add(b.g); apDress('uzi', b); }
+    return { g, flash: a.flash, mag: a.mag, sub: a };
+  }
   return null;
 }
 // seçili silahı kaplaması ve nişangahıyla kur (değişiklik yoksa dokunma)
 function wsBuild(w) {
-  const sig = w + '|' + (skinSel[w] || 'std') + '|' + (sightSel[w] || 'iron');
+  const sig = w + '|' + skinEff(w) + '|' + (sightSel[w] || 'iron') + '|' + JSON.stringify(apSel[w] || {});
   if (ws.sig === sig && ws.model) return; ws.sig = sig;
   if (ws.model) { ws.root.remove(ws.model.g); ws.model.g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); ws.model = null; }
   const m = wsMake(w); if (!m) return;
+  if (AP_CLS[w]) apDress(w, m.sub || m);   // eklentiler büyük modelde de
   m.g.traverse(o => { if (o.isSprite) o.visible = false; });
-  skinTo(m.g, w, skinSel[w] || 'std');
+  skinTo(m.g, w, skinEff(w));
   const S = SIGHTS.find(s => s.id === (sightSel[w] || 'iron')), C = SIGHT_GUNS[w];
   if (C && S && S.id !== 'iron' && sightOpen(S)) {
     const o = S.id === 'holo' ? opticHolo() : opticRedDot(); o.g.position.set(0, C.mountY, C.mountZ); m.g.add(o.g);
@@ -49,8 +54,26 @@ function wsBuild(w) {
   ws.spot.position.y = -size.y / 2 - .02; ws.spot.scale.setScalar(Math.max(size.z, .3) * .9);
   $('wsName').textContent = (SKIN_WEAPONS.find(([id]) => id === w) || [, w])[1];
 }
+const wsTags = {};
+function wsLabels() {
+  const box = $('wsTags'); if (!box) return;
+  const w = skinUI.w, seen = {};
+  if (ws.open && ws.model && AP_CLS[w]) {
+    ws.root.updateMatrixWorld(true);
+    ws.model.g.traverse(o => {
+      const s = o.userData && o.userData.slot; if (!s || seen[s]) return; seen[s] = 1;
+      const el = wsTags[s] || (wsTags[s] = Object.assign(document.createElement('div'), { className: 'wtag' })); if (!el.parentNode) box.appendChild(el);
+      const name = apCur(w, s).name, lab = (AP_SLOTS.find(q => q[0] === s) || [, s])[1];
+      if (el.dataset.t !== name) { el.dataset.t = name; el.innerHTML = `<i></i><b>${name}</b><small>${lab}</small>`; }
+      const p = o.getWorldPosition(new V3()).project(ws.cam);
+      el.style.left = ((p.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - p.y) / 2 * innerHeight) + 'px'; el.hidden = p.z > 1;
+    });
+  }
+  for (const s in wsTags) if (!seen[s]) wsTags[s].hidden = true;
+}
 function wsShow(on) {
   ws.open = on; $('wsHint').hidden = !on;
+  if (!on) for (const s in wsTags) wsTags[s].hidden = true;
   if (on) { ws.sig = ''; ws.yaw = 1.25; ws.pitch = .16; ws.zoom = 1; wsBuild(skinUI.w); ws.idleT = 0; }
   else if (ws.model) { ws.root.remove(ws.model.g); ws.model = null; ws.sig = ''; }
 }
@@ -65,6 +88,7 @@ function wsRender(dt) {
   cam.position.set(Math.sin(ws.yaw) * Math.cos(ws.pitch) * d, Math.sin(ws.pitch) * d, Math.cos(ws.yaw) * Math.cos(ws.pitch) * d);
   cam.lookAt(0, 0, 0); cam.updateProjectionMatrix();
   renderer.setRenderTarget(null); renderer.clear(); renderer.render(ws.scene, cam);
+  wsLabels();
 }
 // sürükle / yakınlaştır (panelin dışında)
 const wsOnPanel = e => !!(e.target.closest && e.target.closest('#skins .panel'));

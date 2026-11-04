@@ -31,6 +31,13 @@ function statKill(info = {}) {
   if (s) { banner('YENİ EKLENTİ', s.name + ' açıldı · Ana menü → ATÖLYE'); sfx.upgrade(); }
 }
 const sightOpen = s => kkStats.kills >= s.need;
+// nişangahın etkisi (aparat.js A() çarpanlarına katılır): optik nişanda daha isabetli, holografik biraz ağır
+function sightStats(w) {
+  if (!SIGHT_GUNS[w]) return {};
+  const id = sightSel[w] || 'iron', S = SIGHTS.find(s => s.id === id);
+  if (!S || !sightOpen(S)) return {};
+  return id === 'reddot' ? { spread: .93 } : id === 'holo' ? { spread: .88, ads: .94 } : {};
+}
 
 /* ================= OPTİK MODELLER ================= */
 const lensMat = new THREE.MeshStandardMaterial({ color: 0x3a5a6a, metalness: .9, roughness: .06, transparent: true, opacity: .2, side: THREE.DoubleSide, depthWrite: false });
@@ -89,7 +96,7 @@ function applySight(w, id) {
 function setSight(w, id) {
   const S = SIGHTS.find(s => s.id === id); if (!S || !sightOpen(S)) { sfx.empty(); return; }
   sightSel[w] = id; try { localStorage.setItem('kk-nisangah', JSON.stringify(sightSel)); } catch (e) { /* kayıt yok */ }
-  applySight(w, id); renderSights();
+  applySight(w, id); renderSights(); if (typeof applyAparat === 'function') applyAparat();
   if (typeof ws !== 'undefined' && ws.open) wsBuild(w);
 }
 // Atölye ekranında nişangah satırı (yalnız M4 ve AK-47)
@@ -104,3 +111,6 @@ function renderSights() {
 }
 $('sightRow').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setSight(skinUI.w, b.dataset.s); });
 for (const w in SIGHT_GUNS) if (sightSel[w] && sightSel[w] !== 'iron') applySight(w, sightSel[w]);
+// eklenti ve kaplama görevleri: her leşte yeni açılanlar duyurulur; açılışta eklentiler silahlara uygulanır
+killHooks.push(info => apCheckUnlocks(info.w));
+applyAparat();

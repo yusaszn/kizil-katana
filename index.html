@@ -162,13 +162,17 @@
   </div>
 </div>
 <div id="skins" class="screen" hidden>
+  <div id="wsTags"></div>
   <div id="wsHint" hidden><b id="wsName"></b><span>SÜRÜKLE: ÇEVİR · TEKERLEK / İKİ PARMAK: YAKINLAŞ</span></div>
   <div class="panel">
     <h2>Atölye</h2>
-    <p>Silahını seç; nişangahını ve kaplamasını değiştir. Eklentiler leş yaptıkça açılır. Seçimlerin bu cihazda saklanır; maçta F ile incelerken görürsün.</p>
+    <p>Silahını seç, eklentilerini tak. Her eklentinin artısı ve eksisi var, her biri kendi görevini bitirince açılır; kaplamalar o silahla leş yaptıkça açılır. Seçimlerin bu cihazda saklanır.</p>
     <div class="modes" id="skinTabs" role="group" aria-label="Silah"></div>
+    <div class="modes" id="apSlots" role="group" aria-label="Yuva"></div>
     <div id="sightRow" hidden></div>
     <div id="skinGrid"></div>
+    <div id="apGrid" hidden></div>
+    <div id="apStats" hidden></div>
     <div class="btns">
       <button class="btn" id="skinsTry" type="button">POLİGONDA DENE</button>
       <button class="btn ghost" id="skinsBack" type="button">GERİ</button>
@@ -297,6 +301,7 @@
 <script src="js/poligon.js"></script>
 <script src="js/debris.js"></script>
 <script src="js/upgrades.js"></script>
+<script src="js/aparat.js"></script>
 <script src="js/el-veri.js"></script>
 <script src="js/el.js"></script>
 <script src="js/player.js"></script>

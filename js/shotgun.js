@@ -12,33 +12,34 @@ const sgPose = P([0, 0, 0], [0, 0, 0]);
 const HAND_PUMP = new V3(0, -.06, -.3), HAND_PORT = new V3(.01, -.1, .04), HAND_BELT = new V3(-.12, -.3, .12);
 
 const shells = { tube: 6, reserve: 24, cd: 0, pumpT: 0, loadT: 0, loading: false, aimK: 0, loadK: 0 };
-const shellCap = () => ST.sgTube;
+const shellCap = () => Math.max(2, Math.round(ST.sgTube * A('shotgun').mag));
 const LOAD_T = .42;
 let sgClick = false, sgClickR = false;
 const sgAiming = () => wpn.cur === 'shotgun' && !wpn.next && mouse.right && player.alive && state === 'play';
 function startShellReload() {
   if (wpn.cur !== 'shotgun' || shells.loading || shells.tube >= shellCap()) return;
   if (shells.reserve <= 0) { sfx.empty(); return; }
-  shells.loading = true; shells.loadT = LOAD_T * ST.sgLoad;
+  shells.loading = true; shells.loadT = LOAD_T * ST.sgLoad * A('shotgun').reload;
 }
 function fireShotgun(focused) {
   shells.tube--; netFx.sh++; netFx.ft = focused;
   shells.loading = false;
-  sg.kick = 1; sg.flashT = .06; sg.flash.material.rotation = rand(0, 6.28); sg.flash.scale.setScalar(focused ? rand(.35, .45) : rand(.5, .7));
+  sg.kick = 1; sg.flashT = A('shotgun').silent ? 0 : .06; sg.flash.material.rotation = rand(0, 6.28); sg.flash.scale.setScalar(focused ? rand(.35, .45) : rand(.5, .7));
   muzzleGlow = 1.6;
-  sfx.shotgun(); shake(.22); gunKickFor('shotgun');
+  (A('shotgun').silent ? sfx.usps : sfx.shotgun)(); shake(.22); gunKickFor('shotgun');
   if (typeof flashWorld === 'function') flashWorld(3.2, 0xff8530, 0.08);
-  player.pitch = Math.min(1.45, player.pitch + (focused ? .06 : .045));
-  kickView(rand(-.03, .03), .035);
+  const rc = A('shotgun').recoil;
+  player.pitch = Math.min(1.45, player.pitch + (focused ? .06 : .045) * rc);
+  kickView(rand(-.03, .03) * rc, .035 * rc);
   camVectors();
   muzzleW.copy(camPos).addScaledVector(rightV, focused ? .06 : .2).addScaledVector(upV, -.12).addScaledVector(camFwd, .9);
   // geniş: yakında çok etkili saçılma; odaklı: saçmalar tek noktada toplanır, uzakta da vurur
-  const spr = (focused ? .016 : .085 * ST.sgSpread) * (player.grounded ? 1 : 1.25);
+  const spr = (focused ? .016 : .085 * ST.sgSpread) * (player.grounded ? 1 : 1.25) * A('shotgun').spread;
   const muzzle = muzzleW.clone();
   for (let i = 0; i < ST.sgPellets; i++) {
     const ang = rand(0, 6.28), rr = Math.sqrt(Math.random()) * spr;
     const d = camFwd.clone().addScaledVector(rightV, Math.cos(ang) * rr).addScaledVector(upV, Math.sin(ang) * rr).normalize();
-    castShot(d, muzzle, ST.sgDmg * (focused ? .9 : 1), focused ? 1.6 : 2.4, .35, (focused ? 16 : 6) * ST.sgRange, PVP_DMG.shotgun);
+    castShot(d, muzzle, ST.sgDmg * (focused ? .9 : 1) * A('shotgun').dmg, focused ? 1.6 : 2.4, .35, (focused ? 16 : 6) * ST.sgRange * A('shotgun').range, PVP_DMG.shotgun * A('shotgun').dmg);
   }
   if (!ST.sgAuto) shells.pumpT = .5;
 }
@@ -56,7 +57,7 @@ function updateShotgun(dt) {
     shells.loadT -= dt;
     if (shells.loadT <= 0) {
       if (shells.reserve > 0 && shells.tube < shellCap()) { shells.tube++; shells.reserve--; sfx.shell(); }
-      if (shells.tube >= shellCap() || shells.reserve <= 0) shells.loading = false; else shells.loadT = LOAD_T * ST.sgLoad;
+      if (shells.tube >= shellCap() || shells.reserve <= 0) shells.loading = false; else shells.loadT = LOAD_T * ST.sgLoad * A('shotgun').reload;
     }
   }
   const active = wpn.cur === 'shotgun' && !wpn.next;
@@ -83,7 +84,7 @@ function updateShotgun(dt) {
   sg.pump.position.z = -.3 + pumpK * .14;
   // sol el: pompada ya da fişek takıyor (kemerden fişeği alır, yuvaya iter)
   if (shells.loading) {
-    const c = 1 - shells.loadT / (LOAD_T * ST.sgLoad);                 // 0 → 1 tek fişek döngüsü
+    const c = 1 - shells.loadT / (LOAD_T * ST.sgLoad * A('shotgun').reload);                 // 0 → 1 tek fişek döngüsü
     const fetch = c < .45 ? easeInOut(c / .45) : 1 - easeInOut((c - .45) / .55);
     sg.hand.position.lerpVectors(HAND_PORT, HAND_BELT, fetch);
     sg.hand.rotation.set(-.3 * fetch, 0, .4 * fetch);

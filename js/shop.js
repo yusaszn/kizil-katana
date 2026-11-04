@@ -6,7 +6,7 @@
 
 const ECON = { start: 800, max: 9000, kill: 200, win: 3000, loss: [1900, 2400, 2900] };
 const SHOP = [
-  { id: 'uzi', cat: 'HAFİF', name: 'ÇİFT UZİ', price: 1600, info: 'Yakın mesafede eritir · 2×30 mermi' },
+  { id: 'uzi', cat: 'HAFİF', name: 'UZİ', price: 1300, info: 'Yakın mesafede eritir · 30 mermi · Atölye bonusu: ÇİFT UZİ' },
   { id: 'fenek', cat: 'HAFİF', name: 'FENEK', price: 2100, info: 'Saniyede 19 mermi, az teper · 18 m sonrası zayıflar' },
   { id: 'shotgun', cat: 'HAFİF', name: 'POMPALI', price: 1850, info: 'Köşe tutucu · sağ tık odaklı atış' },
   { id: 'ak47', cat: 'TÜFEK', name: 'AK-47', price: 2700, info: 'Sert vurur, kafaya tek mermi · geri tepmesi güçlü' },

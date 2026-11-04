@@ -3,7 +3,7 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 28;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 29;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 // çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
@@ -376,7 +376,7 @@ function onGuestData(d) {
 function myState() {
   const b = player.body.position, v = player.body.velocity;
   const lob = state === 'lobby';
-  return { t: 'ps', id: net.myId, name: playerName(), p: arr(b), v: [r2(v.x), r2(v.z)], yaw: r2(player.yaw), pitch: r2(player.pitch), w: lob ? 'none' : wpn.cur, st: lob && lobby.sit >= 0 ? lobby.sit + 1 : 0, em: lob ? lobby.emote : '', b: block.on ? 1 : 0, a: player.alive ? 1 : 0, sw: netFx.sw, sh: netFx.sh, hp: Math.ceil(player.hp), lv: prog.lv, k: kills, s: score, rv: r2(revive.p), c: r2(player.crouchK), sl: player.slideT > 0 ? 1 : 0, kc: netFx.kc || 0, ft: netFx.ft ? 1 : 0, pk: picksLeft(), dt: vs.deaths, cr: eco.cr, rd: eco.ready ? 1 : 0 };
+  return { t: 'ps', id: net.myId, name: playerName(), p: arr(b), v: [r2(v.x), r2(v.z)], yaw: r2(player.yaw), pitch: r2(player.pitch), w: lob ? 'none' : wpn.cur, st: lob && lobby.sit >= 0 ? lobby.sit + 1 : 0, em: lob ? lobby.emote : '', b: block.on ? 1 : 0, a: player.alive ? 1 : 0, sw: netFx.sw, sh: netFx.sh, hp: Math.ceil(player.hp), lv: prog.lv, k: kills, s: score, rv: r2(revive.p), c: r2(player.crouchK), sl: player.slideT > 0 ? 1 : 0, su: !lob && AP_CLS[wpn.cur] && A(wpn.cur).silent ? 1 : 0, kc: netFx.kc || 0, ft: netFx.ft ? 1 : 0, pk: picksLeft(), dt: vs.deaths, cr: eco.cr, rd: eco.ready ? 1 : 0 };
 }
 function updateNet(dt) {
   if (net.mode === 'solo' || (!net.inMatch && state !== 'lobby')) return;
@@ -451,7 +451,7 @@ function applyPlayerState(id, d, self) {
   const pr = p.proxy || makeProxy(id);
   if (pr.name !== d.name && d.name) { pr.name = d.name; p.name = d.name; pr.g.remove(pr.label); pr.label = nameSprite(d.name, p.color); pr.label.position.y = 2.25; pr.g.add(pr.label); }
   pr.tgt.set(d.p[0], d.p[1], d.p[2]); pr.vel.set(d.v[0], 0, d.v[1]);
-  pr.tyaw = d.yaw; pr.pitch = d.pitch; pr.w = d.w; pr.block = d.b; pr.rv = d.rv || 0; pr.c = d.c || 0; pr.sl = d.sl || 0;
+  pr.tyaw = d.yaw; pr.pitch = d.pitch; pr.w = d.w; pr.block = d.b; pr.rv = d.rv || 0; pr.c = d.c || 0; pr.sl = d.sl || 0; pr.su = d.su || 0;
   pr.st = d.st || 0; const em = d.em || ''; if (em !== (pr.em || '')) { pr.em = em; pr.emT = 0; }
   if (pr.sw >= 0 && d.sw !== pr.sw) pr.swingT = .25;
   if (pr.sh >= 0 && d.sh > pr.sh) remoteShots(pr, Math.min(3, d.sh - pr.sh), d.ft);
@@ -470,12 +470,12 @@ function remoteShots(pr, n, focused) {
     const t = rayStatic(rsFrom, rsDir, 40);
     rsTo.copy(rsFrom).addScaledVector(rsDir, t);
     if (t < 39.5) bulletHole(rsTo);   // diğer oyuncunun mermisi de duvarda iz bırakır
-    addTracer(rsFrom, rsTo, { chance: sgShot ? .05 : pr.w === 'usps' ? 0 : .5 });
+    addTracer(rsFrom, rsTo, { chance: sgShot ? .05 : pr.w === 'usps' || pr.su ? 0 : .5 });
   }
   remoteCasing(pr);   // kovan oyuncunun silahından düşer (mermiler.js)
   // her silahın kendi sesi; susturuculu USP-S yakından bile zor duyulur
-  const d = pr.pos.distanceTo(camera.position), snd = sfx[pr.w] && pr.w !== 'rocket' && pr.w !== 'launcher' ? sfx[pr.w] : sfx.uzi;
-  if (d < (pr.w === 'usps' ? 10 : 34)) snd();
+  const d = pr.pos.distanceTo(camera.position), snd = pr.su ? sfx.usps : sfx[pr.w] && pr.w !== 'rocket' && pr.w !== 'launcher' ? sfx[pr.w] : sfx.uzi;
+  if (d < (pr.w === 'usps' || pr.su ? 10 : 34)) snd();
 }
 function updateProxies(dt) {
   for (const id in net.players) {

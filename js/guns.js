@@ -114,7 +114,7 @@ function fireGun(id) {
   s.kick = G.adsKick ? 1 - (1 - G.adsKick) * s.adsK : 1; s.slide = 1; s.flashT = G.silenced ? .03 : .05;
   m.flash.material.rotation = rand(0, 6.28); m.flash.scale.setScalar(G.silenced ? rand(.08, .12) : rand(.22, .34) * (G.heavy ? 1.4 : 1));
   muzzleGlow = G.silenced ? .25 : G.heavy ? 1.6 : 1;
-  sfx[id](); shake(G.shake);
+  (G.silenced && id !== 'usps' ? sfx.usps : sfx[id])(); shake(G.shake);   // susturucu eklentisi: USP-S gibi kısık ses
   // adsKick: nişandayken yaylı tepme ve silah sarsıntısı bu kadarına iner (hızlı seride gez-arpacık hizası dağılmasın)
   const kickSc = G.adsKick ? 1 - (1 - G.adsKick) * s.adsK : 1;
   ejectCasing(m, id === 'ak47' ? 'rifle' : 'pistol'); playerCasing(id); gunKickFor(id, kickSc);
@@ -165,7 +165,7 @@ function updateGuns(dt) {
     s.held = mouse.left;
     if (s.mag <= 0 && s.reserve > 0 && s.reloadT <= 0 && !wpn.next) gunReload();
     // ---- animasyon ----
-    s.adsK += (((mouse.right && playing) ? 1 : 0) - s.adsK) * Math.min(1, dt * 14);
+    s.adsK += (((mouse.right && playing) ? 1 : 0) - s.adsK) * Math.min(1, dt * 14 * A(id).ads);
     s.kick = Math.max(0, s.kick - dt * (G.heavy ? 6 : 11)); s.slide = Math.max(0, s.slide - dt * 15);
     s.flashT -= dt; m.flash.visible = s.flashT > 0;
     const rp = s.reloadT > 0 ? 1 - s.reloadT / G.reload : -1;

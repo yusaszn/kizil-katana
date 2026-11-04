@@ -447,6 +447,27 @@ body.rangemode #wave,body.rangemode #score,body.rangemode #xpbox,body.rangemode 
 body.touchdev.showboard #board{display:block;transform:scale(.8);transform-origin:top right}
 
 /* ================= ATÖLYE: nişangah seçimi ================= */
+#apSlots button{font-size:11px;letter-spacing:.14em;padding:6px 10px}
+#wsTags{position:fixed;inset:0;pointer-events:none;z-index:1}
+.wtag{position:absolute;transform:translate(-6px,-6px);display:grid;grid-template-columns:12px auto;column-gap:6px;align-items:center;font-family:var(--hud);white-space:nowrap}
+.wtag i{grid-row:span 2;width:10px;height:10px;border:2px solid var(--gold);border-radius:50%;background:rgba(0,0,0,.5)}
+.wtag b{font-size:11px;letter-spacing:.12em;color:var(--bone);background:rgba(0,0,0,.55);padding:1px 5px;transform:translateY(-14px)}
+.wtag small{font-size:9px;letter-spacing:.2em;color:var(--gold);transform:translateY(-14px);padding-left:5px}
+#apGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+#apGrid .apo{display:flex;flex-direction:column;gap:4px;align-items:stretch;text-align:left;padding:8px 10px;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid rgba(239,225,205,.2);color:var(--bone);font-family:var(--hud)}
+#apGrid .apo>b{font-size:12px;letter-spacing:.12em}
+#apGrid ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:11px}
+#apGrid li.pro,.aps em.pro{color:#7dffa0}#apGrid li.con,.aps em.con{color:#ff7a68}
+#apGrid small{font-size:10px;color:var(--ash)}#apGrid small.task{color:var(--gold)}
+#apGrid .apo.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;background:rgba(255,194,58,.08)}
+#apGrid .apo.locked,#skinGrid .sk.locked{opacity:.62}
+#skinGrid .sk small{font-size:10px;color:var(--gold)}
+.apb{display:block;height:5px;background:rgba(255,255,255,.12);position:relative;overflow:hidden}
+.apb i{display:block;height:100%;background:var(--gold)}
+#apStats{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-family:var(--hud);font-size:10px;letter-spacing:.14em;color:var(--ash)}
+.aps{display:grid;grid-template-columns:82px 1fr 36px;gap:6px;align-items:center}
+.aps .apb{height:6px}.aps .apb i{background:var(--bone)}.aps .apb.up i{background:#7dffa0}.aps .apb.down i{background:#ff7a68}
+.aps em{font-style:normal;text-align:right}
 #sightRow{display:grid;grid-template-columns:auto repeat(3,1fr);gap:8px;align-items:stretch}
 #sightRow>b{align-self:center;font-size:12px;letter-spacing:.25em;color:var(--gold);padding-right:6px}
 #sightRow button{display:flex;flex-direction:column;gap:4px;padding:8px 10px;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid rgba(239,225,205,.2);color:var(--bone);font-family:var(--hud);text-align:left}
@@ -482,6 +503,8 @@ body.touchdev.showboard #board{display:block;transform:scale(.8);transform-origi
   #skinTabs button{padding:3px 6px;font-size:9px;letter-spacing:.08em}
   #skinTabs button img{width:52px;height:19px}
   #sightRow{gap:5px}#sightRow button{padding:5px 7px}#sightRow button small{display:none}
+  #apSlots button{padding:3px 6px;font-size:9px}#apGrid{grid-template-columns:repeat(2,1fr);gap:5px}#apGrid .apo{padding:5px 7px}#apGrid ul{font-size:9px}
+  #apStats{grid-template-columns:1fr;font-size:9px}.aps{grid-template-columns:70px 1fr 30px}
   #skinGrid{grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:6px}
   #skinGrid .sk{padding:5px;gap:4px}#skinGrid .sk i{height:30px}#skinGrid .sk b{font-size:9px}
   #skins .btns .btn{padding:8px 14px;font-size:12px}

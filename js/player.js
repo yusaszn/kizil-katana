@@ -52,7 +52,7 @@ function quickSwitch() {
 }
 const WEAPONS = ['katana', 'uzi', 'shotgun', 'm4', 'awp', 'fenek'];   // co-op: 1-6 (7: boss silahı)
 const weaponList = () => isVS() ? vsWeapons() : isRange() ? RANGE_W : (special.kind && special.ammo > 0 ? WEAPONS.concat(special.kind) : WEAPONS);
-const WEAPON_NAMES = { katana: 'KATANA', uzi: 'ÇİFT UZİ', shotgun: 'POMPALI', m4: 'M4', awp: 'AWP', pistol: 'TABANCA', knife: 'BIÇAK', karambit: 'KARAMBİT', butterfly: 'KELEBEK', rocket: 'ROKETATAR', launcher: 'BOMBAATAR' };
+const WEAPON_NAMES = { katana: 'KATANA', uzi: 'UZİ', shotgun: 'POMPALI', m4: 'M4', awp: 'AWP', pistol: 'TABANCA', knife: 'BIÇAK', karambit: 'KARAMBİT', butterfly: 'KELEBEK', rocket: 'ROKETATAR', launcher: 'BOMBAATAR' };
 // değiştirme: eski silah indirilir (.17 sn), sonra yenisi kendi çekme animasyonuyla ele alınır; animasyon bitene kadar ateş edilemez
 function updateWeaponSwitch(dt) {
   if (wpn.next) {
@@ -449,7 +449,7 @@ function updatePlayer(dt) {
     const knifeFast = isKnife(wpn.cur) ? 1.12 : 1;   // bıçakla daha hızlı koşulur
     // veriyle tanımlı silahlar (guns.js): elde hafif silahla biraz daha hızlı, nişandayken yavaş (move / adsMove)
     const G = typeof GUNS !== 'undefined' && GUNS[wpn.cur], gunMove = G ? (G.move || 1) * (G.adsMove && gst[wpn.cur].adsK > .5 ? G.adsMove : 1) : 1;
-    const sp = ST.moveSpeed * (isVS() ? .85 : 1) * knifeFast * gunMove * aimSlow * (player.tagT > 0 ? .6 : 1) * (block.on ? .55 : 1) * (crouching ? .6 : player.sprinting ? (isVS() ? 1.45 : 2.05) : 1), acc = player.grounded ? 14 : 3.5;
+    const sp = ST.moveSpeed * (isVS() ? .85 : 1) * knifeFast * gunMove * apMove() * aimSlow * (player.tagT > 0 ? .6 : 1) * (block.on ? .55 : 1) * (crouching ? .6 : player.sprinting ? (isVS() ? 1.45 : 2.05) : 1), acc = player.grounded ? 14 : 3.5;
     const k = Math.min(1, acc * dt);
     if (player.grounded) { v.x += (wish.x * sp - v.x) * k; v.z += (wish.z * sp - v.z) * k; }
     else {

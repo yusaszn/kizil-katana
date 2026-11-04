@@ -623,7 +623,7 @@ function updateHUD(dt) {
     el.style.transform = `scaleX(${f})`; el.style.background = f >= 1 ? 'var(--steel)' : 'var(--ash)';
   }
   const w = wpn.next || wpn.cur;
-  setText('weapon', WEAPON_NAMES[w] + (w === 'shotgun' && ST.sgAuto ? ' · OTO' : '') + (isVS() ? '   [1/2/3]' : ''));
+  setText('weapon', (w === 'uzi' && uziDual() ? 'ÇİFT UZİ' : WEAPON_NAMES[w]) + (w === 'shotgun' && ST.sgAuto ? ' · OTO' : '') + (isVS() ? '   [1/2/3]' : ''));
   if (w === 'uzi') {
     setText('ammo', ammo.mag + ' / ' + magCap());
     setText('mags', '▮'.repeat(ammo.reserve) + '▯'.repeat(Math.max(0, ST.maxMags - ammo.reserve)));
@@ -631,7 +631,7 @@ function updateHUD(dt) {
     setText('ammo', shells.tube + ' / ' + shellCap());
     setText('mags', 'YEDEK FİŞEK ' + shells.reserve);
   } else if (w === 'm4') {
-    setText('ammo', m4.mag + ' / ' + ST.m4Mag);
+    setText('ammo', m4.mag + ' / ' + m4Cap());
     setText('mags', '▮'.repeat(m4.reserve) + (isVS() ? '' : '  BOMBA ' + '●'.repeat(m4.gren) + '○'.repeat(Math.max(0, ST.grenMax - m4.gren))));
   } else if (isGun(w)) {
     setText('ammo', gst[w].mag + ' / ' + GUNS[w].mag);
@@ -640,7 +640,7 @@ function updateHUD(dt) {
     setText('ammo', pis.mag + ' / ' + RIF.pistol.mag);
     setText('mags', 'YEDEK ' + pis.reserve);
   } else if (w === 'awp') {
-    setText('ammo', awp.mag + ' / ' + ST.awpMag);
+    setText('ammo', awp.mag + ' / ' + awpCap());
     setText('mags', 'YEDEK ' + awp.reserve);
   } else if (isSpecial(w)) {
     setText('ammo', special.ammo + ' / ' + SPECIALS[w].ammo);

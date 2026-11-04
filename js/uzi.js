@@ -1,5 +1,5 @@
 'use strict';
-/* Çift uzi: model, atış, mermi izleri, şarjör sistemi */
+/* UZİ: model, atış, mermi izleri, şarjör sistemi. Varsayılan tek UZİ; Atölye'deki ÇİFT UZİ bonusuyla iki elde iki tabanca (aparat.js) */
 
 const uziRoot = new THREE.Group(); vmScene.add(uziRoot); uziRoot.visible = false;
 function buildUzi(side) {
@@ -16,11 +16,13 @@ const uziAim = { k: 0 };   // sağ tık: iki tabancayı öne toplayıp nişan al
 const uziPose = P([0, 0, 0], [0, 0, 0]);
 
 const ammo = { mag: 60, reserve: 3, reloadT: 0, cd: 0, next: 1 };
-const magCap = () => Math.round(ST.magSize) * 2;
+const uziDual = () => A('uzi').dual;
+const magCap = () => Math.round(ST.magSize * (A('uzi').mag / (uziDual() ? 2 : 1))) * (uziDual() ? 2 : 1);
+const uziReloadT = () => ST.reloadTime * A('uzi').reload;
 function startReload() {
   if (ammo.reloadT > 0 || wpn.cur !== 'uzi' || ammo.mag >= magCap()) return;
   if (ammo.reserve <= 0) { sfx.empty(); return; }
-  ammo.reloadT = ST.reloadTime; sfx.reload();
+  ammo.reloadT = uziReloadT(); sfx.reload();
 }
 
 // mermi izleri ve dünyadaki kovanlar: mermiler.js
@@ -45,14 +47,16 @@ function rayEnemy(e, o, d) {
 const shotDir = new V3(), muzzleW = new V3(), hitAt = new V3();
 function fireUzi() {
   ammo.mag--; netFx.sh++;
-  const gi = ammo.next; ammo.next = 1 - ammo.next;
+  const gi = uziDual() ? ammo.next : 1; ammo.next = 1 - ammo.next;
   const ud = uzis[gi].userData;
-  ud.kick = 1; ud.twist = rand(.5, 1) * (gi ? 1 : -1); ud.flashT = .045; ud.flash.material.rotation = rand(0, 6.28); ud.flash.scale.setScalar(rand(.22, .34));
+  const sil = A('uzi').silent;
+  ud.kick = 1; ud.twist = rand(.5, 1) * (gi ? 1 : -1); ud.flashT = sil ? 0 : .045; ud.flash.material.rotation = rand(0, 6.28); ud.flash.scale.setScalar(rand(.22, .34));
   muzzleGlow = 1;
-  sfx.uzi(); shake(.025);
+  (sil ? sfx.usps : sfx.uzi)(); shake(.025);
   if (typeof flashWorld === 'function') flashWorld(1.4, 0xffb060, 0.04);
-  player.pitch = Math.min(1.45, player.pitch + .0035); player.yaw += rand(-.0018, .0018);
-  kickView((gi ? -1 : 1) * .006, .004);
+  const rc = A('uzi').recoil;
+  player.pitch = Math.min(1.45, player.pitch + .0035 * rc); player.yaw += rand(-.0018, .0018) * rc;
+  kickView((gi ? -1 : 1) * .006 * rc, .004 * rc);
   camVectors();
   // boş kovan çıkış penceresinden fırlar, silah yaylı geri teper
   ejectCasing({ g: uzis[gi], port: ud.port }, 'pistol', .9);
@@ -62,11 +66,11 @@ function fireUzi() {
 }
 function shootRay(gi, k) {
   const moving = Math.hypot(player.body.velocity.x, player.body.velocity.z) > 2;
-  const spr = ((moving ? .042 : .022) + (player.grounded ? 0 : .02) + k * .012) * (1 - uziAim.k * .55);
+  const spr = ((moving ? .042 : .022) + (player.grounded ? 0 : .02) + k * .012) * (1 - uziAim.k * .55) * A('uzi').spread;
   const ang = rand(0, 6.28), rr = Math.sqrt(Math.random()) * spr;
   shotDir.copy(camFwd).addScaledVector(rightV, Math.cos(ang) * rr).addScaledVector(upV, Math.sin(ang) * rr).normalize();
   muzzleW.copy(camPos).addScaledVector(rightV, (gi ? .2 : -.2) + k * .04).addScaledVector(upV, -.16).addScaledVector(camFwd, .55);
-  castShot(shotDir, muzzleW, ST.bulletDmg, 1, .22, 0, PVP_DMG.uzi);
+  castShot(shotDir, muzzleW, ST.bulletDmg * A('uzi').dmg, 1, .22, 0, PVP_DMG.uzi * A('uzi').dmg);
 }
 // Tek bir merminin ışın testi ve etkisi (uzi ve pompalı ortak kullanır)
 let castHeadMul = 0;   // silaha özel kafa vuruşu çarpanı (PvP); 0 ise 2 kat
@@ -79,7 +83,7 @@ function castShot(dir, muzzle, baseDmg, power, splitChance, falloff, pvpDmg) {
   if (isRange()) { rng.shots++; const r = rangeRay(o, dir, best); if (r) { best = r.t; kind = 'target'; hitObj = r; } }
   else for (const p of pieces) { const t = raySphere(o, dir, p.body.position, (p.he.x + p.he.y + p.he.z) / 3 * 1.2); if (t >= 0 && t < best) { best = t; kind = 'piece'; hitObj = p; } }
   hitAt.copy(o).addScaledVector(dir, best);
-  addTracer(muzzle, hitAt, { chance: TRACER_CHANCE[wpn.cur] !== undefined ? TRACER_CHANCE[wpn.cur] : .3 });
+  addTracer(muzzle, hitAt, { chance: AP_CLS[wpn.cur] && A(wpn.cur).silent ? 0 : TRACER_CHANCE[wpn.cur] !== undefined ? TRACER_CHANCE[wpn.cur] : .3 });   // susturucuda iz görünmez
   const fall = falloff ? clamp(1 - (best - falloff) / 14, .3, 1) : 1;
   if (kind === 'player') {
     pvpHit(hitObj, (pvpDmg || 10) * fall * (head ? (castHeadMul || 2) : 1), dir, { head, w: wpn.cur, at: hitAt.clone(), fx: shotFx(head, hitAt) });
@@ -118,14 +122,15 @@ function updateUzi(dt) {
     let guard = 0;
     while (ammo.cd <= 0 && guard++ < 4) {
       if (ammo.mag <= 0) { if (ammo.reserve > 0) startReload(); else sfx.empty(); break; }
-      fireUzi(); ammo.cd += 1 / ST.fireRate;
+      fireUzi(); ammo.cd += 1 / (ST.fireRate * .6 * A('uzi').rate);   // tek UZİ toplam hızın %60'ı; ÇİFT UZİ bonusu x1.65
     }
   }
   if (ammo.cd < 0) ammo.cd = 0;
   if (wpn.cur === 'uzi' && ammo.mag <= 0 && ammo.reserve > 0 && ammo.reloadT <= 0 && !wpn.next) startReload();
 
   const bob = viewBob(), low = lowerOffset();
-  const rprog = ammo.reloadT > 0 ? 1 - ammo.reloadT / ST.reloadTime : -1;
+  const rprog = ammo.reloadT > 0 ? 1 - ammo.reloadT / uziReloadT() : -1;
+  const dual = uziDual(); uzis[0].visible = dual;
   const sprint = player.sprinting && player.grounded && ammo.reloadT <= 0 ? 1 : 0;
   const t = performance.now() / 1000;
   for (let i = 0; i < 2; i++) {
@@ -136,7 +141,7 @@ function updateUzi(dt) {
     // şarjör değiştirme: önce sol, sonra sağ tabanca. Silah yana yatar, eski şarjör düşer, yenisi aşağıdan takılır, sonra silah kurulur
     let tilt = 0, drop = 0, cock = 0;
     if (rprog >= 0) {
-      const ph = clamp((rprog - (i ? .25 : 0)) / .75, 0, 1);
+      const ph = dual ? clamp((rprog - (i ? .25 : 0)) / .75, 0, 1) : rprog;
       tilt = Math.sin(ph * Math.PI);
       if (ph < .35) drop = easeOut(ph / .35) * .5;                      // eski şarjör düşüyor
       else if (ph < .75) drop = .5 - easeOut((ph - .35) / .4) * .5;     // yenisi yukarı itiliyor

@@ -1,6 +1,8 @@
 'use strict';
 /* M4 (tam otomatik, co-op'ta bomba atar, VS'de nişan alma) ve AWP (dürbünlü keskin nişancı, co-op'ta deler geçer) */
 
+// eklentili şarjör (aparat.js): M4 ve AWP'nin şarjörü yükseltmelerle (ST) birlikte
+const m4Cap = () => Math.max(1, Math.round(ST.m4Mag * A('m4').mag)), awpCap = () => Math.max(1, Math.round(ST.awpMag * A('awp').mag));
 const RIF = {
   m4: { mag: 30, mags: 4, rate: 10, reload: 1.9, dmg: 1.1, pvp: 22, spread: .022, ads: .006 },
   awp: { mag: 5, rounds: 15, bolt: 1.25, reload: 2.3, dmg: 14, pvp: 150, spread: .07 },
@@ -23,30 +25,30 @@ const PIS_REST = P([.17, -.18, -.4], [0, .03, 0]), PIS_ADS = P([0, -pism.sight, 
 const pisAds = () => wpn.cur === 'pistol' && !wpn.next && mouse.right && player.alive && pis.reloadT <= 0 && state === 'play';
 function firePistol() {
   pis.mag--; netFx.sh++; netFx.ft = 0;
-  pis.kick = 1; pis.slide = 1; pis.flashT = .04; pism.flash.scale.setScalar(rand(.18, .26));
-  muzzleGlow = .9; sfx.pistol(); shake(.04);
+  pis.kick = 1; pis.slide = 1; pis.flashT = A('pistol').silent ? 0 : .04; pism.flash.scale.setScalar(rand(.18, .26));
+  muzzleGlow = .9; (A('pistol').silent ? sfx.usps : sfx.pistol)(); shake(.04);
   ejectCasing(pism, 'pistol'); playerCasing('pistol'); gunKickFor('pistol');
   if (typeof flashWorld === 'function') flashWorld(1.8, 0xffa850, 0.05);
   const ads = pis.adsK > .6;
-  player.pitch = Math.min(1.45, player.pitch + .02); kickView(rand(-.01, .01), .012);
+  const rcp = A('pistol').recoil; player.pitch = Math.min(1.45, player.pitch + .02 * rcp); kickView(rand(-.01, .01) * rcp, .012 * rcp);
   camVectors();
   const moving = Math.hypot(player.body.velocity.x, player.body.velocity.z) > 2;
   const spr = (ads ? RIF.pistol.ads : RIF.pistol.spread) * (moving ? 1.6 : 1) * (player.grounded ? 1 : 2);
   muzzleW.copy(eyePos).addScaledVector(rightV, ads ? 0 : .18).addScaledVector(upV, -.1).addScaledVector(camFwd, .55);
-  castShot(spreadDir(spr), muzzleW.clone(), RIF.pistol.dmg, 1.2, .2, 25, RIF.pistol.pvp);
+  castShot(spreadDir(spr), muzzleW.clone(), RIF.pistol.dmg, 1.2, .2, 25 * A('pistol').range, RIF.pistol.pvp);
 }
 function updatePistol(dt) {
   pis.cd -= dt;
   if (pis.reloadT > 0) { pis.reloadT -= dt; if (pis.reloadT <= 0) { pis.reloadT = 0; const n = Math.min(RIF.pistol.mag - pis.mag, pis.reserve); pis.mag += n; pis.reserve -= n; } }
   const playing = wpn.cur === 'pistol' && !wpn.next && player.alive && state === 'play' && !vsFrozen() && pis.reloadT <= 0;
   if (playing && rifClick && pis.cd <= 0) {
-    if (pis.mag > 0) { firePistol(); pis.cd = .14; }
+    if (pis.mag > 0) { firePistol(); pis.cd = .14 / A('pistol').rate; }
     else if (pis.reserve > 0) { pis.reloadT = RIF.pistol.reload; sfx.reload(); }
     else sfx.empty();
   }
   if (wpn.cur === 'pistol' && pis.mag <= 0 && pis.reserve > 0 && pis.reloadT <= 0 && !wpn.next) { pis.reloadT = RIF.pistol.reload; sfx.reload(); }
   rifClick = false; rifClickR = false;   // tıklar bu karede tüketildi (tüfekler ve tabanca)
-  pis.adsK += ((pisAds() ? 1 : 0) - pis.adsK) * Math.min(1, dt * 14);
+  pis.adsK += ((pisAds() ? 1 : 0) - pis.adsK) * Math.min(1, dt * 14 * A('pistol').ads);
   pis.kick = Math.max(0, pis.kick - dt * 10); pis.slide = Math.max(0, pis.slide - dt * 16);
   pis.flashT -= dt; pism.flash.visible = pis.flashT > 0;
   const rp = pis.reloadT > 0 ? 1 - pis.reloadT / RIF.pistol.reload : -1;
@@ -74,12 +76,12 @@ function aimFov(base) {
 }
 function resetRifles() {
   Object.assign(pis, { mag: RIF.pistol.mag, reserve: RIF.pistol.rounds, reloadT: 0, cd: 0, adsK: 0 });
-  Object.assign(m4, { mag: ST.m4Mag, reserve: RIF.m4.mags, reloadT: 0, cd: 0, gren: ST.grenMax, grenCd: 0, adsK: 0 });
-  Object.assign(awp, { mag: ST.awpMag, reserve: RIF.awp.rounds, reloadT: 0, boltT: 0, cd: 0, scopeK: 0 });
+  Object.assign(m4, { mag: m4Cap(), reserve: RIF.m4.mags, reloadT: 0, cd: 0, gren: ST.grenMax, grenCd: 0, adsK: 0 });
+  Object.assign(awp, { mag: awpCap(), reserve: RIF.awp.rounds, reloadT: 0, boltT: 0, cd: 0, scopeK: 0 });
 }
 function rifleReload() {
-  if (wpn.cur === 'm4' && m4.reloadT <= 0 && m4.mag < ST.m4Mag) { if (m4.reserve <= 0) { sfx.empty(); return; } m4.reloadT = RIF.m4.reload; sfx.reload(); }
-  if (wpn.cur === 'awp' && awp.reloadT <= 0 && awp.mag < ST.awpMag) { if (awp.reserve <= 0) { sfx.empty(); return; } awp.reloadT = RIF.awp.reload; awp.boltT = 0; sfx.reload(); }
+  if (wpn.cur === 'm4' && m4.reloadT <= 0 && m4.mag < m4Cap()) { if (m4.reserve <= 0) { sfx.empty(); return; } m4.reloadT = RIF.m4.reload; sfx.reload(); }
+  if (wpn.cur === 'awp' && awp.reloadT <= 0 && awp.mag < awpCap()) { if (awp.reserve <= 0) { sfx.empty(); return; } awp.reloadT = RIF.awp.reload; awp.boltT = 0; sfx.reload(); }
 }
 function spreadDir(spr) {
   const ang = rand(0, 6.28), rr = Math.sqrt(Math.random()) * spr;
@@ -89,31 +91,32 @@ function spreadDir(spr) {
 /* ================= ATEŞ ================= */
 function fireM4() {
   m4.mag--; netFx.sh++; netFx.ft = 0;
-  m4.kick = 1; m4.flashT = .04; m4m.flash.material.rotation = rand(0, 6.28); m4m.flash.scale.setScalar(rand(.25, .36));
-  muzzleGlow = 1; sfx.m4(); shake(.03);
+  m4.kick = 1; m4.flashT = A('m4').silent ? 0 : .04; m4m.flash.material.rotation = rand(0, 6.28); m4m.flash.scale.setScalar(rand(.25, .36));
+  muzzleGlow = 1; (A('m4').silent ? sfx.usps : sfx.m4)(); shake(.03);
   ejectCasing(m4m, 'rifle'); playerCasing('m4'); gunKickFor('m4');
   if (typeof flashWorld === 'function') flashWorld(2.4, 0xffa040, 0.05);
   const ads = m4.adsK > .6;
   if (isVS() || isRange()) {   // VS ve poligon: CS tarzı sprey deseni (guns.js)
     camVectors();
     const dir = sprayFire('m4', ads);
-    kickView(rand(-.006, .006), .004);
+    kickView(rand(-.006, .006) * A('m4').recoil, .004 * A('m4').recoil);
     muzzleW.copy(eyePos).addScaledVector(rightV, ads ? 0 : .2).addScaledVector(upV, -.12).addScaledVector(camFwd, .8);
-    castShot(dir, muzzleW.clone(), RIF.m4.dmg, 1.3, .25, 30, RIF.m4.pvp);
+    castShot(dir, muzzleW.clone(), RIF.m4.dmg, 1.3, .25, 30 * A('m4').range, RIF.m4.pvp);
     return;
   }
-  player.pitch = Math.min(1.45, player.pitch + (ads ? .006 : .009)); player.yaw += rand(-.003, .003);
-  kickView(rand(-.008, .008), .006);
+  const rcm = A('m4').recoil;
+  player.pitch = Math.min(1.45, player.pitch + (ads ? .006 : .009) * rcm); player.yaw += rand(-.003, .003) * rcm;
+  kickView(rand(-.008, .008) * rcm, .006 * rcm);
   camVectors();
   const moving = Math.hypot(player.body.velocity.x, player.body.velocity.z) > 2;
   const spr = (ads ? RIF.m4.ads : RIF.m4.spread) * (moving ? 1.8 : 1) * (player.grounded ? 1 : 2);
   muzzleW.copy(eyePos).addScaledVector(rightV, ads ? 0 : .2).addScaledVector(upV, -.12).addScaledVector(camFwd, .8);
-  castShot(spreadDir(spr), muzzleW.clone(), RIF.m4.dmg * (isVS() ? 1 : ST.m4Dmg), 1.3, .25, 30, RIF.m4.pvp);
+  castShot(spreadDir(spr), muzzleW.clone(), RIF.m4.dmg * (isVS() ? 1 : ST.m4Dmg), 1.3, .25, 30 * A('m4').range, RIF.m4.pvp);
 }
 function fireAWP() {
   awp.mag--; netFx.sh++; netFx.ft = 1;
-  awp.kick = 1; awp.flashT = .07; awpm.flash.scale.setScalar(rand(.5, .65));
-  muzzleGlow = 1.8; sfx.awp(); shake(.3); gunKickFor('awp');
+  awp.kick = 1; awp.flashT = A('awp').silent ? 0 : .07; awpm.flash.scale.setScalar(rand(.5, .65));
+  muzzleGlow = A('awp').silent ? .4 : 1.8; (A('awp').silent ? sfx.usps : sfx.awp)(); shake(.3); gunKickFor('awp');
   if (typeof flashWorld === 'function') flashWorld(4.5, 0xffe8a0, 0.09);
   const scoped = awp.scopeK > .6;
   camVectors();
@@ -122,14 +125,14 @@ function fireAWP() {
   const dir = spreadDir(spr);
   muzzleW.copy(eyePos).addScaledVector(rightV, scoped ? 0 : .22).addScaledVector(upV, -.12).addScaledVector(camFwd, 1);
   pierceShot(dir, muzzleW.clone());
-  player.pitch = Math.min(1.45, player.pitch + .07); kickView(rand(-.04, .04), .08);
-  awp.boltT = ST.awpBolt;
+  const rca = A('awp').recoil; player.pitch = Math.min(1.45, player.pitch + .07 * rca); kickView(rand(-.04, .04) * rca, .08 * rca);
+  awp.boltT = ST.awpBolt / A('awp').rate;
 }
 // AWP: co-op'ta yoldaki bütün düşmanları deler; VS'de oyuncuya tam hasar
 function pierceShot(dir, muzzle) {
   const o = camPos;
   const wallT = rayStatic(o, dir, 120);
-  if (isVS()) { castShot(dir, muzzle, RIF.awp.dmg, 3, .5, 60, RIF.awp.pvp); return; }
+  if (isVS()) { castShot(dir, muzzle, RIF.awp.dmg, 3, .5, 60 * A('awp').range, RIF.awp.pvp); return; }
   const hits = [];
   for (const e of enemies) { const r = rayEnemy(e, o, dir); if (r && r.t < wallT) hits.push([r.t, e, r.head]); }
   hits.sort((a, b) => a[0] - b[0]);
@@ -202,8 +205,8 @@ function explodeAt(p, real, R = 5, base = 3, vari = 9, by) {
 /* ================= GÜNCELLEME ================= */
 function updateRifles(dt) {
   m4.cd -= dt; awp.cd -= dt; m4.grenCd -= dt;
-  if (m4.reloadT > 0) { m4.reloadT -= dt; if (m4.reloadT <= 0) { m4.reloadT = 0; m4.reserve--; m4.mag = ST.m4Mag; } }
-  if (awp.reloadT > 0) { awp.reloadT -= dt; if (awp.reloadT <= 0) { awp.reloadT = 0; const n = Math.min(ST.awpMag - awp.mag, awp.reserve); awp.mag += n; awp.reserve -= n; } }
+  if (m4.reloadT > 0) { m4.reloadT -= dt; if (m4.reloadT <= 0) { m4.reloadT = 0; m4.reserve--; m4.mag = m4Cap(); } }
+  if (awp.reloadT > 0) { awp.reloadT -= dt; if (awp.reloadT <= 0) { awp.reloadT = 0; const n = Math.min(awpCap() - awp.mag, awp.reserve); awp.mag += n; awp.reserve -= n; } }
   if (awp.boltT > 0) { const b0 = awp.boltT; awp.boltT -= dt; if (b0 > ST.awpBolt * .55 && awp.boltT <= ST.awpBolt * .55) { sfx.bolt(); ejectCasing(awpm, 'rifle', .8); playerCasing('awp'); } }
   const playing = player.alive && state === 'play' && !wpn.next && !vsFrozen();
   if (playing && wpn.cur === 'm4' && m4.reloadT <= 0) {
@@ -211,7 +214,7 @@ function updateRifles(dt) {
       let guard = 0;
       while (m4.cd <= 0 && guard++ < 3) {
         if (m4.mag <= 0) { if (m4.reserve > 0) rifleReload(); else sfx.empty(); break; }
-        fireM4(); m4.cd += 1 / ST.m4Rate;
+        fireM4(); m4.cd += 1 / (ST.m4Rate * A('m4').rate);
       }
     }
     if (rifClickR && !isVS() && m4.grenCd <= 0) launchGrenade();
@@ -227,9 +230,9 @@ function updateRifles(dt) {
   boomT -= dt; boomGlow.material.opacity = Math.max(0, boomT / .35); boomGlow.scale.setScalar((6 + (1 - Math.max(0, boomT) / .35) * 6) * boomScale);
 
   // ---- animasyon ----
-  m4.adsK += ((m4Ads() ? 1 : 0) - m4.adsK) * Math.min(1, dt * 14);
+  m4.adsK += ((m4Ads() ? 1 : 0) - m4.adsK) * Math.min(1, dt * 14 * A('m4').ads);
   if (m4m.rearMat) m4m.rearMat.opacity = 1 - m4.adsK * .82;   // nişanda arka gez saydamlaşır, görüşü kapatmaz
-  awp.scopeK += ((awpScoped() ? 1 : 0) - awp.scopeK) * Math.min(1, dt * 16);
+  awp.scopeK += ((awpScoped() ? 1 : 0) - awp.scopeK) * Math.min(1, dt * 16 * A('awp').ads);
   const bob = viewBob(), low = lowerOffset(), t = performance.now() / 1000;
   const sprint = player.sprinting && player.grounded ? 1 : 0;
   m4m.gl.visible = !isVS();
