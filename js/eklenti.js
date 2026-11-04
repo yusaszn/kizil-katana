@@ -30,7 +30,7 @@ function statKill(info = {}) {
   const s = SIGHTS.find(q => q.need && q.need === kkStats.kills);
   if (s) { banner('YENİ EKLENTİ', s.name + ' açıldı · Ana menü → ATÖLYE'); sfx.upgrade(); }
 }
-const sightOpen = s => kkStats.kills >= s.need;
+const sightOpen = s => (typeof apAdmin === 'function' && apAdmin()) || kkStats.kills >= s.need;
 // nişangahın etkisi (aparat.js A() çarpanlarına katılır): optik nişanda daha isabetli, holografik biraz ağır
 function sightStats(w) {
   if (!SIGHT_GUNS[w]) return {};

@@ -54,6 +54,22 @@ const AP_OPTS = {
 // kaplamalar o silahla yapılan leşle açılır (kötüden iyiye)
 const SKIN_NEED = { std: 0, orman: 10, col: 20, kis: 40, kaplan: 50, karbon: 60, gece: 80, buz: 100, kizil: 150, altin: 200 };
 
+/* ADMİN: adres çubuğunda ?admin=KOD (kod yalnız özeti tutulur) → bu cihazda bütün eklenti, kaplama ve nişangah açık; ?admin=0 kapatır */
+let apAdminOn = false;
+try { apAdminOn = localStorage.getItem('kk-admin') === '1'; } catch (e) { /* kayıt yok */ }
+const apAdmin = () => apAdminOn;
+(() => {
+  const q = new URLSearchParams(location.search).get('admin'); if (q == null) return;
+  if (q === '0') { apAdminOn = false; try { localStorage.removeItem('kk-admin'); } catch (e) { /* yok */ } return; }
+  if (!crypto || !crypto.subtle) return;
+  crypto.subtle.digest('SHA-256', new TextEncoder().encode(q)).then(b => {
+    const h = [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+    if (h !== '540746a2c84bfafbe9bbd206487cbb4d9fd14411a55025b790e9eb5965f0950e') return;
+    apAdminOn = true; try { localStorage.setItem('kk-admin', '1'); } catch (e) { /* yok */ }
+    if (typeof applyAparat === 'function') applyAparat();
+    if (typeof toast === 'function') toast('ADMİN · HER ŞEY AÇIK');
+  });
+})();
 const apSel = (() => { try { return JSON.parse(localStorage.getItem('kk-aparat') || '{}'); } catch (e) { return {}; } })();
 const apSaid = (() => { try { return JSON.parse(localStorage.getItem('kk-aparat-acilan') || '{}'); } catch (e) { return {}; } })();
 const apFits = (w, o) => (!o.only || o.only.includes(w) || o.only.includes(AP_CLS[w])) && !(o.not && (o.not.includes(w) || o.not.includes(AP_CLS[w])));
@@ -66,6 +82,7 @@ const apOpts = (w, s) => AP_OPTS[s].filter(o => apFits(w, o));
 // görev ilerlemesi: { v, n, done, txt }
 function apTask(w, t) {
   if (!t) return { v: 0, n: 0, done: true, txt: '' };
+  if (apAdmin()) return { v: t.n, n: t.n, done: true, txt: '' };
   const ws = (apStatsAll().w || {})[w] || {}, v = Math.min(t.n, ws[t.s] || 0);
   return { v, n: t.n, done: v >= t.n, txt: (WEAPON_NAMES_AP[w] || w.toUpperCase()) + ' ile ' + t.n + ' ' + AP_TASK_TXT[t.s] };
 }
@@ -146,7 +163,7 @@ function apCheckUnlocks(w) {
   if (got.length) { apSave(); banner('YENİ EKLENTİ', (WEAPON_NAMES_AP[w] || w) + ': ' + got.join(' · ') + ' · ATÖLYE'); if (typeof sfx !== 'undefined') sfx.upgrade(); applyAparat(); }
 }
 const skinNeed = id => SKIN_NEED[id] || 0;
-const skinOpen = (w, id) => ((((apStatsAll().w || {})[w]) || {}).kills || 0) >= skinNeed(id);
+const skinOpen = (w, id) => apAdmin() || ((((apStatsAll().w || {})[w]) || {}).kills || 0) >= skinNeed(id);
 const skinEff = w => { const id = (typeof skinSel !== 'undefined' && skinSel[w]) || 'std'; return skinOpen(w, id) ? id : 'std'; };   // kilitliyse fabrika
 
 /* ================= 3D: eklentiler silahın üstünde (birinci şahıs ve Atölye görünümü) =================
