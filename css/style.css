@@ -164,6 +164,8 @@ input#nameIn:focus-visible,input#codeIn:focus-visible{outline:2px solid var(--bl
 .plist small{font-size:11px;letter-spacing:.2em;color:var(--ash)}
 .plist .kick{font-family:var(--hud);font-weight:700;font-size:11px;letter-spacing:.2em;padding:4px 10px;cursor:pointer;color:var(--bone);background:transparent;border:1px solid rgba(255,80,60,.6)}
 .plist .kick:hover,.plist .kick:focus-visible{background:var(--blood);outline:none}
+.plist .kick.tmv.red{border-color:rgba(255,90,72,.8);color:#ff8a78}.plist .kick.tmv.blue{border-color:rgba(106,168,255,.8);color:#9ac4ff}
+.plist .kick.tmv.red:hover,.plist .kick.tmv.red:focus-visible{background:#8a1a12;color:#fff}.plist .kick.tmv.blue:hover,.plist .kick.tmv.blue:focus-visible{background:#1f4a8a;color:#fff}
 #board.mp .brow{grid-template-columns:10px minmax(0,1fr) auto 30px 54px}
 .brow .bp{text-align:right;font-size:11px;font-variant-numeric:tabular-nums;color:var(--ash)}
 .brow .bp.good{color:#7dffa0}.brow .bp.mid{color:var(--gold)}.brow .bp.bad{color:var(--blood-hi)}

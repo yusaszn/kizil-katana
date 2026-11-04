@@ -286,17 +286,22 @@ function checkTeamChange() {
     if (vs.phase === 'buy') pvpRespawn();
     else if (isTDM()) { pvpRespawn(); applyLoadout(); vs.spawnProt = 2; }
     else if (player.alive) {
-      player.alive = false; player.hp = 0; player.deathT = 0; state = 'dead'; eco.keep = false;
+      player.alive = false; player.hp = 0; player.deathT = 0; if (state === 'play') state = 'dead'; eco.keep = false;   // duraklatma menüsü açıksa açık kalsın
       if (net.mode === 'host' && net.players.h) net.players.h.alive = false;
     }
   }
   vs.lastTeam = mt;
 }
+// takım değişikliği (yalnız host): oyuncu kendisi istediyse ya da host onu taşıdıysa. Hazırlıkta ve TDM'de yeni üste doğar,
+// raunt sürerken (ve raunt sonunda) bu rauntdan çekilir, sonraki rauntta yeni takımında başlar. Parası korunur.
 function hostSetTeam(id, t) {
   const p = net.players[id]; if (!p || !TEAMS[t] || p.team === t) return;
-  p.team = t; sendRoster();
-  if (vs.phase === 'live' && id !== 'h' && !isTDM()) p.alive = false;
-  toast(p.name.toLocaleUpperCase('tr-TR') + ' → ' + TEAMS[t].name);
+  p.team = t;
+  if ((vs.phase === 'live' || vs.phase === 'end') && id !== 'h' && !isTDM()) p.alive = false;
+  const b = isBot(id) ? botById(id) : null;   // botun kendi istemcisi yok: değişikliği host uygular
+  if (b) { if (vs.phase === 'buy' || isTDM()) botSpawn(b); else { b.p.alive = false; b.tgt = null; b.path = []; } botSend(b); }
+  sendRoster();
+  toast(p.name.toLocaleUpperCase('tr-TR') + ' → ' + TEAMS[t].name); chatSys(p.name + ' artık ' + TEAMS[t].name + ' takımda');
 }
 function updateVS(dt, rdt) {
   checkTeamChange();

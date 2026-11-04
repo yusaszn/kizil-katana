@@ -112,6 +112,16 @@ function switchTeam(id) {
   if (p.proxy) p.proxy.teamSet = null;
   sendRoster();
 }
+// takım değiştir düğmesi: lobide herkes kendini, host herkesi taşır; maç sürerken de (VS, bomba, takım ölüm maçı)
+// host istediği oyuncuyu (botlar dahil) öbür takıma alabilir, oyuncu kendini alabilir
+function changeTeam(id) {
+  const p = net.players[id]; if (!p) return;
+  if (!net.inMatch) { switchTeam(id); return; }
+  if (!isVS()) return;
+  const t = p.team === 'red' ? 'blue' : 'red';
+  if (id === net.myId) requestTeam(t);
+  else if (net.mode === 'host') { hostSetTeam(id, t); sfx.swap(); }
+}
 function dropGuest(conn, why) {
   const id = conn.pid; if (!id || !net.players[id]) return;
   toast(net.players[id].name + (why || ' ayrıldı')); chatSys(net.players[id].name + (why || ' ayrıldı'));
@@ -150,7 +160,7 @@ setInterval(() => {
 window.addEventListener('beforeunload', () => leaveRoom(true));
 // pid: oyuncunun PeerJS kimliği (sesli sohbette oyuncular birbirini doğrudan arar)
 function roster() { return Object.values(net.players).map(p => ({ id: p.id, name: p.name, color: p.color, team: p.team, pid: p.id === 'h' ? net.peer && net.peer.id : p.conn && p.conn.peer })); }
-function sendRoster() { bcast({ t: 'roster', list: roster(), code: net.code, mode: net.gameMode, map: net.vsMap, money: net.money, venue: net.venue }); renderLobby(); }
+function sendRoster() { bcast({ t: 'roster', list: roster(), code: net.code, mode: net.gameMode, map: net.vsMap, money: net.money, venue: net.venue }); renderLobby(); if (!$('pause').hidden) renderPausePlayers(); }
 function showLobby() {
   $('start').hidden = true; $('lobby').hidden = false;
   $('roomCode').textContent = net.code;
@@ -184,15 +194,17 @@ function renderLobby() {
 }
 function fillPlayerList(ul) {
   ul.innerHTML = '';
-  const vsMode = net.gameMode !== 'coop';
+  const vsMode = net.gameMode === 'vs' || net.gameMode === 'bomb' || net.gameMode === 'tdm';
   for (const p of Object.values(net.players)) {
     const li = document.createElement('li');
     const ping = pingOf(p.id);
     const col = vsMode ? TEAMS[p.team].color : p.color;
     li.innerHTML = `<i style="background:#${col.toString(16).padStart(6, '0')}"></i>${escapeHtml(p.name)}${p.id === net.myId ? ' <small>(sen)</small>' : ''}${p.bot ? ' <small>BOT</small>' : ''}${vsMode ? ` <small class="tm ${p.team}">${TEAMS[p.team].name}</small>` : ''} <small>${ping === 'host' ? 'HOST' : ping != null ? ping + ' ms' : ''}</small>`;
-    if (vsMode && !net.inMatch && (p.id === net.myId || net.mode === 'host')) {
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'kick'; b.textContent = 'TAKIM DEĞİŞTİR';
-      b.addEventListener('click', () => switchTeam(p.id));
+    if (vsMode && (!net.inMatch || isVS()) && (p.id === net.myId || net.mode === 'host')) {   // maç sürerken de (duraklatma menüsü)
+      const to = p.team === 'red' ? 'blue' : 'red';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'kick tmv ' + to; b.textContent = '→ ' + TEAMS[to].name;
+      b.title = (p.id === net.myId ? 'Takımını ' : p.name + ' oyuncusunu ') + TEAMS[to].name + ' takıma al';
+      b.addEventListener('click', () => changeTeam(p.id));
       li.appendChild(b);
     }
     if (net.mode === 'host' && p.id !== 'h') {
@@ -312,6 +324,10 @@ function onGuestData(d) {
     }
     case 'roster': {
       const keep = {}, keepOld = {}; for (const id in net.players) keepOld[id] = true;
+      if (net.inMatch) for (const r of d.list) {   // maç sürerken biri takım değiştirdi (host taşıdıysa ya da kendisi geçtiyse)
+        const q = net.players[r.id]; if (!q || !q.team || q.team === r.team || !TEAMS[r.team] || r.id === net.myId) continue;
+        toast(String(r.name).toLocaleUpperCase('tr-TR') + ' → ' + TEAMS[r.team].name); chatSys(r.name + ' artık ' + TEAMS[r.team].name + ' takımda');
+      }
       for (const r of d.list) { keep[r.id] = true; if (!net.players[r.id]) addPlayer(r.id, r.name, null); Object.assign(net.players[r.id], { name: r.name, color: r.color, team: r.team, pid: r.pid }); }
       for (const id in net.players) if (!keep[id]) { removeProxy(id); delete net.players[id]; }
       if (d.mode && !net.inMatch) net.gameMode = d.mode;
@@ -319,7 +335,7 @@ function onGuestData(d) {
       if (d.money && !net.inMatch) net.money = d.money;
       if (d.venue && d.venue !== net.venue) { net.venue = d.venue; if (state === 'lobby') lobbyBuild(); }
       for (const r of d.list) if (!keepOld[r.id] && r.id !== net.myId && state === 'lobby') chatSys(r.name + ' odaya katıldı');
-      renderLobby();
+      renderLobby(); if (!$('pause').hidden) renderPausePlayers();
       break;
     }
     case 'phit': applyPhit(d); break;
