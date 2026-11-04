@@ -148,7 +148,7 @@ function botFire(b, id, d) {
   const G = GUNS.ak47, fall = clamp(1 - (d - G.falloff) / 14, .3, 1);
   const dmg = (b.w === 'ak47' ? G.pvp : RIF.m4.pvp) * fall * (head ? (b.w === 'ak47' ? G.head : 3.5) : 1);
   const dir = new V3(pos.x - b.pos.x, 0, pos.z - b.pos.z).normalize();
-  const msg = { t: 'phit', to: id, dmg: Math.round(dmg), dir: arr(dir), head, melee: false, kn: 0, w: b.w, by: b.id };
+  const msg = { t: 'phit', to: id, dmg: Math.round(dmg), dir: arr(dir), head, melee: false, kn: 0, w: b.w, by: b.id, fx: head ? 'hs' : '' };
   if (isBot(id)) botHit(msg); else deliverPhit(msg);
 }
 // bota isabet (insanların mermisi ya da başka bot)
@@ -161,7 +161,7 @@ function botHit(d) {
   if (b.hp <= 0) {
     b.p.alive = false; b.deaths++; b.p.deaths = b.deaths;
     const k = botById(d.by); if (k) { k.kills++; k.p.kills = k.kills; }
-    hostKill(b.id, d.by, d.w);
+    hostKill(b.id, d.by, d.w, d.fx);
     b.respawnT = isTDM() ? TDM_RESPAWN : 0;
     botSend(b);
   }

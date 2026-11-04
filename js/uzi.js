@@ -82,7 +82,7 @@ function castShot(dir, muzzle, baseDmg, power, splitChance, falloff, pvpDmg) {
   addTracer(muzzle, hitAt, { chance: TRACER_CHANCE[wpn.cur] !== undefined ? TRACER_CHANCE[wpn.cur] : .3 });
   const fall = falloff ? clamp(1 - (best - falloff) / 14, .3, 1) : 1;
   if (kind === 'player') {
-    pvpHit(hitObj, (pvpDmg || 10) * fall * (head ? (castHeadMul || 2) : 1), dir, { head, w: wpn.cur, at: hitAt.clone() });
+    pvpHit(hitObj, (pvpDmg || 10) * fall * (head ? (castHeadMul || 2) : 1), dir, { head, w: wpn.cur, at: hitAt.clone(), fx: shotFx(head, hitAt) });
     hitMarker(head);
   } else if (kind === 'enemy') {
     const dmg = baseDmg * fall * (head ? 2.2 : 1);

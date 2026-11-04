@@ -270,7 +270,7 @@ function onHostData(conn, d) {
     case 'team': if (!net.inMatch) switchTeam(conn.pid); break;
     case 'teamSet': if (net.inMatch && isVS()) hostSetTeam(conn.pid, d.team); break;
     case 'phit': d.by = conn.pid; deliverPhit(d); break;
-    case 'pdied': if (isVS()) hostKill(conn.pid, d.by, d.w); break;
+    case 'pdied': if (isVS()) hostKill(conn.pid, d.by, d.w, d.fx); break;
     case 'boom': bcast(d, conn); explodeAt(v3(d.p), false, d.r || 5); break;
     case 'util': bcast(d, conn); onUtil(d); break;
     case 'bplant': hostPlant(conn.pid, d); break;

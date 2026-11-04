@@ -56,7 +56,7 @@ function requestTeam(t) {
 }
 
 function resetEco() {
-  Object.assign(eco, { cr: ECON.start, primary: null, sidearm: null, armor: 0, armorKind: null, smoke: 0, flash: 0, he: 0, bought: [], streak: 0, keep: false, roundKills: 0, ready: false, taken: {}, deathInfo: '' });
+  Object.assign(eco, { cr: ECON.start, primary: null, sidearm: null, armor: 0, armorKind: null, smoke: 0, flash: 0, he: 0, bought: [], streak: 0, keep: false, roundKills: 0, ready: false, taken: {}, deathInfo: '', kit: { armor: null, smoke: 0, flash: 0, he: 0 } });
   closeBuy();
 }
 function addCredits(n, why) {
@@ -100,6 +100,7 @@ function buyItem(id) {
     eco.cr -= it.price; eco.bought.push({ id, price: it.price }); eco[id]++;
   }
   if (infMoney()) eco.cr = ECON.max;   // sınırsız para
+  if (isTDM()) kitNote(id);
   if (isTDM() && vs.phase === 'live') applyLoadout();   // takım ölüm maçında aldığın hemen eline geçer
   sfx.ammo(); renderBuy();
 }
@@ -110,7 +111,22 @@ function sellItem(id) {
   else if (SIDEARM_IDS.includes(id)) eco.sidearm = null;
   else if (shopItem(id).armor) { eco.armor = 0; eco.armorKind = null; }
   else eco[id] = Math.max(0, eco[id] - 1);
+  if (isTDM()) kitNote(id);
   sfx.swap(); renderBuy();
+}
+/* TAKIM ÖLÜM MAÇI: satın aldığın kalkan ve el bombaları her doğuşta yeniden verilir (bir kez alman yeter).
+   Kit: en son aldığın kalkan ve her bombadan elinde tuttuğun en fazla sayı; satarsan kitten de çıkar */
+function kitNote(id) {
+  const k = eco.kit || (eco.kit = { armor: null, smoke: 0, flash: 0, he: 0 }), it = shopItem(id); if (!it) return;
+  if (it.armor) k.armor = eco.armorKind;
+  else if (id in k) k[id] = eco[id];
+}
+function tdmRestock() {
+  const k = eco.kit; if (!k) return;
+  const got = [];
+  if (k.armor && shopItem(k.armor) && eco.armor < shopItem(k.armor).armor) { eco.armorKind = k.armor; eco.armor = shopItem(k.armor).armor; got.push(shopItem(k.armor).name || 'KALKAN'); }
+  for (const u of ['he', 'flash', 'smoke']) if (k[u] > eco[u]) { got.push((k[u] - eco[u]) + ' ' + ({ he: 'EL BOMBASI', flash: 'FLAŞ', smoke: 'SİS' })[u]); eco[u] = k[u]; }
+  if (got.length) toast('TEÇHİZAT YENİLENDİ · ' + got.join(' · '));
 }
 function noMoney() { sfx.empty(); toast('YETERSİZ KREDİ'); }
 

@@ -61,9 +61,34 @@ function rayPlayer(pr, o, d) {
   return null;
 }
 
+/* ================= ÖLDÜRME İŞARETLERİ =================
+   Vuran kendi ekranında belirler, vuruş ve ölüm mesajıyla ölüm akışına kadar taşınır:
+   hs kafadan · ns dürbünsüz (AWP) · air havadayken · smk sisin içinden · kor flaşla körken */
+const KILL_FX = ['ns', 'smk', 'air', 'kor', 'hs'];
+const KILL_FX_NAME = { hs: 'KAFADAN', ns: 'DÜRBÜNSÜZ', air: 'HAVADAYKEN', smk: 'SİSİN İÇİNDEN', kor: 'KÖRKEN' };
+const cleanFx = s => { const a = Array.isArray(s) ? s : String(s || '').split(','); return KILL_FX.filter(t => a.includes(t)); };
+function shotFx(head, hitPoint) {
+  const f = [];
+  if (head) f.push('hs');
+  if (wpn.cur === 'awp' && typeof awp !== 'undefined' && awp.scopeK < .3) f.push('ns');
+  if (!player.grounded && player.coyote < 0) f.push('air');
+  if (typeof flashBlind !== 'undefined' && flashBlind > .6) f.push('kor');
+  if (hitPoint && typeof smokes !== 'undefined' && smokes.length && smokeBlocks(camPos, hitPoint)) f.push('smk');
+  return f;
+}
+// ölüm akışı simgeleri (küçük çizgi çizimler)
+const KF_SVG = {
+  hs: '<svg viewBox="0 0 16 16"><path fill="currentColor" stroke="none" d="M8 1.5a5.6 5.6 0 0 0-5.6 5.6c0 2 1 3.4 2.3 4.2V14h6.6v-2.7c1.3-.8 2.3-2.2 2.3-4.2A5.6 5.6 0 0 0 8 1.5z"/><circle cx="5.9" cy="7.4" r="1.4" fill="#120808" stroke="none"/><circle cx="10.1" cy="7.4" r="1.4" fill="#120808" stroke="none"/><path d="M7 14v-2M9 14v-2" stroke="#120808"/></svg>',
+  ns: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/><path d="M2.5 13.5l11-11" stroke-width="2"/></svg>',
+  air: '<svg viewBox="0 0 16 16"><path d="M4 8l4-4 4 4M4 12l4-4 4 4"/><path d="M2 15h12" stroke-dasharray="2 2"/></svg>',
+  smk: '<svg viewBox="0 0 16 16"><path d="M4.5 12.5h7.2a3 3 0 0 0 .3-6 4 4 0 0 0-7.7.9 2.6 2.6 0 0 0 .2 5.1z"/></svg>',
+  kor: '<svg viewBox="0 0 16 16"><path d="M1.5 8s2.4-4.2 6.5-4.2S14.5 8 14.5 8 12.1 12.2 8 12.2 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="1.8"/><path d="M2.5 13.5l11-11" stroke-width="2"/></svg>',
+};
+const kfIcons = fx => fx && fx.length ? '<em class="kfx">' + fx.map(t => `<i class="${t}" title="${KILL_FX_NAME[t]}">${KF_SVG[t]}</i>`).join('') + '</em>' : '';
+
 /* ================= VURUŞLAR ================= */
 function pvpHit(id, dmg, dir, opts = {}) {
-  const msg = { t: 'phit', to: id, dmg: Math.round(dmg), dir: arr(dir), head: !!opts.head, melee: !!opts.melee, kn: opts.kn || 0, w: opts.w || wpn.cur, by: net.myId };
+  const msg = { t: 'phit', to: id, dmg: Math.round(dmg), dir: arr(dir), head: !!opts.head, melee: !!opts.melee, kn: opts.kn || 0, w: opts.w || wpn.cur, by: net.myId, fx: (opts.fx || shotFx(opts.head)).join(',') };
   const pr = (net.players[id] || {}).proxy;
   if (pr) { const at = opts.at || new V3(pr.pos.x, pr.pos.y + .7, pr.pos.z); bloodBurst(at, dir, opts.melee ? 45 : 14, 6, 2); sfx.flesh(); }
   if (net.mode === 'host') deliverPhit(msg); else toHost(msg);
@@ -78,7 +103,7 @@ function applyPhit(d) {
   const att = (net.players[d.by] || {}).proxy;
   const from = att ? att.pos.clone() : null;
   if (d.kn) { const v = player.body.velocity; v.x += d.dir[0] * d.kn; v.z += d.dir[2] * d.kn; v.y += 4; }
-  vs.lastHit = { by: d.by, w: d.w };
+  vs.lastHit = { by: d.by, w: d.w, fx: cleanFx(d.fx) };
   if (vs.spawnProt <= 0) noteTaken(d.by, d.dmg);
   hurtPlayer(d.dmg, from, null, { pvp: true, melee: d.melee });
   if (d.head) screenSplat(1);
@@ -136,22 +161,23 @@ function pvpDie() {
   screenSplat(6); deathSummary();
   banner('KATLEDİLDİN', (k.by ? nameOf(k.by).toLocaleUpperCase('tr-TR') + ' · ' : '') + (isTDM() ? TDM_RESPAWN + ' SN SONRA YENİDEN DOĞACAKSIN' : 'SONRAKİ RAUNDU BEKLE'));
   if (isTDM()) { vs.respawnT = TDM_RESPAWN; eco.keep = true; closeBuy(); }
-  if (net.mode === 'host') { net.players.h.alive = false; hostKill(net.myId, k.by, k.w); }
-  else toHost({ t: 'pdied', by: k.by, w: k.w });
+  if (net.mode === 'host') { net.players.h.alive = false; hostKill(net.myId, k.by, k.w, k.fx); }
+  else toHost({ t: 'pdied', by: k.by, w: k.w, fx: (k.fx || []).join(',') });
   vs.lastHit = null;
 }
-function hostKill(v, by, w) {
+function hostKill(v, by, w, fx) {
   if (vs.over) return;
   if (net.players[v]) net.players[v].alive = false;
   if (isTDM() && by && by !== v && teamOf(by) && teamOf(by) !== teamOf(v)) { if (teamOf(by) === 'red') vs.rr++; else vs.rb++; vs.tick = 0; }   // takım leşi
-  const msg = { t: 'pkill', v, by, w };
+  const msg = { t: 'pkill', v, by, w, fx: cleanFx(fx).join(',') };
   bcast(msg); onPkill(msg);
 }
 function onPkill(d) {
-  vs.feed.unshift({ by: d.by ? nameOf(d.by) : '', byTeam: teamOf(d.by), v: nameOf(d.v), vTeam: teamOf(d.v), w: WEAPON_SHORT[d.w] || '', t: 5 });
+  const fx = d.by && d.by !== d.v ? cleanFx(d.fx) : [];
+  vs.feed.unshift({ by: d.by ? nameOf(d.by) : '', byTeam: teamOf(d.by), v: nameOf(d.v), vTeam: teamOf(d.v), w: WEAPON_SHORT[d.w] || '', fx, t: 5 });
   vs.feed.length = Math.min(vs.feed.length, 5);
   if (d.by === net.myId && d.v !== net.myId) {
-    statKill();
+    statKill({ w: d.w, fx, pvp: true });
     kills++; combo.n++; combo.t = 3.2; score += 100 * combo.n;
     const name = COMBO_NAMES.find(([n]) => combo.n >= n)[1];
     $('comboLabel').textContent = name; $('comboN').textContent = '×' + combo.n;
@@ -214,6 +240,7 @@ function pvpRespawn() {
   Object.assign(player, { alive: true, hp: ST.maxHp, deathT: 0, yaw: sp.z < 0 ? Math.PI : 0, pitch: 0, slideT: 0, dashT: 0 });   // haritanın ortasına bakarak doğ
   block.guard = 100;
   ammo.mag = magCap(); ammo.reserve = 3; shells.tube = ST.sgTube; shells.reserve = 24; resetRifles(); resetGuns();
+  if (isTDM()) tdmRestock();   // aldığın kalkan ve bombalar her doğuşta geri gelir
   if (state === 'dead') state = 'play';
 }
 function hostStartRound() {
@@ -341,7 +368,7 @@ function renderVsHud() {
   $('vsTeam').className = myTeam();
   setText('ecoHud', '◈ ' + (infMoney() ? '∞' : eco.cr) + (eco.smoke ? '   Z SİS ×' + eco.smoke : '') + (eco.flash ? '   X FLAŞ ×' + eco.flash : '') + (eco.he ? '   H BOMBA ×' + eco.he : '') + (buyPhase() && !buy.open ? '   B MENÜ' : ''));
   $('armorb').style.width = (eco.armor / 50 * 100) + '%';
-  const html = vs.feed.map(f => `<div class="kf"><b class="${f.byTeam || ''}">${escapeHtml(f.by)}</b><span>${f.w}</span><b class="${f.vTeam || ''}">${escapeHtml(f.v)}</b></div>`).join('');
+  const html = vs.feed.map(f => `<div class="kf"><b class="${f.byTeam || ''}">${escapeHtml(f.by)}</b><span>${f.w}</span>${kfIcons(f.fx)}<b class="${f.vTeam || ''}">${escapeHtml(f.v)}</b></div>`).join('');
   if (hud.feed !== html) { hud.feed = html; $('killfeed').innerHTML = html; }
   const sp = spectateTarget();
   setText('respawnHint', !player.alive && !vs.over && isTDM() ? 'YENİDEN DOĞUŞ ' + Math.max(1, Math.ceil(vs.respawnT)) : !player.alive && !vs.over && vs.phase === 'live' ? (sp ? 'İZLİYORSUN: ' + sp.name.toLocaleUpperCase('tr-TR') : 'SONRAKİ RAUNDU BEKLE') + (eco.deathInfo ? '\n' + eco.deathInfo : '') : '');

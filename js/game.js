@@ -24,8 +24,8 @@ function hitMarker(head) {
 function hitMarkShow(kind) { const el = $('hitm'); el.className = ''; void el.offsetWidth; el.className = 'show' + (kind ? ' ' + kind : ''); }
 
 const COMBO_NAMES = [[10, 'ŞEYTAN AVCISI'], [7, 'KANLI HASAT'], [5, 'KATLİAM'], [3, 'ÜÇLÜ DOĞRAMA'], [2, 'ÇİFT KESİK'], [1, 'KESİK']];
-function registerKill(T, close) {
-  statKill();   // eklenti kilitleri için toplam leş (eklenti.js)
+function registerKill(T, close, opts = {}) {
+  statKill({ w: wpn.cur, fx: shotFx(!!opts.head), pvp: false });   // eklenti ve kaplama görevleri için (eklenti.js)
   kills++; combo.n++; combo.t = 3.2;
   score += Math.round(T.score * (1 + (combo.n - 1) * .25));
   const name = COMBO_NAMES.find(([n]) => combo.n >= n)[1];
@@ -130,7 +130,7 @@ function killFx(e, push, cutN, opts) {
   if (Math.random() < T.ammoChance) dropOrbs(c, isBoss ? 4 : 1, 'ammo');
   const d = Math.hypot(c.x - camera.position.x, c.z - camera.position.z);
   if (mine) {
-    registerKill(T, d < (isBoss ? 8 : 3.4));
+    registerKill(T, d < (isBoss ? 8 : 3.4), opts);
     hitMarkShow('kill'); player.fov -= 2.2;   // öldürme: kızıl işaret ve küçük bir yakınlaşma vuruşu
     hitStop = Math.max(hitStop, opts.big ? .11 : opts.bullet ? .03 : .07);
     if (!opts.bullet) sword.blood = Math.min(1, sword.blood + .35);

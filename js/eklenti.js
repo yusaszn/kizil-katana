@@ -16,8 +16,16 @@ kkStats.kills = kkStats.kills || 0;
 const sightSel = (() => { try { return JSON.parse(localStorage.getItem('kk-nisangah') || '{}'); } catch (e) { return {}; } })();
 const sightNow = { m4: null, ak47: null };
 
-function statKill() {
+/* her leşte çağrılır (co-op ve PvP). info = { w: silah, fx: ['hs','ns','air','smk','kor'], pvp }
+   Toplam ve silah başına sayaçlar tutulur (kkStats.w[silah].kills / .hs ...); görevler killHooks ile dinler */
+const killHooks = [];
+function statKill(info = {}) {
   kkStats.kills++;
+  const W = kkStats.w || (kkStats.w = {}), w = info.w || 'diger', ws = W[w] || (W[w] = { kills: 0 });
+  ws.kills++;
+  for (const f of info.fx || []) { ws[f] = (ws[f] || 0) + 1; kkStats[f] = (kkStats[f] || 0) + 1; }
+  if (info.pvp) kkStats.pvp = (kkStats.pvp || 0) + 1;
+  for (const h of killHooks) { try { h(info, ws); } catch (e) { /* görev hatası leşi bozmasın */ } }
   try { localStorage.setItem('kk-istatistik', JSON.stringify(kkStats)); } catch (e) { /* kayıt yok */ }
   const s = SIGHTS.find(q => q.need && q.need === kkStats.kills);
   if (s) { banner('YENİ EKLENTİ', s.name + ' açıldı · Ana menü → ATÖLYE'); sfx.upgrade(); }
