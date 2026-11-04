@@ -29,13 +29,13 @@ function wsMake(w) {
 }
 // seçili silahı kaplaması ve nişangahıyla kur (değişiklik yoksa dokunma)
 function wsBuild(w) {
-  const sig = w + '|' + skinEff(w) + '|' + (sightSel[w] || 'iron') + '|' + JSON.stringify(apSel[w] || {});
+  const sk = skinUI.prevSkin || skinEff(w), sig = w + '|' + sk + '|' + (sightSel[w] || 'iron') + '|' + JSON.stringify(apSel[w] || {}) + JSON.stringify(apPrev);
   if (ws.sig === sig && ws.model) return; ws.sig = sig;
   if (ws.model) { ws.root.remove(ws.model.g); ws.model.g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); ws.model = null; }
   const m = wsMake(w); if (!m) return;
   if (AP_CLS[w]) apDress(w, m.sub || m);   // eklentiler büyük modelde de
   m.g.traverse(o => { if (o.isSprite) o.visible = false; });
-  skinTo(m.g, w, skinEff(w));
+  skinTo(m.g, w, sk);
   const S = SIGHTS.find(s => s.id === (sightSel[w] || 'iron')), C = SIGHT_GUNS[w];
   if (C && S && S.id !== 'iron' && sightOpen(S)) {
     const o = S.id === 'holo' ? opticHolo() : opticRedDot(); o.g.position.set(0, C.mountY, C.mountZ); m.g.add(o.g);

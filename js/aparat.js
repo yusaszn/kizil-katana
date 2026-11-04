@@ -72,8 +72,13 @@ function apTask(w, t) {
 const apStatsAll = () => (typeof kkStats !== 'undefined' ? kkStats : { w: {} });   // eklenti.js sonra yüklenir
 const WEAPON_NAMES_AP = { ak47: 'AK-47', m4: 'M4', awp: 'AWP', deagle: 'DEAGLE', usps: 'USP-S', glock: 'GLOCK', pistol: 'TABANCA', shotgun: 'POMPALI', uzi: 'UZİ', fenek: 'FENEK', knife: 'BIÇAK', karambit: 'KARAMBİT', butterfly: 'KELEBEK' };
 const apOpen = (w, o) => apTask(w, o.t).done;
+// önizleme (Atölye'de kilitli eklentiye tıklayınca): yalnız görünüm ve değerler, kuşanılmaz; Atölye'den çıkınca kalkar
+let apPrev = null;
+function apPreview(w, s, id) { const p = id ? { w, s, id } : null; if (JSON.stringify(p) === JSON.stringify(apPrev)) return; apPrev = p; applyAparat(); }
 function apCur(w, s) {
-  const list = apOpts(w, s), id = (apSel[w] || {})[s], o = list.find(q => q.id === id);
+  const list = apOpts(w, s);
+  if (apPrev && apPrev.w === w && apPrev.s === s) { const q = list.find(o => o.id === apPrev.id); if (q) return q; }
+  const id = (apSel[w] || {})[s], o = list.find(q => q.id === id);
   return o && apOpen(w, o) ? o : list[0];
 }
 // silahın toplam çarpanları (önbellekli; seçim değişince sıfırlanır)

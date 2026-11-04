@@ -461,6 +461,8 @@ body.touchdev.showboard #board{display:block;transform:scale(.8);transform-origi
 #apGrid small{font-size:10px;color:var(--ash)}#apGrid small.task{color:var(--gold)}
 #apGrid .apo.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;background:rgba(255,194,58,.08)}
 #apGrid .apo.locked,#skinGrid .sk.locked{opacity:.62}
+#apGrid .apo.prev,#skinGrid .sk.prev{opacity:1;border-color:#6aa8ff;box-shadow:0 0 0 1px #6aa8ff inset;background:rgba(106,168,255,.08)}
+#apGrid .apo b em{font-style:normal;font-size:9px;letter-spacing:.2em;color:#6aa8ff;margin-left:6px}
 #skinGrid .sk small{font-size:10px;color:var(--gold)}
 .apb{display:block;height:5px;background:rgba(255,255,255,.12);position:relative;overflow:hidden}
 .apb i{display:block;height:100%;background:var(--gold)}

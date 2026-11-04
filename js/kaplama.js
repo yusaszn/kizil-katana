@@ -115,9 +115,10 @@ function renderSkins() {
   $('apSlots').innerHTML = slots.map(([s, n]) => `<button type="button" data-slot="${s}" class="${s === sl ? 'on' : ''}">${n}</button>`).join('');
   // kaplamalar: o silahla leş yaptıkça kötüden iyiye açılır
   const cur = skinEff(w), kills = ((apStatsAll().w || {})[w] || {}).kills || 0;
-  const grid = SKINS.map(S => {
+  const grid = SKINS.slice().sort((a, b) => skinNeed(b.id) - skinNeed(a.id)).map(S => {   // açılma leşine göre büyükten küçüğe
     const open = skinOpen(w, S.id), n = skinNeed(S.id);
-    return `<button type="button" class="sk${S.id === cur ? ' on' : ''}${open ? '' : ' locked'}" data-s="${S.id}"><i style="background:${S.tex ? swatchUrl(S) + ' center/120px' : S.sw}"></i><b>${S.name}</b>${open ? '' : `<small>🔒 ${n} leş · ${Math.min(kills, n)}/${n}</small>${apBar(kills, n)}`}</button>`;
+    const pv = skinUI.prevSkin === S.id;
+    return `<button type="button" class="sk${S.id === cur && !skinUI.prevSkin ? ' on' : ''}${open ? '' : ' locked'}${pv ? ' prev' : ''}" data-s="${S.id}"><i style="background:${S.tex ? swatchUrl(S) + ' center/120px' : S.sw}"></i><b>${S.name}</b>${open ? '' : `<small>🔒 ${n} leş · ${Math.min(kills, n)}/${n}</small>${apBar(kills, n)}`}</button>`;
   }).join('');
   $('skinTabs').innerHTML = tabs; $('skinGrid').innerHTML = grid;
   $('skinGrid').hidden = sl !== 'kaplama';
@@ -128,7 +129,8 @@ function renderSkins() {
     const on = apCur(w, sl).id;
     $('apGrid').innerHTML = apOpts(w, sl).map(o => {
       const T = apTask(w, o.t), pc = apProsCons(o);
-      return `<button type="button" class="apo${o.id === on ? ' on' : ''}${T.done ? '' : ' locked'}" data-o="${o.id}"><b>${o.name}</b>` +
+      const pv = apPrev && apPrev.w === w && apPrev.s === sl && apPrev.id === o.id;
+      return `<button type="button" class="apo${o.id === on && !pv ? ' on' : ''}${T.done ? '' : ' locked'}${pv ? ' prev' : ''}" data-o="${o.id}"><b>${o.name}${pv ? ' <em>ÖNİZLEME</em>' : ''}</b>` +
         (pc.pro.length || pc.con.length ? `<ul>${pc.pro.map(t => `<li class="pro">+ ${t}</li>`).join('')}${pc.con.map(t => `<li class="con">− ${t}</li>`).join('')}</ul>` : '<small>Silahın kendi parçası</small>') +
         (T.done ? '' : `<small class="task">🔒 ${T.txt} · ${T.v}/${T.n}</small>${apBar(T.v, T.n)}`) + '</button>';
     }).join('');
@@ -147,23 +149,24 @@ function renderSkins() {
   if (sl !== 'durbun') $('sightRow').hidden = true;
   if (typeof ws !== 'undefined' && ws.open) wsBuild(w);   // canlı 3D görünüm
 }
-$('apSlots').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; skinUI.slot = b.dataset.slot; renderSkins(); });
+const apUnpreview = () => { skinUI.prevSkin = null; apPreview(null); };
+$('apSlots').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; skinUI.slot = b.dataset.slot; apUnpreview(); renderSkins(); });
 $('apGrid').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   const o = apOpts(skinUI.w, skinUI.slot).find(q => q.id === b.dataset.o); if (!o) return;
-  if (!apOpen(skinUI.w, o)) { sfx.empty(); toast('GÖREV: ' + apTask(skinUI.w, o.t).txt); return; }
-  setAparat(skinUI.w, skinUI.slot, o.id); sfx.swap(); renderSkins();
+  if (!apOpen(skinUI.w, o)) { apPreview(skinUI.w, skinUI.slot, o.id); sfx.swap(); toast('ÖNİZLEME · GÖREV: ' + apTask(skinUI.w, o.t).txt); renderSkins(); return; }
+  apPreview(null); setAparat(skinUI.w, skinUI.slot, o.id); sfx.swap(); renderSkins();
 });
-$('skinTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; skinUI.w = b.dataset.w; renderSkins(); });
+$('skinTabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; skinUI.w = b.dataset.w; apUnpreview(); renderSkins(); });
 $('skinGrid').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
-  if (!skinOpen(skinUI.w, b.dataset.s)) { sfx.empty(); toast('BU KAPLAMA ' + (WEAPON_NAMES_AP[skinUI.w] || '') + ' İLE ' + skinNeed(b.dataset.s) + ' LEŞTE AÇILIR'); return; }
-  setSkin(skinUI.w, b.dataset.s);
+  if (!skinOpen(skinUI.w, b.dataset.s)) { skinUI.prevSkin = b.dataset.s; toast('ÖNİZLEME · ' + (WEAPON_NAMES_AP[skinUI.w] || '') + ' İLE ' + skinNeed(b.dataset.s) + ' LEŞTE AÇILIR'); renderSkins(); return; }
+  skinUI.prevSkin = null; setSkin(skinUI.w, b.dataset.s);
 });
 $('skinsBtn').addEventListener('click', () => { $('start').hidden = true; $('skins').hidden = false; wsShow(true); renderSkins(); });
-$('skinsBack').addEventListener('click', () => { wsShow(false); $('skins').hidden = true; $('start').hidden = false; });
+$('skinsBack').addEventListener('click', () => { apUnpreview(); wsShow(false); $('skins').hidden = true; $('start').hidden = false; });
 $('skinsTry').addEventListener('click', () => {
-  wsShow(false); $('skins').hidden = true;
+  apUnpreview(); wsShow(false); $('skins').hidden = true;
   leaveRoom(true); net.gameMode = 'range'; resetGame(); play();
   const w = skinUI.w;
   if (RANGE_W.includes(w)) { wpn.cur = w; wpn.next = null; }
