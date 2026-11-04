@@ -81,17 +81,20 @@ function wsShow(on) {
 function wsRender(dt) {
   ws.idleT += dt;
   if (!ws.drag && ws.idleT > 2.5) ws.yaw += dt * .35;
-  const W = innerWidth, Hh = innerHeight, narrow = W < 820, cam = ws.cam;
+  const W = innerWidth, Hh = innerHeight, cam = ws.cam;
   if (cam.aspect !== W / Hh) { cam.aspect = W / Hh; }
-  cam.setViewOffset(W, Hh, narrow ? 0 : -W * .22, narrow ? Hh * .2 : 0, W, Hh);
-  const d = ws.dist / ws.zoom;
+  // silah ortadaki boş alanın (apC) merkezinde ve ona sığacak büyüklükte
+  const C = document.querySelector('#skins .apC'), r = C ? C.getBoundingClientRect() : { left: 0, top: 0, width: W, height: Hh };
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2, fit = Math.max(1, Math.min(2.6, Math.max(W / Math.max(80, r.width) * .62, Hh / Math.max(80, r.height) * .9)));
+  cam.setViewOffset(W, Hh, W / 2 - cx, Hh / 2 - cy, W, Hh);
+  const d = ws.dist / ws.zoom * fit;
   cam.position.set(Math.sin(ws.yaw) * Math.cos(ws.pitch) * d, Math.sin(ws.pitch) * d, Math.cos(ws.yaw) * Math.cos(ws.pitch) * d);
   cam.lookAt(0, 0, 0); cam.updateProjectionMatrix();
   renderer.setRenderTarget(null); renderer.clear(); renderer.render(ws.scene, cam);
   wsLabels();
 }
 // sürükle / yakınlaştır (panelin dışında)
-const wsOnPanel = e => !!(e.target.closest && e.target.closest('#skins .panel'));
+const wsOnPanel = e => !!(e.target.closest && e.target.closest('#skins .apanel'));
 $('skins').addEventListener('pointerdown', e => { if (!ws.open || wsOnPanel(e)) return; ws.drag = { x: e.clientX, y: e.clientY, id: e.pointerId }; ws.idleT = 0; });
 window.addEventListener('pointermove', e => {
   if (!ws.drag || e.pointerId !== ws.drag.id) return;
