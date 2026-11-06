@@ -35,7 +35,7 @@ function posOf(id) {
 }
 function aliveOf(id) { return id === net.myId ? player.alive : !!(net.players[id] || {}).alive; }
 // not: bombanın geri sayımı da 't' adında; mesaj türüyle çakışmasın diye 'left' olarak gönderilir
-const bombMsg = () => ({ t: 'bomb', st: bomb.st, carrier: bomb.carrier, x: bomb.x, z: bomb.z, left: bomb.t, site: bomb.site, planter: bomb.planter });
+const bombMsg = () => ({ t: 'bomb', st: bomb.st, carrier: bomb.carrier, x: bomb.x, z: bomb.z, left: bomb.t, site: bomb.site, planter: bomb.planter, df: bomb.st === 'defused' ? bomb.defuser : null });
 function sendBomb() { const m = bombMsg(); bcast(m); onBombState(m); }
 function resetBomb() { Object.assign(bomb, { st: 'none', carrier: null, x: 0, z: 0, t: 0, site: '', planter: null }); bombAct.kind = null; bombModel.visible = false; }
 
@@ -100,8 +100,9 @@ function onBombState(d) {
     banner('BOMBA KURULDU', d.site + ' BÖLGESİ · ' + (mine ? 'KORU' : 'İMHA ET: YANINDA 4 BASILI TUT'));
     sfx.roar(); bombModel.position.set(d.x, 0, d.z); bombModel.rotation.y = Math.random() * 6;
     if (d.planter === net.myId) addCredits(BOMB.plantBonus, 'BOMBA KURULDU');
+    mvpObj(d.planter);
   }
-  if (d.st === 'defused' && prev !== 'defused') { banner('BOMBA İMHA EDİLDİ', ''); sfx.parry(); }
+  if (d.st === 'defused' && prev !== 'defused') { banner('BOMBA İMHA EDİLDİ', ''); sfx.parry(); mvpObj(d.df); }
   if (d.st === 'exploded' && prev !== 'exploded') bombExplodeFx();
 }
 function bombExplodeFx() {

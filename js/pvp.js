@@ -222,6 +222,7 @@ function hostKill(v, by, w, fx) {
 }
 function onPkill(d) {
   const fx = d.by && d.by !== d.v ? cleanFx(d.fx) : [];
+  mvpKill(d);
   vs.feed.unshift({ by: d.by ? nameOf(d.by) : '', byTeam: teamOf(d.by), v: nameOf(d.v), vTeam: teamOf(d.v), w: WEAPON_SHORT[d.w] || '', fx, t: 5 });
   vs.feed.length = Math.min(vs.feed.length, 5);
   if (d.by === net.myId && d.v !== net.myId) {
@@ -245,6 +246,61 @@ function onPkill(d) {
     }
   }
 }
+/* ================= MVP ================= */
+// raunt ve maç boyunca herkesin leş / kafa / özel leş / seri / görev sayıları (her istemci pkill'den kendisi hesaplar)
+const mvp = { r: {}, m: {} };
+const mvpRow = (tab, id) => tab[id] || (tab[id] = { k: 0, hs: 0, fx: 0, d: 0, st: 0, best: 0, obj: 0 });
+const mvpScore = r => r.k * 100 + r.hs * 30 + r.fx * 25 + r.obj * 150 + r.best * 10 - r.d * 15;
+function mvpKill(d) {
+  const fx = cleanFx(d.fx), foe = d.by && d.by !== d.v && teamOf(d.by) !== teamOf(d.v);
+  for (const tab of [mvp.r, mvp.m]) {
+    const v = mvpRow(tab, d.v); v.d++; v.st = 0;
+    if (!foe) continue;
+    const k = mvpRow(tab, d.by); k.k++; k.st++; k.best = Math.max(k.best, k.st);
+    if (fx.includes('hs')) k.hs++;
+    k.fx += fx.filter(f => f !== 'hs').length;
+  }
+}
+function mvpObj(id) { if (id) for (const tab of [mvp.r, mvp.m]) mvpRow(tab, id).obj++; }
+function mvpBest(tab, key = mvpScore) {
+  let best = null, bv = 0;
+  for (const id in tab) { if (!net.players[id] && id !== net.myId) continue; const v = key(tab[id]); if (v > bv) { bv = v; best = id; } }
+  return best;
+}
+function mvpLine(r) {
+  const a = [r.k + ' LEŞ'];
+  if (r.hs) a.push(r.hs + ' KAFADAN');
+  if (r.fx) a.push(r.fx + ' ÖZEL LEŞ');
+  if (r.obj) a.push(isBomb() ? 'BOMBA GÖREVİ' : r.obj + ' GÖREV');
+  return a.join(' · ');
+}
+const MVP_STAR = '<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg>';
+function showRoundMvp() {
+  const id = mvpBest(mvp.r), el = $('mvpCard');
+  if (!id) return;
+  const r = mvp.r[id];
+  el.innerHTML = `${MVP_STAR}<div><small>RAUNDUN YILDIZI</small><b class="${teamOf(id) || ''}">${escapeHtml(nameOf(id))}</b><span>${mvpLine(r)}</span></div>`;
+  el.classList.toggle('me', id === net.myId);
+  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  clearTimeout(showRoundMvp.t); showRoundMvp.t = setTimeout(() => el.classList.remove('on'), (END_T - .3) * 1000);
+  if (id === net.myId) sfx.wave();
+}
+// maç sonu: büyük MVP kartı ve ödüller
+function mvpEndHtml() {
+  const tab = mvp.m, id = mvpBest(tab);
+  if (!id) return '';
+  const r = tab[id];
+  const awards = [
+    ['KESKİN NİŞANCI', 'en çok kafadan', mvpBest(tab, x => x.hs), x => x.hs + ' kafadan'],
+    ['SERİ KATİL', 'ölmeden en uzun seri', mvpBest(tab, x => x.best >= 2 ? x.best : 0), x => x.best + ' leş üst üste'],
+    ['GÖSTERİ', 'en çok özel leş', mvpBest(tab, x => x.fx), x => x.fx + ' özel leş'],
+    ['YIKILMAZ', 'en iyi leş / ölüm', mvpBest(tab, x => x.k >= 3 ? x.k / Math.max(1, x.d) : 0), x => (x.k / Math.max(1, x.d)).toFixed(1) + ' L/Ö'],
+  ].concat(isBomb() ? [['GÖREV ADAMI', 'bomba kurdu / imha etti', mvpBest(tab, x => x.obj), x => x.obj + ' görev']] : [])
+    .filter(a => a[2]);
+  return `<div class="mvpBig${id === net.myId ? ' me' : ''}">${MVP_STAR}<div><small>MAÇIN EN DEĞERLİ OYUNCUSU</small><b class="${teamOf(id) || ''}">${escapeHtml(nameOf(id))}</b><span>${mvpLine(r)}${r.best >= 3 ? ' · ' + r.best + ' SERİ' : ''}</span></div></div>`
+    + (awards.length ? '<div class="mvpAw">' + awards.map(([t, d, aid, f]) => `<div${aid === net.myId ? ' class="me"' : ''}><small>${t}</small><b class="${teamOf(aid) || ''}">${escapeHtml(nameOf(aid))}</b><span>${f(tab[aid])}</span></div>`).join('') + '</div>' : '');
+}
+
 // ölüyken yaşayan bir takım arkadaşını izle (önce ölüm kamerası biter)
 function spectateTarget() {
   if (!isVS() || player.alive || player.deathT < (vs.kc ? KC_T : 1.5) || vs.phase === 'buy') return null;
@@ -309,6 +365,7 @@ function hostEndRound(win) {
 function onRound(d) {
   vs.phase = d.ph; vs.t = d.time; vs.rr = d.rr; vs.rb = d.rb; vs.round = d.n;
   if (d.ph === 'buy') {
+    mvp.r = {}; $('mvpCard').classList.remove('on');
     if (isBomb()) resetBomb();
     pvpRespawn();
     if (net.mode === 'host') for (const b of bots.list) botSpawn(b);
@@ -325,6 +382,7 @@ function onRound(d) {
   } else if (d.ph === 'end') {
     ecoRoundEnd(d.win);
     banner(d.win === 'draw' ? 'BERABERE' : TEAMS[d.win].name + ' RAUNDU ALDI', vs.rr + ' — ' + vs.rb);
+    showRoundMvp();
   }
 }
 function aliveCount(team) {
@@ -350,6 +408,7 @@ function resetVS() {
   vs.lastTeam = null;
   Object.assign(vs, { rr: 0, rb: 0, round: 0, phase: 'buy', t: BUY_T, spawnProt: 0, deaths: 0, feed: [], over: false, tick: 0, lastHit: null, respawnT: 0, buyT: 0, kc: null });
   resetEco(); clearUtils();
+  mvp.r = {}; mvp.m = {};
 }
 
 /* ================= HER KARE ================= */

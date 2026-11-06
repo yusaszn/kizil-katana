@@ -414,7 +414,7 @@ function boardRows() {
     const col = vsMode ? TEAMS[p.team].color : p.color;
     return p.id === net.myId
       ? { name: playerName(), color: col, team: p.team, lv: prog.lv, kills, deaths: vs.deaths, score, alive: player.alive, me: true, ping: pingOf(p.id) }
-      : { name: p.name, color: col, team: p.team, lv: p.lv || 1, kills: p.kills || 0, deaths: p.deaths || 0, score: p.score || 0, alive: p.alive, ping: pingOf(p.id) };
+      : { id: p.id, name: p.name, color: col, team: p.team, lv: p.lv || 1, kills: p.kills || 0, deaths: p.deaths || 0, score: p.score || 0, alive: p.alive, ping: pingOf(p.id) };
   });
   return rows.sort((a, b) => vsMode && a.team !== b.team ? (a.team === 'red' ? -1 : 1) : b.kills - a.kills);
 }
@@ -429,9 +429,11 @@ function showEnd(msg, vsWin) {
     $('endTitle').textContent = msg;
     $('endTitle').className = vsWin;
     $('endWave').innerHTML = `${isTDM() ? 'LEŞ' : 'RAUNT'} <b class="red">${vs.rr}</b> — <b class="blue">${vs.rb}</b>`;
-    $('endBoard').innerHTML = '<tr><th>OYUNCU</th><th>TAKIM</th><th>LEŞ</th><th>ÖLÜM</th></tr>' + rows.map(r => `<tr${r.me ? ' class="me"' : ''}><td><i style="background:${hexCol(r.color)}"></i>${escapeHtml(r.name)}</td><td>${TEAMS[r.team].name}</td><td>${r.kills}</td><td>${r.deaths}</td></tr>`).join('');
+    const hsOf = r => { const m = mvp.m[r.me ? net.myId : r.id]; return m ? m.hs : 0; };
+    $('endMvp').innerHTML = mvpEndHtml();
+    $('endBoard').innerHTML = '<tr><th>OYUNCU</th><th>TAKIM</th><th>LEŞ</th><th>ÖLÜM</th><th>KAFA</th></tr>' + rows.map(r => `<tr${r.me ? ' class="me"' : ''}><td><i style="background:${hexCol(r.color)}"></i>${escapeHtml(r.name)}</td><td>${TEAMS[r.team].name}</td><td>${r.kills}</td><td>${r.deaths}</td><td>${hsOf(r)}</td></tr>`).join('');
   } else {
-    $('endTitle').textContent = 'Katledildin'; $('endTitle').className = '';
+    $('endTitle').textContent = 'Katledildin'; $('endTitle').className = ''; $('endMvp').innerHTML = '';
     $('endWave').innerHTML = 'DALGA <b>' + waveN + '</b>';
     $('endBoard').innerHTML = '<tr><th>OYUNCU</th><th>SV</th><th>LEŞ</th><th>PUAN</th></tr>' + rows.map(r => `<tr${r.me ? ' class="me"' : ''}><td><i style="background:${hexCol(r.color)}"></i>${escapeHtml(r.name)}</td><td>${r.lv}</td><td>${r.kills}</td><td>${r.score.toLocaleString('tr-TR')}</td></tr>`).join('');
   }
