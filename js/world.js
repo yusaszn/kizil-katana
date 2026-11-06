@@ -341,6 +341,8 @@ function buildMap(id) {
   floorMat.color.setHex(M.floor); wallMat.color.setHex(M.wall);
   // haritaya özel dokular ve ışık (çöl gündüz aydınlık)
   floorMat.map = M.floorTex ? M.floorTex() : floorTex; wallMat.map = M.wallTex ? M.wallTex() : wallTex; floorMat.needsUpdate = wallMat.needsUpdate = true;
+  // fotoğraf dokusunun kabartma haritası varsa (yüksek grafik) zemine ve duvara da geçer
+  floorMat.normalMap = floorMat.map.kkNor || null; wallMat.normalMap = wallMat.map.kkNor || null;
   // büyük haritada zemin dokusu gerilmesin
   const ft = floorMat.map; if (ft.baseRep == null) ft.baseRep = ft.repeat.x; ft.repeat.setScalar(ft.baseRep * H / 22);
   hemi.intensity = (M.hemiI || .6) * (gfxLow ? 1.35 : 1); moon.intensity = M.moonI || .35;

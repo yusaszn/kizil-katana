@@ -152,11 +152,13 @@ function mdGrime(g, W, HH) {   // dipte kir (gölge yerine), yağmur izleri
 /* cephe dokusu: 7.2 m genişlik x 10.2 m yükseklik (3 kat, 3.4 m), tuval 512 x 512 ama 512 x 724 mantıksal ölçüde çizilir
    (metre başına eşit piksel). Zemin kat tuvalin altında: kapı, dükkân, küçük parmaklıklı pencere; üst katlarda kemerli pencereler. */
 const MD_TW = 7.2, MD_TH = 10.2;
-function mdFacadeTex(variant, kind = 'ev') {
-  return canvasTex(512, (g, s) => {
-    g.save(); g.scale(1, s / 724);
+// fotoğraf taşı varsa zemin döşenir (3 m'lik döşeme = 213 mantıksal piksel); kabartma geçişinde pencereler düz boyanır, kir çizilmez
+function mdFacadeDraw(g0, s, variant, kind, nor) {
+    let g = g0;
+    g.save(); g.scale(s / 512, s / 724);
     const W = 512, HH = 724, F = HH / 3, sh = MD_SH[variant % MD_SH.length];
-    mdCourses(g, 0, 0, W, HH, 24, 46, kind === 'han' ? 64 : 60, kind === 'han' ? 76 : 73);
+    if (dokuHazir('tas')) { dokuDose(g, nor ? 'tas_n' : 'tas', 0, 0, W, HH, 213); if (nor) g = dokuDuzCtx(g0); }
+    else mdCourses(g, 0, 0, W, HH, 24, 46, kind === 'han' ? 64 : 60, kind === 'han' ? 76 : 73);
     for (let f = 0; f < 3; f++) {
       const bot = HH - f * F;
       if (f > 0) { g.fillStyle = '#ecd6a8'; g.fillRect(0, bot - 9, W, 9); g.fillStyle = 'rgba(70,45,20,.35)'; g.fillRect(0, bot, W, 4); }
@@ -183,21 +185,32 @@ function mdFacadeTex(variant, kind = 'ev') {
         }
       }
     }
-    mdGrime(g, W, HH);
-    g.restore();
-  }, 1, 1);
+    if (!nor) mdGrime(g, W, HH);
+    g0.restore();
+}
+function mdFacadeTex(variant, kind = 'ev') {
+  const seed = variant * 31 + kind.length * 7 + 3, size = gfxHigh() ? 1024 : 512;
+  const t = canvasTex(size, (g, s) => dokuTohum(seed, () => mdFacadeDraw(g, s, variant, kind, false)), 1, 1);
+  if (gfxHigh() && dokuHazir('tas_n')) t.kkNor = canvasTex(512, (g, s) => dokuTohum(seed, () => mdFacadeDraw(g, s, variant, kind, true)), 1, 1, false);
+  return t;
 }
 // dokular yalnız Mardin ilk kez kurulurken çizilir (her açılışta değil: başka haritada oynayan beklemesin)
 const MD_SUN_U = .085;
 let mdAshTex, mdIntTex, mdPaveTex, mdSlabTex, mdCobbleTex, mdWetTex, mdSkyTex, mdCastleTex, mdClockTex;
+// fotoğraf dokusu (yüksek grafikte kabartmasıyla); yoksa eski çizim
+function mdPhoto(k, rx = 1, ry = rx) {
+  const t = dokuTex(k, rx, ry);
+  if (t && gfxHigh()) t.kkNor = dokuTex(k + '_n', rx, ry, false);
+  return t;
+}
 function mdTextures() {
-  mdAshTex = canvasTex(256, (g, s) => { mdCourses(g, 0, 0, s, s, 32, 62, 61, 74); grain(g, s, 2500, .1); }, 1, 1);           // 2.4 m karo
-  mdIntTex = canvasTex(256, (g, s) => {   // sarnıç ve abbara içi: koyu, nemli taş
+  mdAshTex = mdPhoto('tas') || canvasTex(256, (g, s) => { mdCourses(g, 0, 0, s, s, 32, 62, 61, 74); grain(g, s, 2500, .1); }, 1, 1);           // 2.4 m karo
+  mdIntTex = mdPhoto('ic') || canvasTex(256, (g, s) => {   // sarnıç ve abbara içi: koyu, nemli taş
     mdCourses(g, 0, 0, s, s, 32, 62, 30, 41, '#3a2e22');
     for (let i = 0; i < 14; i++) wrapBlob(g, s, Math.random() * s, s - Math.random() * 60, 20 + Math.random() * 40, 'rgba(30,40,30,.35)');
     grain(g, s, 2500, .1);
   }, 1, 1);
-  mdPaveTex = canvasTex(512, (g, s) => {   // sokak: düzensiz taş plakalar
+  mdPaveTex = mdPhoto('sokak', 12, 12) || canvasTex(512, (g, s) => {   // sokak: düzensiz taş plakalar
     g.fillStyle = '#5e5040'; g.fillRect(0, 0, s, s);
     let y = 0;
     for (const rh of [64, 52, 70, 58, 66, 54, 76, 72]) {
@@ -216,7 +229,7 @@ function mdTextures() {
     for (let i = 0; i < 26; i++) wrapBlob(g, s, Math.random() * s, Math.random() * s, 20 + Math.random() * 50, 'rgba(60,45,30,.12)');
     grain(g, s, 9000, .14);
   }, 12, 12);
-  mdSlabTex = canvasTex(256, (g, s) => {   // han avlusu: büyük kare plakalar, çapraz derzli orta şerit
+  mdSlabTex = mdPhoto('plaka') || canvasTex(256, (g, s) => {   // han avlusu: büyük kare plakalar, çapraz derzli orta şerit
     g.fillStyle = '#6a5a44'; g.fillRect(0, 0, s, s);
     for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
       g.fillStyle = `hsl(${32 + Math.random() * 8},${18 + Math.random() * 12}%,${60 + Math.random() * 12}%)`; g.fillRect(i * 64 + 2, j * 64 + 2, 60, 60);
@@ -225,7 +238,7 @@ function mdTextures() {
     }
     grain(g, s, 4000, .12);
   }, 1, 1);
-  mdCobbleTex = canvasTex(256, (g, s) => {   // bedesten önü: arnavut kaldırımı
+  mdCobbleTex = mdPhoto('kaldirim') || canvasTex(256, (g, s) => {   // bedesten önü: arnavut kaldırımı
     g.fillStyle = '#54473a'; g.fillRect(0, 0, s, s);
     for (let i = 0; i < 520; i++) {
       const x = Math.random() * s, y = Math.random() * s, rx = 6 + Math.random() * 5, ry = 5 + Math.random() * 4;
@@ -238,7 +251,7 @@ function mdTextures() {
     }
     grain(g, s, 3000, .12);
   }, 1, 1);
-  mdWetTex = canvasTex(256, (g, s) => {   // sarnıç tabanı: koyu, ıslak plaka
+  mdWetTex = mdPhoto('islak') || canvasTex(256, (g, s) => {   // sarnıç tabanı: koyu, ıslak plaka
     g.fillStyle = '#1e1a16'; g.fillRect(0, 0, s, s);
     for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { g.fillStyle = `hsl(${30 + Math.random() * 10},${10 + Math.random() * 10}%,${20 + Math.random() * 9}%)`; g.fillRect(i * 64 + 2, j * 64 + 2, 60, 60); }
     for (let i = 0; i < 10; i++) wrapBlob(g, s, Math.random() * s, Math.random() * s, 18 + Math.random() * 30, 'rgba(10,14,16,.5)');
@@ -349,26 +362,34 @@ function mdInterior(mat, sun = .08, sky = .4) {
   return mat;
 }
 let MD = null;
+// taş: dokunun kabartması varsa piksel başına ışıklı Standard (güneş taşın girintisini yakalar), yoksa ucuz Lambert
+const mdStoneMat = o => {
+  const nor = o.map && o.map.kkNor;
+  if (!nor) return mdLam(o);
+  return mdStd(Object.assign({}, o, { normalMap: nor, normalScale: new THREE.Vector2(1.1, 1.1), roughness: .88 }));
+};
+const mdNor = m => { if (m.map && m.map.kkNor && 'normalMap' in m) { m.normalMap = m.map.kkNor; m.needsUpdate = true; } return m; };
 function mdInit() {
-  if (MD) return;
+  if (MD && MD.gfx === SETTINGS.gfx) return;   // grafik kalitesi değişince malzemeler yeniden kurulur
   mdTextures();
   MD = {
+    gfx: SETTINGS.gfx,
     vc: new THREE.MeshLambertMaterial({ vertexColors: true }),
-    facade: [0, 1, 2, 3].map(i => mdLam({ map: mdFacadeTex(i) })),
-    han: mdLam({ map: mdFacadeTex(1, 'han') }),
-    bed: mdLam({ map: mdFacadeTex(2, 'bed') }),
-    ash: mdLam({ map: mdAshTex }),
-    ashL: mdLam({ map: mdAshTex, color: 0xfff0d6 }),
+    facade: [0, 1, 2, 3].map(i => mdStoneMat({ map: mdFacadeTex(i) })),
+    han: mdStoneMat({ map: mdFacadeTex(1, 'han') }),
+    bed: mdStoneMat({ map: mdFacadeTex(2, 'bed') }),
+    ash: mdStoneMat({ map: mdAshTex }),
+    ashL: mdStoneMat({ map: mdAshTex, color: 0xfff0d6 }),
     // iki yüzlü: tonozun dışı bir açıklıktan görünürse boşluk değil taş görünsün
-    int: mdInterior(mdStd({ map: mdIntTex, side: THREE.DoubleSide })),
-    trim: mdLam({ map: mdAshTex, color: 0xffeccc }),
+    int: mdInterior(mdNor(mdStd({ map: mdIntTex, side: THREE.DoubleSide }))),
+    trim: mdStoneMat({ map: mdAshTex, color: 0xffeccc }),
     roof: mdLam({ color: 0xa8916e, roughness: .97 }),
-    slab: mdLam({ map: mdSlabTex, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
-    cobble: mdLam({ map: mdCobbleTex, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
-    wet: mdInterior(mdStd({ map: mdWetTex, roughness: .32, metalness: .15, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })),
+    slab: mdStoneMat({ map: mdSlabTex, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+    cobble: mdStoneMat({ map: mdCobbleTex, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+    wet: mdInterior(mdNor(mdStd({ map: mdWetTex, roughness: .32, metalness: .15, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }))),
     // abbara tabanı sokakla aynı doku ve ölçekte (derzler eşikte kesintisiz sürer), içeride kısık ışıkta
-    intFloor: mdInterior(mdStd({ map: mdPaveTex, color: 0xd8c8b0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })),
-    dome: mdLam({ map: mdAshTex, color: 0xf2e2c4 }),
+    intFloor: mdInterior(mdNor(mdStd({ map: mdPaveTex, color: 0xd8c8b0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }))),
+    dome: mdStoneMat({ map: mdAshTex, color: 0xf2e2c4 }),
     wood: mdLam({ color: 0x6a4a2c, roughness: .85 }),
     woodD: mdLam({ color: 0x3e2a18, roughness: .85 }),
     iron: mdStd({ color: 0x2a2724, roughness: .55, metalness: .6, envMap: vmEnvTex, envMapIntensity: .5 }),
