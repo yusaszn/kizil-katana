@@ -508,7 +508,8 @@ function syncCamera(dt, rdt) {
     const hit = rayStatic(eyePos, tmp, len);
     camera.position.copy(eyePos).addScaledVector(tmp, Math.max(.3, hit - .25));
   }
-  // VS: ölüyken yaşayan takım arkadaşının arkasından izle
+  // VS: önce ölüm kamerası katili gösterir, sonra yaşayan takım arkadaşının arkasından izle
+  if (killcamView(rdt)) { updateMyAvatar(rdt); return; }
   const spec = spectateTarget();
   if (spec) {
     const pr = spec.proxy;

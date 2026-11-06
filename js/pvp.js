@@ -8,7 +8,7 @@ const TEAMS = { red: { name: 'KIRMIZI', color: 0xc0281e }, blue: { name: 'MAVİ'
 const ROUNDS_WIN = 7, BUY_T = 22, ROUND_T = 105, END_T = 4;
 // TAKIM ÖLÜM MAÇI: raunt yok; ölen 3 sn sonra üssünde doğar, doğunca 10 sn satın alabilir; ilk 40 leşe ulaşan takım ya da 10 dk sonunda önde olan kazanır
 const KILLS_WIN = 40, TDM_T = 600, TDM_BUY = 10, TDM_RESPAWN = 3;
-const vs = { rr: 0, rb: 0, round: 0, phase: 'buy', t: BUY_T, spawnProt: 0, deaths: 0, feed: [], over: false, tick: 0, lastHit: null, respawnT: 0, buyT: 0 };
+const vs = { rr: 0, rb: 0, round: 0, phase: 'buy', t: BUY_T, spawnProt: 0, deaths: 0, feed: [], over: false, tick: 0, lastHit: null, respawnT: 0, buyT: 0, kc: null };
 const isVS = () => net.mode !== 'solo' && (net.gameMode === 'vs' || net.gameMode === 'bomb' || net.gameMode === 'tdm');   // bomba ve takım ölüm maçı da VS'dir
 const isTDM = () => net.mode !== 'solo' && net.gameMode === 'tdm';
 const buyPhase = () => vs.phase === 'buy' || (isTDM() && vs.phase === 'live' && vs.buyT > 0 && player.alive);
@@ -158,12 +158,60 @@ function pvpDie() {
   av.g.position.set(b.x, b.y - .5, b.z); av.g.rotation.y = player.yaw + Math.PI;
   avatarGore(av, new V3(-flatF.x, 0, -flatF.z));
   if (av !== myAvatar) scene.remove(av.g);
-  screenSplat(6); deathSummary();
+  screenSplat(6); deathSummary(); killcamStart(k);
   banner('KATLEDİLDİN', (k.by ? nameOf(k.by).toLocaleUpperCase('tr-TR') + ' · ' : '') + (isTDM() ? TDM_RESPAWN + ' SN SONRA YENİDEN DOĞACAKSIN' : 'SONRAKİ RAUNDU BEKLE'));
   if (isTDM()) { vs.respawnT = TDM_RESPAWN; eco.keep = true; closeBuy(); }
   if (net.mode === 'host') { net.players.h.alive = false; hostKill(net.myId, k.by, k.w, k.fx); }
   else toHost({ t: 'pdied', by: k.by, w: k.w, fx: (k.fx || []).join(',') });
   vs.lastHit = null;
+}
+/* ================= ÖLÜM KAMERASI ================= */
+// ölünce kamera yavaşça katile döner ve yakınlaşır; altta katilin adı, silahı, aparatları, kalan canı görünür
+const KC_T = 2.8, _kcV = new V3(), _kcP = new V3();
+function killcamStart(k) {
+  vs.kc = null; $('killcam').classList.remove('on'); $('kcMark').classList.remove('on');
+  if (!k.by || k.by === net.myId || k.w === 'bomb' || !net.players[k.by]) return;
+  const p0 = livePos(k.by), pr = net.players[k.by];
+  vs.kc = { id: k.by, w: k.w, fx: k.fx || [], pos: (p0 || (pr.proxy && pr.proxy.pos) || player.body.position).clone(), yaw: player.yaw, pitch: player.pitch, fov: player.fov, html: '' };
+}
+function killcamText(kc) {
+  const pr = net.players[kc.id] || {}, team = teamOf(kc.id) || '';
+  const hp = pr.alive === false ? 0 : Math.max(0, Math.round(pr.hp == null ? 100 : pr.hp));
+  const sel = AP_CLS[kc.w] && pr.ax ? apNetParse(pr.ax) : {};
+  const aps = Object.entries(sel).map(([s, id]) => { const o = (AP_OPTS[s] || []).find(x => x.id === id); return o && o.m && id !== 'std' && id !== 'yok' ? o.name : ''; }).filter(Boolean);
+  return `<small>SENİ ÖLDÜREN</small><b class="${team}">${escapeHtml(nameOf(kc.id))}</b>`
+    + `<div class="kcw">${WEAPON_SHORT[kc.w] || ''}${kfIcons(kc.fx)}</div>`
+    + (aps.length ? `<div class="kca">${aps.join(' · ')}</div>` : '')
+    + `<div class="kch"><span>${hp ? 'KALAN CAN' : 'O DA ÖLDÜ'}</span><i><em style="width:${hp}%"></em></i><span>${hp}</span></div>`;
+}
+// kamerayı ayarlar; ölüm kamerası çalışıyorsa true döner
+function killcamView(rdt) {
+  const kc = vs.kc, el = $('killcam'), mk = $('kcMark');
+  if (!kc || player.alive || player.deathT >= KC_T || !isVS()) {
+    if (kc && (player.alive || player.deathT >= KC_T)) vs.kc = null;
+    if (el.classList.contains('on')) { el.classList.remove('on'); mk.classList.remove('on'); }
+    return false;
+  }
+  const lp = livePos(kc.id); if (lp) kc.pos.lerp(lp, Math.min(1, rdt * 12));
+  const k = smooth(Math.min(1, Math.max(0, (player.deathT - .35) / 1.1)));   // önce yere yığıl, sonra dön
+  _kcV.set(kc.pos.x, kc.pos.y + 1, kc.pos.z).sub(camera.position);
+  const dist = Math.max(.5, _kcV.length());
+  let dy = Math.atan2(-_kcV.x, -_kcV.z) - kc.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+  const tp = Math.asin(Math.max(-1, Math.min(1, _kcV.y / dist)));
+  camera.rotation.set(kc.pitch + (tp - kc.pitch) * k, kc.yaw + dy * k, camera.rotation.z * (1 - k));
+  const fz = Math.max(16, Math.min(70, 2 * Math.atan(3.2 / dist) * 180 / Math.PI));
+  player.fov = kc.fov + (fz - kc.fov) * k;
+  camera.fov = player.fov; camera.updateProjectionMatrix();
+  const html = killcamText(kc);
+  if (html !== kc.html) { kc.html = html; el.innerHTML = html; }
+  el.classList.add('on');
+  // katilin üstünde kırmızı işaret (duvar arkasında da görünür)
+  camera.updateMatrixWorld();
+  _kcP.set(kc.pos.x, kc.pos.y + 1.9, kc.pos.z).project(camera);
+  const vis = k > .3 && _kcP.z < 1 && Math.abs(_kcP.x) < 1.1 && Math.abs(_kcP.y) < 1.1;
+  mk.classList.toggle('on', vis);
+  if (vis) mk.style.transform = `translate(${(_kcP.x * .5 + .5) * innerWidth}px,${(-_kcP.y * .5 + .5) * innerHeight}px)`;
+  return true;
 }
 function hostKill(v, by, w, fx) {
   if (vs.over) return;
@@ -197,9 +245,9 @@ function onPkill(d) {
     }
   }
 }
-// ölüyken yaşayan bir takım arkadaşını izle
+// ölüyken yaşayan bir takım arkadaşını izle (önce ölüm kamerası biter)
 function spectateTarget() {
-  if (!isVS() || player.alive || player.deathT < 1.5 || vs.phase === 'buy') return null;
+  if (!isVS() || player.alive || player.deathT < (vs.kc ? KC_T : 1.5) || vs.phase === 'buy') return null;
   for (const id in net.players) { const p = net.players[id]; if (id !== net.myId && p.team === myTeam() && p.alive && p.proxy && p.proxy.g.visible) return p; }
   return null;
 }
@@ -300,7 +348,7 @@ function showVsEnd(win) {
 }
 function resetVS() {
   vs.lastTeam = null;
-  Object.assign(vs, { rr: 0, rb: 0, round: 0, phase: 'buy', t: BUY_T, spawnProt: 0, deaths: 0, feed: [], over: false, tick: 0, lastHit: null, respawnT: 0, buyT: 0 });
+  Object.assign(vs, { rr: 0, rb: 0, round: 0, phase: 'buy', t: BUY_T, spawnProt: 0, deaths: 0, feed: [], over: false, tick: 0, lastHit: null, respawnT: 0, buyT: 0, kc: null });
   resetEco(); clearUtils();
 }
 

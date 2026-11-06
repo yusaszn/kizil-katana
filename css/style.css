@@ -29,6 +29,20 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(-
 #banner{position:absolute;left:0;right:0;top:24%;text-align:center;font-family:var(--display);font-size:clamp(40px,8vw,96px);color:var(--blood-hi);opacity:0}
 #banner small{display:block;font-family:var(--hud);font-size:15px;letter-spacing:.35em;color:var(--bone);margin-top:6px}
 #banner.show{animation:ban 2.6s ease-out forwards}
+#killcam{position:absolute;left:50%;bottom:5%;transform:translate(-50%,12px);min-width:260px;max-width:min(420px,calc(100vw - 32px));padding:12px 18px 14px;background:linear-gradient(180deg,rgba(20,4,4,.82),rgba(8,2,2,.9));border:1px solid rgba(214,40,30,.55);border-left:4px solid var(--blood-hi);text-align:left;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none}
+#killcam.on{opacity:1;transform:translate(-50%,0)}
+#killcam small{display:block;font-family:var(--hud);font-size:11px;letter-spacing:.35em;color:rgba(236,224,206,.6)}
+#killcam b{display:block;font-family:var(--display);font-size:clamp(24px,4vw,36px);line-height:1.1;color:var(--bone)}
+#killcam b.red{color:#ff5a4a}#killcam b.blue{color:#5aa8ff}
+#killcam .kcw{font-family:var(--hud);font-size:14px;letter-spacing:.2em;color:var(--bone);margin-top:4px;display:flex;align-items:center;gap:8px}
+#killcam .kca{font-family:var(--hud);font-size:11px;letter-spacing:.12em;color:#e8b04a;margin-top:3px}
+#killcam .kch{display:flex;align-items:center;gap:8px;margin-top:8px;font-family:var(--hud);font-size:11px;letter-spacing:.2em;color:rgba(236,224,206,.75)}
+#killcam .kch i{flex:1;height:6px;background:rgba(255,255,255,.12)}#killcam .kch em{display:block;height:100%;background:linear-gradient(90deg,#b3110d,#ff4a3a)}
+#killcam .kch span:last-child{font-size:15px;color:var(--bone);min-width:28px;text-align:right}
+#kcMark{position:absolute;left:0;top:0;width:0;height:0;opacity:0;pointer-events:none;transition:opacity .2s}
+#kcMark.on{opacity:1}
+#kcMark::before{content:'';position:absolute;left:-9px;top:-16px;border:9px solid transparent;border-top:13px solid #ff2a1a;animation:kcb .8s ease-in-out infinite alternate}
+@keyframes kcb{to{transform:translateY(-6px)}}
 @keyframes ban{0%{opacity:0;transform:scale(1.4)}10%{opacity:1;transform:scale(1)}75%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}
 #toast{position:absolute;left:0;right:0;top:58%;text-align:center;font-weight:700;font-size:22px;letter-spacing:.3em;color:#9fe8ff;opacity:0}
 #toast.show{animation:toast .8s ease-out forwards}
@@ -118,9 +132,9 @@ body.vsmode #xpbox,body.vsmode #score,body.vsmode #wave,body.vsmode .right small
 #killfeed{position:absolute;right:16px;top:calc(130px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:3px;align-items:flex-end}
 .kf{display:flex;gap:8px;align-items:center;padding:3px 8px;background:rgba(0,0,0,.5);font-size:13px;font-weight:700}
 .kf span{font-size:10px;letter-spacing:.2em;color:var(--ash)}
-.kf .kfx{display:inline-flex;gap:3px;align-items:center;font-style:normal}
-.kf .kfx i{display:block;width:15px;height:15px;color:var(--bone)}.kf .kfx i.hs{color:#ffcf6a}
-.kf .kfx svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.kf .kfx,#killcam .kfx{display:inline-flex;gap:3px;align-items:center;font-style:normal}
+.kf .kfx i,#killcam .kfx i{display:block;width:15px;height:15px;color:var(--bone)}.kf .kfx i.hs,#killcam .kfx i.hs{color:#ffcf6a}
+.kf .kfx svg,#killcam .kfx svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 #respawnHint{position:absolute;left:0;right:0;top:62%;text-align:center;font-weight:700;font-size:18px;letter-spacing:.3em;color:var(--bone)}
 #scope{position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at center,transparent 0,transparent 33vmin,#000 33.4vmin)}
 #scope i{position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.9)}
@@ -585,3 +599,4 @@ body.touchdev.showboard #board{display:block;transform:scale(.8);transform-origi
 #wsLv{font-style:normal;font-family:var(--hud);font-size:11px;letter-spacing:.16em;color:var(--gold);display:flex;flex-direction:column;align-items:flex-end;gap:3px}
 #wsLv i{display:block;width:180px;height:4px;background:rgba(255,255,255,.15)}#wsLv i b{display:block;height:100%;background:var(--gold)}
 @media (max-height:520px),(max-width:820px){#skins .wgrid button .lv{font-size:7px}#wsLv{font-size:8px}#wsLv i{width:110px}}
+@media (max-height:520px){#killcam{bottom:3%;min-width:220px;max-width:260px;padding:6px 12px 8px}#killcam small{font-size:9px}#killcam .kcw{font-size:12px;margin-top:2px}#killcam b{font-size:22px}#killcam .kch{margin-top:5px}}
