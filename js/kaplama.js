@@ -109,7 +109,7 @@ function renderSkins() {
   const w = skinUI.w;
   // silahlar kategorilere ayrılmış büyük kartlarda
   const nm = Object.fromEntries(SKIN_WEAPONS);
-  const tabs = SKIN_CATS.map(([cat, ids]) => `<div class="wcat"><b>${cat}</b><div class="wgrid">` + ids.filter(q => nm[q]).map(q => `<button type="button" data-w="${q}" class="${q === w ? 'on' : ''}">${iconFor(q) ? `<img src="${iconFor(q)}" alt="">` : ''}<span>${nm[q]}</span></button>`).join('') + '</div></div>').join('');
+  const tabs = SKIN_CATS.map(([cat, ids]) => `<div class="wcat"><b>${cat}</b><div class="wgrid">` + ids.filter(q => nm[q]).map(q => `<button type="button" data-w="${q}" class="${q === w ? 'on' : ''}">${iconFor(q) ? `<img src="${iconFor(q)}" alt="">` : ''}<span>${nm[q]}</span><small class="lv">SV ${apLevel(q).L}</small></button>`).join('') + '</div></div>').join('');
   // yuvalar: KAPLAMA, silahın eklenti yuvaları, M4 ve AK-47'de DÜRBÜN
   const slots = [['kaplama', 'KAPLAMA']].concat(apSlotsOf(w).map(s => AP_SLOTS.find(q => q[0] === s)));
   if (SIGHT_GUNS[w]) slots.splice(slots.length - (apSlotsOf(w).includes('bonus') ? 1 : 0), 0, ['durbun', 'DÜRBÜN']);
@@ -138,6 +138,9 @@ function renderSkins() {
         (T.done ? '' : `<small class="task">🔒 ${T.txt} · ${T.v}/${T.n}</small>${apBar(T.v, T.n)}`) + '</button>';
     }).join('');
   }
+  // ustalık: seviye ve sonraki seviyeye tecrübe
+  const LV = apLevel(w);
+  $('wsLv').innerHTML = `USTALIK SV. ${LV.L}${LV.L >= AP_MAXLV ? ' · EN ÜST' : ` · ${LV.xp - LV.cur} / ${LV.next - LV.cur} TP`}<i><b style="width:${LV.L >= AP_MAXLV ? 100 : Math.round((LV.xp - LV.cur) / Math.max(1, LV.next - LV.cur) * 100)}%"></b></i>`;
   // değer çubukları: silahın tabanı ve eklentilerle değişim
   const B = apBase(w);
   $('apStats').hidden = !B;

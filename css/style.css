@@ -579,3 +579,9 @@ body.touchdev.showboard #board{display:block;transform:scale(.8);transform-origi
 #skins #skinTabs .wgrid button{flex-direction:column;justify-content:center;gap:6px;padding:10px 6px 8px;font-size:11px;text-align:center}
 #skins #skinTabs .wgrid button img{width:100%;max-width:120px;height:40px}
 @media (max-height:520px),(max-width:820px){#skins #skinTabs .wgrid button{padding:5px 3px;gap:3px;font-size:8px}#skins #skinTabs .wgrid button img{height:22px}}
+
+/* silah ustalığı */
+#skins .wgrid button .lv{font-size:9px;letter-spacing:.14em;color:var(--gold)}
+#wsLv{font-style:normal;font-family:var(--hud);font-size:11px;letter-spacing:.16em;color:var(--gold);display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+#wsLv i{display:block;width:180px;height:4px;background:rgba(255,255,255,.15)}#wsLv i b{display:block;height:100%;background:var(--gold)}
+@media (max-height:520px),(max-width:820px){#skins .wgrid button .lv{font-size:7px}#wsLv{font-size:8px}#wsLv i{width:110px}}

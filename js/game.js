@@ -623,7 +623,7 @@ function updateHUD(dt) {
     el.style.transform = `scaleX(${f})`; el.style.background = f >= 1 ? 'var(--steel)' : 'var(--ash)';
   }
   const w = wpn.next || wpn.cur;
-  setText('weapon', (w === 'uzi' && uziDual() ? 'ÇİFT UZİ' : w === 'fenek' && A('fenek').dual ? 'ÇİFTE FENEK' : WEAPON_NAMES[w]) + (w === 'shotgun' && ST.sgAuto ? ' · OTO' : '') + (isVS() ? '   [1/2/3]' : ''));
+  setText('weapon', (w === 'uzi' && uziDual() ? 'ÇİFT UZİ' : w === 'fenek' && A('fenek').dual ? 'ÇİFTE FENEK' : WEAPON_NAMES[w]) + (WEAPON_NAMES_AP[w] ? ' · SV ' + apLevel(w).L : '') + (w === 'shotgun' && ST.sgAuto ? ' · OTO' : '') + (isVS() ? '   [1/2/3]' : ''));
   if (w === 'uzi') {
     setText('ammo', ammo.mag + ' / ' + magCap());
     setText('mags', '▮'.repeat(ammo.reserve) + '▯'.repeat(Math.max(0, ST.maxMags - ammo.reserve)));

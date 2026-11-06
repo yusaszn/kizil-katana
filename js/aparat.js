@@ -167,7 +167,17 @@ function apCheckUnlocks(w) {
   for (const s of apSlotsOf(w)) for (const o of apOpts(w, s)) if (o.t && !said[o.id + s] && apOpen(w, o)) { said[o.id + s] = 1; got.push(o.name); }
   const k = ((apStatsAll().w || {})[w] || {}).kills || 0;
   if (typeof SKINS !== 'undefined') for (const S of SKINS) { const n = SKIN_NEED[S.id] || 0; if (n && k >= n && !said['sk_' + S.id]) { said['sk_' + S.id] = 1; got.push(S.name + ' kaplama'); } }
+  const lv = apLevel(w).L;   // ustalık seviyesi atladıysa duyur
+  if (lv > (said.lv || 1)) { said.lv = lv; apSave(); if (!got.length) { banner((WEAPON_NAMES_AP[w] || w) + ' USTALIĞI', 'SEVİYE ' + lv); if (typeof sfx !== 'undefined') sfx.upgrade(); } else got.unshift('USTALIK SEVİYE ' + lv); }
   if (got.length) { apSave(); banner('YENİ EKLENTİ', (WEAPON_NAMES_AP[w] || w) + ': ' + got.join(' · ') + ' · ATÖLYE'); if (typeof sfx !== 'undefined') sfx.upgrade(); applyAparat(); }
+}
+/* SİLAH USTALIĞI: her silah leş (100), kafadan vuruş (+50) ve özel leşlerle (dürbünsüz, havada, sisten, körken +75) tecrübe kazanır.
+   Seviye = karekök(tecrübe / 150) + 1, en çok 50. Atölye'de, silah kartlarında ve maçta silah adının yanında görünür */
+const AP_MAXLV = 50;
+function apLevel(w) {
+  const s = (apStatsAll().w || {})[w] || {}, xp = (s.kills || 0) * 100 + (s.hs || 0) * 50 + ((s.ns || 0) + (s.air || 0) + (s.smk || 0) + (s.kor || 0)) * 75;
+  const L = Math.min(AP_MAXLV, Math.floor(Math.sqrt(xp / 150)) + 1);
+  return { L, xp, cur: 150 * (L - 1) * (L - 1), next: L >= AP_MAXLV ? xp : 150 * L * L };
 }
 const skinNeed = id => SKIN_NEED[id] || 0;
 const skinOpen = (w, id) => apAdmin() || ((((apStatsAll().w || {})[w]) || {}).kills || 0) >= skinNeed(id);
