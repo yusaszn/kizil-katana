@@ -533,7 +533,7 @@ function updateMyAvatar(dt) {
   const b = player.body.position, v = player.body.velocity;
   animateAvatar(myAvatar, dt, {
     x: b.x, y: b.y, z: b.z, yaw: player.yaw, pitch: player.pitch, speed: Math.hypot(v.x, v.z),
-    w: wpn.cur, block: block.on, alive: player.alive, crouch: player.crouchK, slide: player.slideK,
+    w: wpn.cur, ax: typeof apNetCode === 'function' ? apNetCode(wpn.cur) : '', block: block.on, alive: player.alive, crouch: player.crouchK, slide: player.slideK,
     swing: sword.phase === 'wind' || sword.phase === 'swing', kick: kickAnim > 0, air: !player.grounded, legsOnly: legs,
   });
   // 1. şahısta beden biraz geride durur: kamera kalçanın içinden görünmesin, aşağı bakınca bacaklar önde kalsın

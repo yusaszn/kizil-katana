@@ -5,10 +5,10 @@
    Kaplamalar o silahla yapılan leşe göre kötüden iyiye açılır. Seçimler bu cihazda saklanır.
    Bu dosya erken yüklenir (yalnız veri ve hesap); silah tablolarına uygulama ve arayüz sonra çağrılır. */
 
-const AP_SLOTS = [['namlu', 'NAMLU'], ['dipcik', 'DİPÇİK'], ['tutamac', 'TUTAMAÇ'], ['sarjor', 'ŞARJÖR'], ['bonus', 'BONUS']];
+const AP_SLOTS = [['namlu', 'NAMLU'], ['dipcik', 'DİPÇİK'], ['tutamac', 'TUTAMAÇ'], ['sarjor', 'ŞARJÖR'], ['altray', 'ALT RAY'], ['bonus', 'BONUS']];
 // silah sınıfı: hangi yuvalar ve seçenekler olur
 const AP_CLS = { ak47: 'tufek', m4: 'tufek', awp: 'keskin', fenek: 'hafif', uzi: 'hafif', shotgun: 'pompa', deagle: 'tabanca', usps: 'tabanca', glock: 'tabanca', pistol: 'tabanca' };
-const AP_STATS = [['dmg', 'HASAR', 1], ['range', 'MENZİL', 1], ['spread', 'İSABET', -1], ['recoil', 'GERİ TEPME', -1], ['ads', 'NİŞAN HIZI', 1], ['move', 'HAREKET', 1], ['mag', 'ŞARJÖR', 1], ['reload', 'DOLDURMA', -1], ['rate', 'ATIŞ HIZI', 1]];
+const AP_STATS = [['dmg', 'HASAR', 1], ['range', 'MENZİL', 1], ['spread', 'İSABET', -1], ['hip', 'KALÇADAN İSABET', -1], ['recoil', 'GERİ TEPME', -1], ['ads', 'NİŞAN HIZI', 1], ['move', 'HAREKET', 1], ['mag', 'ŞARJÖR', 1], ['reload', 'DOLDURMA', -1], ['rate', 'ATIŞ HIZI', 1]];
 // görev: s sayaç ('kills' leş, 'hs' kafadan, 'ns' dürbünsüz, 'air' havadayken, 'smk' sisin içinden, 'kor' körken), n hedef
 const AP_TASK_TXT = { kills: 'leş', hs: 'kafadan vuruş', ns: 'dürbünsüz leş', air: 'havadayken leş', smk: 'sisin içinden leş', kor: 'körken leş' };
 // seçenekler: m çarpanlar (yoksa 1), only/not sınıf ya da silah listesi, note ek açıklama (artı ya da eksi), t görev
@@ -36,6 +36,12 @@ const AP_OPTS = {
     { id: 'hizli', name: 'HIZLI ŞARJÖR', m: { reload: .7, mag: .85 }, t: { s: 'kills', n: 35 } },
     { id: 'uzun', name: 'UZATILMIŞ ŞARJÖR', m: { mag: 1.5, reload: 1.2, ads: .92 }, t: { s: 'kills', n: 50 } },
     { id: 'davul', name: 'DAVUL ŞARJÖR', m: { mag: 2.2, reload: 1.6, move: .9, ads: .8 }, only: ['ak47', 'm4', 'uzi', 'fenek'], t: { s: 'kills', n: 100 } },
+  ],
+  // alt ray: lazer kalçadan atışı toplar ama rakip kırmızı ışını görür; fener önünü aydınlatır ama rakip ışığı görür
+  altray: [
+    { id: 'yok', name: 'ALT RAY BOŞ', m: {} },
+    { id: 'fener', name: 'FENER', m: {}, light: true, note: ['önünü aydınlatır', 'rakip ışığını görür'], t: { s: 'kills', n: 20 } },
+    { id: 'lazer', name: 'LAZER', m: { hip: .78 }, laser: true, note: ['', 'rakip kırmızı ışını görür'], t: { s: 'kills', n: 40 } },
   ],
   bonus: [
     { id: 'yok', name: 'BONUS YOK', m: {} },
@@ -103,8 +109,8 @@ function apCur(w, s) {
 const apCache = {};
 function A(w) {
   if (apCache[w]) return apCache[w];
-  const r = { dmg: 1, range: 1, spread: 1, recoil: 1, ads: 1, move: 1, mag: 1, reload: 1, rate: 1, silent: false, dual: false, auto: false };
-  for (const s of apSlotsOf(w)) { const o = apCur(w, s); for (const k in o.m) r[k] *= o.m[k]; if (o.silent) r.silent = true; if (o.dual) r.dual = true; if (o.auto) r.auto = true; }
+  const r = { dmg: 1, range: 1, spread: 1, hip: 1, recoil: 1, ads: 1, move: 1, mag: 1, reload: 1, rate: 1, silent: false, dual: false, auto: false, laser: false, light: false };
+  for (const s of apSlotsOf(w)) { const o = apCur(w, s); for (const k in o.m) r[k] *= o.m[k]; for (const f of ['silent', 'dual', 'auto', 'laser', 'light']) if (o[f]) r[f] = true; }
   if (typeof sightStats === 'function') { const q = sightStats(w); for (const k in q) r[k] *= q[k]; }
   return (apCache[w] = r);
 }
@@ -113,7 +119,7 @@ function apSave() { try { localStorage.setItem('kk-aparat', JSON.stringify(apSel
 // artılar ve eksiler (çarpanlardan yazı)
 function apProsCons(o) {
   const pro = [], con = [];
-  const W = { dmg: ['hasar', 'artar', 'azalır'], range: ['menzil', 'artar', 'azalır'], spread: ['isabet', 'azalır', 'artar'], recoil: ['geri tepme', 'artar', 'azalır'], ads: ['nişan alma', 'hızlanır', 'yavaşlar'], move: ['hareket', 'hızlanır', 'yavaşlar'], mag: ['şarjör', 'büyür', 'küçülür'], reload: ['doldurma', 'uzar', 'kısalır'], rate: ['atış hızı', 'artar', 'azalır'] };
+  const W = { dmg: ['hasar', 'artar', 'azalır'], range: ['menzil', 'artar', 'azalır'], spread: ['isabet', 'azalır', 'artar'], hip: ['kalçadan isabet', 'azalır', 'artar'], recoil: ['geri tepme', 'artar', 'azalır'], ads: ['nişan alma', 'hızlanır', 'yavaşlar'], move: ['hareket', 'hızlanır', 'yavaşlar'], mag: ['şarjör', 'büyür', 'küçülür'], reload: ['doldurma', 'uzar', 'kısalır'], rate: ['atış hızı', 'artar', 'azalır'] };
   for (const [k, , dir] of AP_STATS) {
     const v = o.m[k]; if (v == null || v === 1) continue;
     const p = Math.round(Math.abs(v - 1) * 100), good = (v > 1) === (dir > 0), w = W[k];
@@ -125,10 +131,10 @@ function apProsCons(o) {
 // silahın taban değerleri (stat çubukları için 0-1 arası, kabaca); çarpanla birlikte gösterilir
 function apBase(w) {
   const G = typeof GUNS !== 'undefined' && GUNS[w] && GUNS_AP_BASE[w];
-  if (G) return { dmg: G.pvp / 60, range: G.falloff / 40, spread: 1 - Math.min(1, G.spread / .05), recoil: 1 - Math.min(1, G.recoil / .07), ads: .6, move: (G.move || 1) * .65, mag: G.mag / 60, reload: 1 - G.reload / 3, rate: G.rate / 20 };
+  if (G) return { dmg: G.pvp / 60, range: G.falloff / 40, spread: 1 - Math.min(1, G.spread / .05), hip: 1 - Math.min(1, G.spread / .05), recoil: 1 - Math.min(1, G.recoil / .07), ads: .6, move: (G.move || 1) * .65, mag: G.mag / 60, reload: 1 - G.reload / 3, rate: G.rate / 20 };
   const T = { m4: { dmg: 22, range: 30, spread: .022, recoil: .009, mag: 30, reload: 1.9, rate: 10 }, awp: { dmg: 150, range: 60, spread: .07, recoil: .07, mag: 5, reload: 2.3, rate: .8 }, pistol: { dmg: 26, range: 25, spread: .014, recoil: .02, mag: 12, reload: 1.3, rate: 7 }, uzi: { dmg: 8, range: 15, spread: .022, recoil: .0035, mag: 30, reload: 1.4, rate: 8.4 }, shotgun: { dmg: 60, range: 8, spread: .085, recoil: .06, mag: 6, reload: 2.5, rate: 1.6 } }[w];
   if (!T) return null;
-  return { dmg: Math.min(1, T.dmg / 60), range: T.range / 40, spread: 1 - Math.min(1, T.spread / .09), recoil: 1 - Math.min(1, T.recoil / .07), ads: .6, move: .65, mag: Math.min(1, T.mag / 60), reload: 1 - T.reload / 3, rate: Math.min(1, T.rate / 20) };
+  return { dmg: Math.min(1, T.dmg / 60), range: T.range / 40, spread: 1 - Math.min(1, T.spread / .09), hip: 1 - Math.min(1, T.spread / .09), recoil: 1 - Math.min(1, T.recoil / .07), ads: .6, move: .65, mag: Math.min(1, T.mag / 60), reload: 1 - T.reload / 3, rate: Math.min(1, T.rate / 20) };
 }
 const GUNS_AP_BASE = {};
 const RIF_AP_BASE = {};
@@ -138,12 +144,12 @@ function applyAparat() {
   if (typeof GUNS !== 'undefined') for (const w in GUNS) {
     const G = GUNS[w], B = GUNS_AP_BASE[w] || (GUNS_AP_BASE[w] = { rate: G.rate, reload: G.reload, mag: G.mag, dmg: G.dmg, pvp: G.pvp, falloff: G.falloff, spread: G.spread, ads: G.ads, recoil: G.recoil, recoilYaw: G.recoilYaw, auto: G.auto, silenced: !!G.silenced, move: G.move });
     const m = A(w);
-    Object.assign(G, { rate: B.rate * m.rate, reload: B.reload * m.reload, mag: Math.max(1, Math.round(B.mag * m.mag)), dmg: B.dmg * m.dmg, pvp: Math.round(B.pvp * m.dmg), falloff: B.falloff * m.range, spread: B.spread * m.spread, ads: B.ads * m.spread, recoil: B.recoil * m.recoil, recoilYaw: B.recoilYaw * m.recoil, auto: B.auto || m.auto, silenced: B.silenced || m.silent });
+    Object.assign(G, { rate: B.rate * m.rate, reload: B.reload * m.reload, mag: Math.max(1, Math.round(B.mag * m.mag)), dmg: B.dmg * m.dmg, pvp: Math.round(B.pvp * m.dmg), falloff: B.falloff * m.range, spread: B.spread * m.spread * m.hip, ads: B.ads * m.spread, recoil: B.recoil * m.recoil, recoilYaw: B.recoilYaw * m.recoil, auto: B.auto || m.auto, silenced: B.silenced || m.silent });
     if (typeof gst !== 'undefined' && gst[w] && gst[w].mag > G.mag) gst[w].mag = G.mag;
   }
   if (typeof RIF !== 'undefined') for (const w of ['m4', 'awp', 'pistol']) {
     const R = RIF[w], B = RIF_AP_BASE[w] || (RIF_AP_BASE[w] = Object.assign({}, R)), m = A(w);
-    R.reload = B.reload * m.reload; R.spread = B.spread * m.spread; if (B.ads != null) R.ads = B.ads * m.spread;
+    R.reload = B.reload * m.reload; R.spread = B.spread * m.spread * m.hip; if (B.ads != null) R.ads = B.ads * m.spread;
     R.dmg = B.dmg * m.dmg; R.pvp = Math.round(B.pvp * m.dmg);
     if (w === 'pistol') R.mag = Math.max(1, Math.round(B.mag * m.mag));
   }
@@ -177,8 +183,17 @@ function apLocalBox(root, part, skip) {   // parçanın kendi ekseninde sınır 
   part.traverse(o => { if (!o.isMesh || o.userData.ap || !o.geometry) return; if (skip) for (let q = o; q && q !== part; q = q.parent) if (q === skip) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); mm.multiplyMatrices(inv, o.matrixWorld); tb.copy(o.geometry.boundingBox).applyMatrix4(mm); box.union(tb); });
   return box;
 }
-function apDress(w, m) {
+// ağ kodu: başkaları silahını eklentileriyle görsün ('n:sus,t:dikey,s:davul,a:lazer,b:cift'; varsayılanlar yazılmaz)
+const AP_NET = { namlu: 'n', tutamac: 't', sarjor: 's', altray: 'a', bonus: 'b' };
+function apNetCode(w) {
+  if (!AP_CLS[w]) return '';
+  return apSlotsOf(w).filter(s => AP_NET[s]).map(s => { const o = apCur(w, s); return o === apOpts(w, s)[0] ? '' : AP_NET[s] + ':' + o.id; }).filter(Boolean).join(',');
+}
+function apNetParse(code) { const sel = {}; for (const part of String(code || '').split(',')) { const [k, id] = part.split(':'); for (const s in AP_NET) if (AP_NET[s] === k && id) sel[s] = id; } return sel; }
+let apBeamMats = null;
+function apDress(w, m, sel = null, beams = false) {   // sel: ağdan gelen seçim (yoksa kendi seçimin); beams: 3. şahısta lazer ve fener ışını
   if (!m || !m.g || typeof GK === 'undefined' || !GK.black) return;
+  const pick = s => sel ? (apOpts(w, s).find(o => o.id === sel[s]) || apOpts(w, s)[0]).id : apCur(w, s).id;
   const ud = m.g.userData;
   for (const c of ud.apG || []) if (c.parent) c.parent.remove(c);
   for (const o of ud.apHid || []) o.visible = true;   // davul için gizlenen asıl şarjör geri gelir
@@ -189,7 +204,7 @@ function apDress(w, m) {
   // namlu ucu
   if (m.flash) {
     if (ud.flashZ0 == null) ud.flashZ0 = m.flash.position.z;
-    const mu = m.flash.position, z0 = ud.flashZ0, n = apCur(w, 'namlu').id; mu.z = z0;
+    const mu = m.flash.position, z0 = ud.flashZ0, n = pick('namlu'); mu.z = z0;
     if (n === 'sus' || n === 'komp' || n === 'uzun') {
       const len = n === 'sus' ? (pist ? .095 : .15) : n === 'komp' ? .045 : .11, rad = n === 'sus' ? r * 1.35 : n === 'komp' ? r * 1.15 : r * .55;
       const c = add(new THREE.Mesh(new THREE.CylinderGeometry(rad, rad, len, 16), n === 'uzun' ? GK.steel || GK.black : GK.black), m.g); c.userData.slot = 'namlu';
@@ -199,7 +214,23 @@ function apDress(w, m) {
       mu.z = z0 - len;
     }
     // namlu altı tutamaç (pompalıda pompaya takılır, onunla gidip gelir)
-    const t = apSlotsOf(w).includes('tutamac') ? apCur(w, 'tutamac').id : 'yok';
+    const t = apSlotsOf(w).includes('tutamac') ? pick('tutamac') : 'yok';
+    // alt ray: lazer ya da fener kutusu namlunun sağ yanında (tabancada namlu altında); 3. şahısta ışını da görünür
+    const ar = apSlotsOf(w).includes('altray') ? pick('altray') : 'yok';
+    if (ar !== 'yok') {
+      const lz = ar === 'lazer', px = pist ? mu.x : mu.x + r * 1.9, py = pist ? mu.y - .028 : mu.y - .004, pz = z0 * (pist ? .45 : w === 'fenek' ? .78 : .62);
+      const bx = add(new THREE.Mesh(new THREE.BoxGeometry(.018, .018, lz ? .045 : .055), GK.black), m.g); bx.position.set(px, py, pz); bx.userData.slot = 'altray';
+      if (!apBeamMats) apBeamMats = { lazer: new THREE.MeshBasicMaterial({ color: 0xff2410 }), fener: new THREE.MeshBasicMaterial({ color: 0xfff2c8 }),
+        lzBeam: new THREE.MeshBasicMaterial({ color: 0xff2a14, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false }),
+        fnBeam: new THREE.MeshBasicMaterial({ color: 0xfff0c0, transparent: true, opacity: .05, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }) };
+      const lens = add(new THREE.Mesh(new THREE.CylinderGeometry(lz ? .004 : .008, lz ? .004 : .008, .004, 12), apBeamMats[ar]), m.g); lens.rotation.x = Math.PI / 2; lens.position.set(px, py, pz - (lz ? .0235 : .0285));
+      if (beams) {
+        const L = lz ? 9 : 3.2, start = pz - (lz ? .025 : .03);
+        const geo = lz ? new THREE.BoxGeometry(.004, .004, L) : new THREE.CylinderGeometry(.02, .4, L, 14, 1, true);
+        const b = add(new THREE.Mesh(geo, lz ? apBeamMats.lzBeam : apBeamMats.fnBeam), m.g); if (!lz) b.rotation.x = -Math.PI / 2;
+        b.position.set(px, py, start - L / 2); b.renderOrder = 3;
+      }
+    }
     if (t !== 'yok') {
       const par = m.pump || m.g, bz = m.pump ? 0 : z0 * (w === 'uzi' ? .62 : w === 'fenek' ? .72 : .5), by = (m.pump ? -.02 : mu.y - .034);
       const g = add(new THREE.Mesh(new THREE.BoxGeometry(.02, t === 'dikey' ? .072 : .05, t === 'dikey' ? .024 : .05), GK.poly || GK.black), par);
@@ -208,7 +239,7 @@ function apDress(w, m) {
     }
   }
   // şarjör: uzatma ya da davul, şarjörün altına (şarjör değiştirirken onunla iner)
-  const sj = apSlotsOf(w).includes('sarjor') ? apCur(w, 'sarjor').id : 'std';
+  const sj = apSlotsOf(w).includes('sarjor') ? pick('sarjor') : 'std';
   if (m.mag && sj !== 'std') {
     const bb = apLocalBox(m.g, m.mag, m.magHand); if (bb.isEmpty()) return;
     const cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2, wx = Math.max(.012, bb.max.x - bb.min.x), wz = Math.max(.02, bb.max.z - bb.min.z), hy = bb.max.y - bb.min.y;

@@ -118,21 +118,25 @@ const TP_GUN = {
   deagle: { make: () => GM.deagle({ hands: false }), grip: [0, -.06, .09], sup: [-.02, -.078, .082], s: 1, pistol: true },
   usps: { make: () => GM.usps({ hands: false }), grip: [0, -.055, .075], sup: [-.02, -.073, .068], s: 1, pistol: true },
   glock: { make: () => GM.glock({ hands: false }), grip: [0, -.055, .077], sup: [-.02, -.073, .07], s: 1, pistol: true },
-  uzi: { make: () => GM.uzi(1, { hands: false }), grip: [0, -.088, .04], s: 1, dual: true },
+  uzi: { make: () => GM.uzi(1, { hands: false }), grip: [0, -.088, .04], sup: [-.02, -.12, .045], s: 1, pistol: true },
 };
-function tpGun(av, w) {
+// ax: oyuncunun eklenti kodu (aparat.js apNetCode); silah eklentileriyle kurulur, ÇİFT UZİ / ÇİFTE FENEK iki silahtır
+function tpGun(av, w, ax = '') {
   const C = av.char; if (!TP_GUN[w]) return null;
-  if (!C.guns[w]) {
-    const def = TP_GUN[w], set = [];
-    for (let i = 0; i < (def.dual ? 2 : 1); i++) {
+  const key = w + '|' + ax;
+  if (!C.guns[key]) {
+    const def = TP_GUN[w], set = [], sel = typeof apNetParse === 'function' ? apNetParse(ax) : {}, dual = sel.bonus === 'cift' && (w === 'uzi' || w === 'fenek');
+    for (let i = 0; i < (dual ? 2 : 1); i++) {
       const m = def.make(); m.g.scale.setScalar(def.s);
+      if (typeof apDress === 'function' && AP_CLS[w]) apDress(w, m, sel, true);
       if (m.flash) m.flash.visible = false;
       if (m.gl) m.gl.visible = false;
       av.g.add(m.g); set.push(m.g);
     }
-    C.guns[w] = set;
+    set.dual = dual;
+    C.guns[key] = set;
   }
-  return C.guns[w];
+  return C.guns[key];
 }
 // kılıç ve bıçak: sağ ele bağlanır
 function tpBlade(av, w) {
@@ -340,7 +344,8 @@ function curlFingers(B, sd, amt, thumb = .5) {
   for (let i = 2; i <= 3; i++) { const b = B['Thumb' + i + '.' + sd]; if (b) boneRotateWorld(b, new THREE.Quaternion().setFromAxisAngle(ax, thumb * .55)); }
 }
 function poseGun(av, s, w, pitch, RIGHT, FWD) {
-  const C = av.char, B = C.bones, def = TP_GUN[w], set = tpGun(av, w); if (!set) return;
+  const C = av.char, B = C.bones, def = TP_GUN[w], set = tpGun(av, w, s.ax || ''); if (!set) return;
+  const dual = set.dual;
   const cp = Math.cos(pitch), aim = new V3(FWD.x * cp, Math.sin(pitch), FWD.z * cp).normalize();
   const up = new V3(0, 1, 0).addScaledVector(aim, -aim.y).normalize();
   const right = aim.clone().cross(up).normalize();
@@ -355,7 +360,7 @@ function poseGun(av, s, w, pitch, RIGHT, FWD) {
   };
   const toW = (obj, p) => new V3(...p).applyMatrix4(obj.matrixWorld);
   let gR, gL;
-  if (def.dual) {
+  if (dual) {
     for (let i = 0; i < 2; i++) place(set[i], mid.clone().addScaledVector(aim, .4).addScaledVector(right, i ? -.13 : .13).addScaledVector(up, -.06));
     gR = toW(set[0], def.grip); gL = toW(set[1], def.grip);
   } else if (def.pistol) {
@@ -372,11 +377,11 @@ function poseGun(av, s, w, pitch, RIGHT, FWD) {
   // el yönleri: d1 bilekten parmak köküne, d2 serçeden işarete. Sağ el kabzayı yandan kavrar (parmaklar sola-öne, boğumlar yukarı);
   // sol el tüfekte kundağı alttan (avuç yukarı, işaret öne), tabancada sağ elin üstünden sarar
   const d1R = right.clone().multiplyScalar(-.75).addScaledVector(aim, .65).normalize(), d2R = up;
-  const d1L = def.pistol || def.dual ? right.clone().multiplyScalar(def.dual ? .75 : .9).addScaledVector(aim, .4).normalize() : right.clone().multiplyScalar(.75).addScaledVector(up, .5).normalize();
-  const d2L = def.pistol || def.dual ? up : aim;
+  const d1L = def.pistol || dual ? right.clone().multiplyScalar(dual ? .75 : .9).addScaledVector(aim, .4).normalize() : right.clone().multiplyScalar(.75).addScaledVector(up, .5).normalize();
+  const d2L = def.pistol || dual ? up : aim;
   // IK hedefi bilektir: avuç ortası tutma noktasında, bilek parmak yönünün ~8 cm gerisinde
   const palmR = gR.clone().addScaledVector(right, .025), wristR = palmR.addScaledVector(d1R, -.075);
-  const palmL = def.pistol || def.dual ? gL.clone() : gL.clone().addScaledVector(up, -.035), wristL = palmL.addScaledVector(d1L, -.07);
+  const palmL = def.pistol || dual ? gL.clone() : gL.clone().addScaledVector(up, -.035), wristL = palmL.addScaledVector(d1L, -.07);
   ikArm(B['UpperArm.R'], B['LowerArm.R'], B['Wrist.R'], wristR, down.clone().addScaledVector(right, .8).addScaledVector(aim, -.3));
   ikArm(B['UpperArm.L'], B['LowerArm.L'], B['Wrist.L'], wristL, down.clone().addScaledVector(right, -.9).addScaledVector(aim, -.1));
   boneOrient(B['Wrist.R'], B['Middle2.R'], B['Pinky2.R'], B['Index2.R'], d1R, d2R);

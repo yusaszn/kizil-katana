@@ -513,7 +513,9 @@ function updateAmbience(dt, t) {
   runeMat.opacity = .35 + Math.sin(t * 1.5) * .12;
   vmFire.intensity = 1.2 + Math.sin(t * 11) * .2;
   muzzleGlow = Math.max(0, muzzleGlow - dt * 22);
-  playerLight.intensity = ((MAPS[curMap] || {}).pl ?? .75) + muzzleGlow * 2.6;
+  const fener = state === 'play' && typeof AP_CLS !== 'undefined' && AP_CLS[wpn.cur] && A(wpn.cur).light;   // fener eklentisi: ışık güçlenir, önüne düşer
+  playerLight.intensity = ((MAPS[curMap] || {}).pl ?? .75) + muzzleGlow * 2.6 + (fener ? 2.2 : 0);
+  playerLight.distance = fener ? 22 : 13; playerLight.position.z = fener ? -3 : 0;
   vmMuzzle.intensity = muzzleGlow * 3.5;
   if (typeof worldMuzzle !== 'undefined') worldMuzzle.intensity = Math.max(worldMuzzle.intensity, muzzleGlow * 3.2);
 }
