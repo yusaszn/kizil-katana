@@ -1,12 +1,17 @@
 'use strict';
 /* Ayarlar: FPS göstergesi, fare hassasiyeti, ses, görüş açısı, grafik kalitesi, kan miktarı. Tarayıcıda saklanır. */
 
-const SETTINGS_DEFAULT = { showFps: false, thirdPerson: false, alwaysSprint: false, sens: 1, volume: .5, fov: 80, quality: 1.5, gore: 1, voice: 'ptt', voiceVol: .9, minimap: true, fx: !('ontouchstart' in window), music: .45, adsMode: 'hold' };
+const SETTINGS_DEFAULT = { showFps: false, thirdPerson: false, alwaysSprint: false, sens: 1, volume: .5, fov: 80, quality: 1.5, gore: 1, voice: 'ptt', voiceVol: .9, minimap: true, fx: !('ontouchstart' in window), music: .45, adsMode: 'hold', gfx: 'ontouchstart' in window ? 'med' : 'high' };
 const SETTINGS = Object.assign({}, SETTINGS_DEFAULT);
 try { Object.assign(SETTINGS, JSON.parse(localStorage.getItem('kk-ayarlar') || '{}')); } catch (e) { /* kayıt yoksa varsayılanlar */ }
 
 function saveSettings() { try { localStorage.setItem('kk-ayarlar', JSON.stringify(SETTINGS)); } catch (e) { /* saklanamazsa bu oturumda geçerli */ } }
+// grafik ön ayarı: düşükte çözünürlük, efektler, meşale ışıkları, parçacıklar ve kenar yumuşatma (yeniden açılışta) azalır
+const GFX_PRESETS = { low: { quality: .6, fx: false }, med: { quality: 1, fx: true }, high: { quality: 1.5, fx: true } };
+let gfxLow = false, gfxEmit = 0;
 function applySettings() {
+  gfxLow = SETTINGS.gfx === 'low';
+  if (typeof gfxApplyLights === 'function') gfxApplyLights();
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, SETTINGS.quality));
   resize();
   if (AU.master) AU.master.gain.value = SETTINGS.volume;
@@ -23,6 +28,7 @@ const SETTING_ROWS = [
   { key: 'volume', label: 'Ses', type: 'range', min: 0, max: 1, step: .05, fmt: v => Math.round(v * 100) + '%' },
   { key: 'music', label: 'Müzik', type: 'range', min: 0, max: 1, step: .05, fmt: v => Math.round(v * 100) + '%' },
   { key: 'fov', label: 'Görüş açısı', type: 'range', min: 60, max: 110, step: 1, fmt: v => v + '°' },
+  { key: 'gfx', label: 'Grafik kalitesi', type: 'choice', options: [['low', 'Düşük'], ['med', 'Orta'], ['high', 'Yüksek']], note: 'Düşük: daha az ışık ve parçacık, efekt yok; kenar yumuşatma oyunu yeniden açınca kapanır', set: v => Object.assign(SETTINGS, GFX_PRESETS[v]) },
   { key: 'quality', label: 'Çözünürlük', type: 'choice', options: [[.6, 'Düşük'], [1, 'Orta'], [1.5, 'Yüksek'], [2, 'Çok yüksek']] },
   { key: 'voice', label: 'Sesli sohbet', type: 'choice', options: [['ptt', 'Bas-konuş (K)'], ['open', 'Açık mikrofon'], ['off', 'Kapalı']] },
   { key: 'voiceVol', label: 'Arkadaşların sesi', type: 'range', min: 0, max: 1, step: .05, fmt: v => Math.round(v * 100) + '%' },
@@ -52,12 +58,17 @@ function buildSettings() {
       for (const [val, name] of r.options) {
         const b = document.createElement('button'); b.type = 'button'; b.textContent = name;
         b.classList.toggle('on', SETTINGS[r.key] === val);
-        b.addEventListener('click', () => { SETTINGS[r.key] = val; for (const x of seg.children) x.classList.remove('on'); b.classList.add('on'); saveSettings(); applySettings(); });
+        b.addEventListener('click', () => {
+          SETTINGS[r.key] = val; for (const x of seg.children) x.classList.remove('on'); b.classList.add('on');
+          if (r.set) { r.set(val); buildSettings(); }   // ön ayar diğer satırları da değiştirir
+          saveSettings(); applySettings();
+        });
         seg.appendChild(b);
       }
       ctl.appendChild(seg);
     }
     row.appendChild(ctl); box.appendChild(row);
+    if (r.note) { const n = document.createElement('p'); n.className = 'snote'; n.textContent = r.note; box.appendChild(n); }
   }
 }
 let settingsFrom = 'start';

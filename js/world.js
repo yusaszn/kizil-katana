@@ -66,6 +66,13 @@ const moon = new THREE.DirectionalLight(0xff6a48, 0.35); moon.position.set(6, 20
 const playerLight = new THREE.PointLight(0xffd6b0, 0.75, 13, 2); camera.add(playerLight);
 // meşale ışıkları bir kez oluşturulur, haritaya göre yer değiştirir (gölgelendiriciler yeniden derlenmesin)
 const torchLights = [0, 1, 2, 3].map(() => { const L = new THREE.PointLight(0xff7428, 2.2, 24, 1.6); scene.add(L); return L; });
+// düşük grafikte meşale ışıkları kapanır (ışık sayısı azalınca gölgelendirici bir kez yeniden derlenir), ortam ışığı biraz artar
+function gfxApplyLights() {
+  for (const L of torchLights) L.visible = !gfxLow;
+  const M = curMap && MAPS[curMap];
+  if (M) hemi.intensity = (M.hemiI || .6) * (gfxLow ? 1.35 : 1);
+}
+gfxApplyLights();
 const braziers = [];
 const flameMat = new THREE.SpriteMaterial({ map: glowTex, color: 0xff7a22, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true });
 const coalMat = new THREE.MeshBasicMaterial({ color: 0xff6a1a });
@@ -336,7 +343,7 @@ function buildMap(id) {
   floorMat.map = M.floorTex ? M.floorTex() : floorTex; wallMat.map = M.wallTex ? M.wallTex() : wallTex; floorMat.needsUpdate = wallMat.needsUpdate = true;
   // büyük haritada zemin dokusu gerilmesin
   const ft = floorMat.map; if (ft.baseRep == null) ft.baseRep = ft.repeat.x; ft.repeat.setScalar(ft.baseRep * H / 22);
-  hemi.intensity = M.hemiI || .6; moon.intensity = M.moonI || .35;
+  hemi.intensity = (M.hemiI || .6) * (gfxLow ? 1.35 : 1); moon.intensity = M.moonI || .35;
   if (AU.verbG) AU.verbG.gain.setTargetAtTime(mapVerb(), AU.ctx.currentTime, .3);   // haritanın yankısı
   embers.material.color.setHex(M.ember);
 }
@@ -393,6 +400,7 @@ const pts = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: .085, map: d
 pts.frustumCulled = false; scene.add(pts);
 let pIdx = 0;
 function emit(x, y, z, vx, vy, vz, kind, r, g, b, life) {
+  if (gfxLow && (++gfxEmit & 1)) return;   // düşük grafikte parçacıkların yarısı
   const i = pIdx; pIdx = (pIdx + 1) % PMAX;
   pPos[i * 3] = x; pPos[i * 3 + 1] = y; pPos[i * 3 + 2] = z;
   pVel[i * 3] = vx; pVel[i * 3 + 1] = vy; pVel[i * 3 + 2] = vz;

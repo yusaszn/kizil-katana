@@ -12,7 +12,8 @@ const UP = new V3(0, 1, 0);
 
 /* ================= RENDERER ================= */
 const canvas = $('game');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+const GFX_LOW_START = (() => { try { return JSON.parse(localStorage.getItem('kk-ayarlar') || '{}').gfx === 'low'; } catch (e) { return false; } })();
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !GFX_LOW_START, powerPreference: GFX_LOW_START ? 'default' : 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
