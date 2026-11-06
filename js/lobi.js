@@ -93,6 +93,7 @@ function lobbyUse() {
   if (n.kind === 'seat') lobbySit(n.i);
   else if (n.kind === 'board') lobbyWalk(false);
   else if (n.kind === 'guitar') playGuitar();
+  else if (n.kind === 'whistle') smWhistle();
 }
 function lobbySit(i) {
   const s = venue.seats[i]; if (!s) return;
@@ -216,9 +217,11 @@ function lobbyNear(dt) {
     const gs = GUITAR_SPOT[curMap];
     if (gs && Math.hypot(gs[0] - b.x, gs[1] - b.z) < Math.min(bd, 1.6)) best = { kind: 'guitar' };
     if (venue.board && Math.hypot(venue.board.x - b.x, venue.board.z - b.z) < 2.4) best = { kind: 'board' };
+    const ws = curMap === 'saha' && SAHA.whistle;
+    if (ws && Math.hypot(ws[0] - b.x, ws[1] - b.z) < 1.7 && smWhistleText()) best = { kind: 'whistle' };
   }
   lobby.near = best;
-  const txt = lobby.sit >= 0 ? 'E · KALK' : best ? (best.kind === 'seat' ? 'E · OTUR' : best.kind === 'guitar' ? 'E · GİTAR ÇAL' : 'E · ODA PANELİ') : '';
+  const txt = lobby.sit >= 0 ? 'E · KALK' : best ? (best.kind === 'seat' ? 'E · OTUR' : best.kind === 'guitar' ? 'E · GİTAR ÇAL' : best.kind === 'whistle' ? 'E · ' + smWhistleText() : 'E · ODA PANELİ') : '';
   if (hud.lhPrompt !== txt) { hud.lhPrompt = txt; $('lhPrompt').textContent = txt; }
   const room = 'ODA ' + net.code + ' · ' + (VENUE_NAMES[curMap] || '') + ' · ' + Object.keys(net.players).length + ' KİŞİ';
   if (hud.lhRoom !== room) { hud.lhRoom = room; $('lhRoom').textContent = room; }
@@ -428,9 +431,10 @@ function lobbyBallSpawn() {
   ball.tgt.set(sp[0], .22, sp[1]); ball.vel.set(0, 0, 0); ball.holder = null; ball.holdT = 0;
 }
 // şut / itme: host doğrudan uygular, konuk hosta yollar
-function ballImpulse(dx, dz, up, sp) {
+function ballImpulse(dx, dz, up, sp, by = net.myId) {
   if (!ball.body) return;
   if (net.mode === 'guest') { toHost({ t: 'bk', d: [r2(dx), r2(dz)], u: r2(up), s: r2(sp) }); return; }
+  ball.last = by;   // gol kimin: son dokunan
   const v = ball.body.velocity; v.x = dx * sp; v.z = dz * sp; v.y = Math.max(v.y, up);
   ball.body.wakeUp();
 }
@@ -498,7 +502,7 @@ function lobbyTackle(dx, dz, sp) {
 }
 // host: topu tutma / atma / kapma (konuktan 'bh' mesajı ile de gelir)
 function ballSetHolder(id) {
-  ball.holder = id; ball.holdT = 0;
+  ball.holder = id; ball.holdT = 0; if (id) ball.last = id;
   if (ball.body) { ball.body.collisionResponse = !id; ball.body.velocity.set(0, 0, 0); ball.body.angularVelocity.set(0, 0, 0); }
   ball.sendT = 0;
   if (id && curMap === 'saha') SAHA.outT = 0;
@@ -506,7 +510,7 @@ function ballSetHolder(id) {
 function ballThrowBy(id, dx, dz, up, sp) {
   if (ball.holder !== id || !ball.body) return;
   const l = Math.hypot(dx, dz) || 1;
-  ballSetHolder(null);
+  ballSetHolder(null); ball.last = id;
   const v = ball.body.velocity; v.x = dx / l * sp; v.z = dz / l * sp; v.y = up; ball.body.wakeUp();
 }
 function ballTackleBy(id, dx, dz) {
@@ -514,7 +518,7 @@ function ballTackleBy(id, dx, dz) {
   const pos = id === net.myId ? player.body.position : net.players[id] && net.players[id].proxy && net.players[id].proxy.pos, p = ball.body.position;
   if (!pos || Math.hypot(p.x - pos.x, p.z - pos.z) > 1.8) return;
   const l = Math.hypot(dx, dz) || 1;
-  ballSetHolder(null);
+  ballSetHolder(null); ball.last = id;
   const v = ball.body.velocity; v.x = dx / l * 6; v.z = dz / l * 6; v.y = 2.5; ball.body.wakeUp();
 }
 function ballHoldNet(id, d) {

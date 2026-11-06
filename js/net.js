@@ -3,7 +3,7 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 30;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 31;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 // çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
@@ -293,7 +293,8 @@ function onHostData(conn, d) {
     }
     case 'fbshot': { const f = fbById(d.id); if (f) explodeFireball(f); break; }
     case 'dreq': if (isDefense() && net.inMatch) defTryPlace(d.k, +d.x, +d.z, +d.ry); break;
-    case 'bk': if (state === 'lobby' && Array.isArray(d.d) && !ball.holder) ballImpulse(clamp(+d.d[0] || 0, -1, 1), clamp(+d.d[1] || 0, -1, 1), clamp(+d.u || 0, 0, 12), clamp(+d.s || 0, 0, 21)); break;
+    case 'bk': if (state === 'lobby' && Array.isArray(d.d) && !ball.holder) ballImpulse(clamp(+d.d[0] || 0, -1, 1), clamp(+d.d[1] || 0, -1, 1), clamp(+d.u || 0, 0, 12), clamp(+d.s || 0, 0, 21), conn.pid); break;
+    case 'smq': if (state === 'lobby' && curMap === 'saha' && smatch.ph === 'idle') smStart(); break;
     case 'bh': if (state === 'lobby') ballHoldNet(conn.pid, d); break;
     case 'gtr': { const m = { t: 'gtr', id: conn.pid, i: Math.abs(+d.i || 0) % 4 }; bcast(m, conn); gtrNet(m); break; }
     case 'drep': if (isDefense() && net.inMatch) defTryRepair(); break;
@@ -367,6 +368,7 @@ function onGuestData(d) {
     case 'bs': ballNet(d); break;
     case 'out': sahaOut(d); break;
     case 'gol': sahaGoal(d); break;
+    case 'sm': onSm(d); break;
     case 'gtr': gtrNet(d); break;
     case 'dst': case 'dpl': case 'ddl': case 'dsh': case 'drp': case 'dover': defNet(d); break;
   }

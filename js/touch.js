@@ -14,7 +14,7 @@ function lobbyActionName() {
   if (!lobby.walking) return '';
   if (lobby.sit >= 0) return 'KALK';
   const n = lobby.near; if (!n) return '';
-  return n.kind === 'seat' ? 'OTUR' : n.kind === 'guitar' ? 'GİTAR' : 'PANO';
+  return n.kind === 'seat' ? 'OTUR' : n.kind === 'guitar' ? 'GİTAR' : n.kind === 'whistle' ? 'MAÇ' : 'PANO';
 }
 
 // telefonda varsayılan çözünürlük düşük (kayıtlı bir ayar yoksa): akıcı oynansın

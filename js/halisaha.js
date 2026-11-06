@@ -34,6 +34,7 @@ function sahaTabelaDraw() {
   g.fillStyle = '#0c0e12'; g.fillRect(0, 0, W, Hh);
   g.font = '700 30px "Chakra Petch", Consolas, monospace'; g.textBaseline = 'middle'; g.textAlign = 'center';
   g.fillStyle = '#ff5a48'; g.fillText('KIRMIZI', W * .22, 36); g.fillStyle = '#6aa8ff'; g.fillText('MAVİ', W * .78, 36);
+  if (smatch.ph !== 'idle') { g.font = '700 26px "Chakra Petch", Consolas, monospace'; g.fillStyle = '#eef2ea'; g.fillText(smClock(), W / 2, 36); }
   g.font = '700 84px "Chakra Petch", Consolas, monospace'; g.fillStyle = '#ffd23a';
   g.fillText(SAHA.red + '  —  ' + SAHA.blue, W / 2, 104);
   T.tex.needsUpdate = true;
@@ -46,7 +47,7 @@ MAPS.saha = {
   spawn: () => new V3(rand(-2, 2), .6, rand(10.6, 11.8)),
   build() {
     venue.fx = []; venue.seats = []; venue.board = null; venue.fire = null; vSeed = 31;
-    SAHA.red = 0; SAHA.blue = 0; SAHA.resetT = 0;
+    SAHA.red = 0; SAHA.blue = 0; SAHA.resetT = 0; smatch.ph = 'idle'; smatch.goals = {};
     const L = SAHA.L, W = SAHA.W, line = (w, d, x, z) => { const m = vMesh(new THREE.PlaneGeometry(w, d), SM.line, x, .014, z); m.rotation.x = -Math.PI / 2; };
     // saha çizgileri: kenarlar, orta çizgi ve yuvarlak, ceza sahaları, penaltı noktaları
     line(2 * L, .1, 0, -W); line(2 * L, .1, 0, W); line(.1, 2 * W, -L, 0); line(.1, 2 * W, L, 0); line(.1, 2 * W, 0, 0);
@@ -123,6 +124,18 @@ MAPS.saha = {
       SAHA.tabela = { c, tex }; sahaTabelaDraw();
     }
     makeBoard(-12.5, 1.4, FZ + 2.4, Math.PI);
+    // hakem masası: E ile mini maçı başlat (düdük)
+    { const x = -3.6, z = FZ + 2.5;
+      vMesh(new THREE.BoxGeometry(.9, .9, .55), SM.wood, x, .45, z); vSolid(.9, .9, .55, x, .45, z);
+      vMesh(new THREE.BoxGeometry(1, .05, .65), SM.steel, x, .92, z);
+      const wh = new THREE.MeshStandardMaterial({ color: 0xd8dce0, metalness: .9, roughness: .2 });
+      vMesh(new THREE.CylinderGeometry(.05, .05, .14, 14), wh, x + .1, .99, z).rotation.z = Math.PI / 2;   // düdük
+      vMesh(new THREE.BoxGeometry(.1, .05, .05), wh, x + .22, .99, z);
+      vMesh(new THREE.BoxGeometry(.14, .02, .2), SM.red, x - .25, .95, z + .05);   // kırmızı kart
+      vMesh(new THREE.BoxGeometry(.14, .02, .2), new THREE.MeshStandardMaterial({ color: 0xe8c020, roughness: .7 }), x - .25, .97, z - .05);
+      const sg = vMesh(new THREE.PlaneGeometry(.9, .26), new THREE.MeshBasicMaterial({ map: canvasTex(256, (g, s) => { g.fillStyle = '#101418'; g.fillRect(0, 0, s, s); g.fillStyle = '#ffd23a'; g.font = 'bold 30px "Chakra Petch", Consolas, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.scale(1, 3.5); g.fillText('HAKEM · MAÇ', s / 2, s / 7); }, 1, 1) }), x, .55, z + .29);
+      SAHA.whistle = [x, z];
+    }
     for (const s of [-1, 1]) vMesh(new THREE.CylinderGeometry(.05, .06, 1.9, 6), SM.steel, -12.5 + s * .8, .95, FZ + 2.45);
     moon.position.set(-8, 12, 10);
   },
@@ -133,6 +146,7 @@ VENUE_NAMES.saha = 'HALI SAHA';
 // host: top kale çizgisini tümüyle geçerse gol; 2.5 sn sonra ortaya döner
 function updateSaha(dt) {
   if (curMap !== 'saha' || !ball.body) return;
+  smTick(dt);
   if (SAHA.resetT > 0) {
     SAHA.resetT -= dt;
     if (SAHA.resetT <= 0 && net.mode !== 'guest') { ball.body.position.set(0, .5, 0); ball.body.velocity.set(0, 0, 0); ball.body.angularVelocity.set(0, 0, 0); }
@@ -140,10 +154,16 @@ function updateSaha(dt) {
   }
   if (net.mode === 'guest') return;
   const p = ball.body.position;
+  if (smatch.ph === 'kick') { p.set(0, .25, 0); ball.body.velocity.set(0, 0, 0); ball.body.angularVelocity.set(0, 0, 0); return; }   // başlama vuruşu bekleniyor
+  ballToucher(p);
   if (Math.abs(p.x) > SAHA.L + .25 && Math.abs(p.z) < SAHA.goalW - .1 && p.y < SAHA.goalH) {
+    if (smatch.ph === 'half' || smatch.ph === 'end') { SAHA.resetT = 1.5; return; }   // düdük çaldıktan sonra gol sayılmaz
     const side = p.x < 0 ? 'blue' : 'red';   // soldaki kale kırmızının: oraya giren gol mavinin
     if (side === 'red') SAHA.red++; else SAHA.blue++;
-    const msg = { t: 'gol', side, r: SAHA.red, b: SAHA.blue };
+    const by = ball.last && (ball.last === net.myId || net.players[ball.last]) ? ball.last : '';
+    const own = by && smTeam(by) !== side;
+    if (smatch.ph === 'play' && by && !own) smatch.goals[by] = (smatch.goals[by] || 0) + 1;
+    const msg = { t: 'gol', side, r: SAHA.red, b: SAHA.blue, by, own: own ? 1 : 0 };
     if (net.mode === 'host') bcast(msg);
     sahaGoal(msg);
     return;
@@ -163,13 +183,101 @@ function updateSaha(dt) {
 }
 function sahaOut(d) {
   if (curMap !== 'saha') return;
-  toast(d.k === 'tac' ? 'TAÇ · topu Q ile eline al, at' : 'KORNER · köşeden ortala');
+  lhBanner(d.k === 'tac' ? 'TAÇ' : 'KORNER', d.k === 'tac' ? 'topu Q ile eline al, at' : 'köşeden ortala');
   if (AU.ctx) tn('sine', 2100, 2050, .16, .08);   // düdük
 }
 function sahaGoal(d) {
   SAHA.red = d.r; SAHA.blue = d.b; SAHA.resetT = 2.5; sahaTabelaDraw();
-  chatSys('GOL! ' + (d.side === 'red' ? 'KIRMIZI' : 'MAVİ') + ' · ' + d.r + ' — ' + d.b);
+  const who = d.by ? nameOf(d.by) : '';
+  chatSys('GOL! ' + (d.side === 'red' ? 'KIRMIZI' : 'MAVİ') + ' · ' + d.r + ' — ' + d.b + (who ? ' · ' + who + (d.own ? ' (kendi kalesine)' : '') : ''));
+  lhBanner('GOL!', (who ? who.toLocaleUpperCase('tr-TR') + (d.own ? ' · KENDİ KALESİNE' : '') + ' · ' : '') + d.r + ' — ' + d.b);
   if (AU.ctx) { tn('sine', 2300, 2250, .22, .12); setTimeout(() => tn('sine', 2300, 2250, .5, .12), 260); nz(1.4, 900, 350, .5, .32, 'lowpass'); }
   const p = ball.mesh ? ball.mesh.position : new V3();
   for (let i = 0; i < 60; i++) emit(p.x, p.y + .3, p.z, rand(-4, 4), rand(2, 7), rand(-4, 4), 2, d.side === 'red' ? 1 : .35, d.side === 'red' ? .3 : .6, d.side === 'red' ? .2 : 1, rand(.6, 1.2));
+}
+
+/* ================= MİNİ MAÇ ================= */
+// hakem masasında E: 2 x 90 sn maç. Başlama düdüğü, geri sayım, devre arası, gol kralı ve bitiş düdüğü; zamanı host tutar.
+function lhBanner(big, small) { const el = $('lhBanner'); el.innerHTML = big + (small ? `<small>${small}</small>` : ''); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
+const SM_HALF = 90, SM_KICK = 3, SM_BREAK = 6, SM_END = 8;
+const smatch = { ph: 'idle', t: 0, half: 1, tick: 0, goals: {}, hud: '' };
+const smTeam = id => (net.players[id] || {}).team || 'red';
+const smClock = () => { const t = Math.max(0, Math.ceil(smatch.t)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+function smWhistleText() {
+  if (smatch.ph === 'idle') return 'MİNİ MAÇ BAŞLAT (2 × 90 SN)';
+  return net.mode !== 'guest' ? 'MAÇI BİTİR' : '';
+}
+function smWhistle() {
+  if (smatch.ph === 'idle') smStart();
+  else if (net.mode !== 'guest') smSet('end', 3, smatch.half);
+}
+function smStart() {
+  if (net.mode === 'guest') { toHost({ t: 'smq' }); return; }
+  SAHA.red = 0; SAHA.blue = 0; smatch.goals = {};
+  smSet('kick', SM_KICK, 1);
+}
+function smGoalKing() {
+  let id = null, n = 0;
+  for (const k in smatch.goals) if (smatch.goals[k] > n) { n = smatch.goals[k]; id = k; }
+  return id ? [nameOf(id), n] : null;
+}
+function smSet(ph, time, half) {
+  const msg = { t: 'sm', ph, time, h: half, r: SAHA.red, b: SAHA.blue, gk: ph === 'end' ? smGoalKing() : null };
+  if (net.mode === 'host') bcast(msg);
+  onSm(msg);
+}
+function whistle(n = 1, long = false) {
+  if (!AU.ctx) return;
+  for (let i = 0; i < n; i++) setTimeout(() => { tn('sine', 2350, 2280, long && i === n - 1 ? .75 : .2, .11); tn('sine', 2400, 2330, long && i === n - 1 ? .75 : .2, .05); }, i * 300);
+}
+function onSm(d) {
+  if (curMap !== 'saha') return;
+  const prev = smatch.ph;
+  smatch.ph = d.ph; smatch.t = +d.time || 0; smatch.half = d.h || 1; SAHA.red = d.r | 0; SAHA.blue = d.b | 0;
+  sahaTabelaDraw();
+  if (prev === d.ph) return;
+  const score = 'KIRMIZI ' + SAHA.red + ' — ' + SAHA.blue + ' MAVİ';
+  if (d.ph === 'kick') {
+    // herkes kendi yarı sahasına: kırmızı soldaki kaleyi korur
+    if (lobby.sit >= 0) lobbyStand();
+    if (ball.holder === net.myId && net.mode !== 'guest') ballSetHolder(null);
+    const red = smTeam(net.myId) === 'red', b = player.body;
+    b.position.set((red ? -1 : 1) * rand(3, 6.5), .6, rand(-4, 4)); b.velocity.set(0, 0, 0);
+    player.yaw = red ? -Math.PI / 2 : Math.PI / 2; player.pitch = 0;
+    if (net.mode !== 'guest' && ball.holder) ballSetHolder(null);
+    lhBanner(smatch.half === 1 ? 'MAÇ BAŞLIYOR' : '2. YARI', (red ? 'KIRMIZISIN · sağdaki kaleye at' : 'MAVİSİN · soldaki kaleye at') + ' · ' + SM_HALF + ' SN');
+    whistle(1);
+  } else if (d.ph === 'play') { whistle(1, true); lhBanner(smatch.half === 1 ? 'BAŞLA!' : '2. YARI BAŞLADI', ''); }
+  else if (d.ph === 'half') { whistle(2, true); lhBanner('DEVRE ARASI', score); }
+  else if (d.ph === 'end') {
+    whistle(3, true);
+    const win = SAHA.red > SAHA.blue ? 'KIRMIZI KAZANDI' : SAHA.blue > SAHA.red ? 'MAVİ KAZANDI' : 'BERABERE';
+    lhBanner('MAÇ BİTTİ · ' + win, score + (d.gk ? ' · GOL KRALI ' + String(d.gk[0]).toLocaleUpperCase('tr-TR') + ' (' + d.gk[1] + ')' : ''));
+    chatSys('MAÇ BİTTİ · ' + score + (d.gk ? ' · gol kralı ' + d.gk[0] + ' (' + d.gk[1] + ')' : ''));
+    const mine = smTeam(net.myId);
+    if ((mine === 'red' && SAHA.red > SAHA.blue) || (mine === 'blue' && SAHA.blue > SAHA.red)) for (let i = 0; i < 90; i++) emit(rand(-6, 6), 3, rand(-4, 4), rand(-3, 3), rand(3, 8), rand(-3, 3), 3, 1, .8, .2, rand(.8, 1.6));
+  }
+}
+// her kare: süre akar; host evreleri ilerletir ve saniyede bir zamanı yayınlar
+function smTick(dt) {
+  const el = $('sahaHud');
+  const html = smatch.ph === 'idle' ? '' : `<b class="red">KIRMIZI ${SAHA.red}</b><span>${smatch.ph === 'kick' ? 'HAZIR · ' + Math.max(1, Math.ceil(smatch.t)) : smatch.ph === 'half' ? 'DEVRE ARASI' : smatch.ph === 'end' ? 'MAÇ BİTTİ' : smClock() + ' · ' + smatch.half + '. YARI'}</span><b class="blue">${SAHA.blue} MAVİ</b>`;
+  if (smatch.hud !== html) { smatch.hud = html; el.innerHTML = html; el.hidden = !html; if (smatch.ph === 'play') sahaTabelaDraw(); }
+  if (smatch.ph === 'idle') return;
+  smatch.t -= dt;
+  if (net.mode === 'guest') return;
+  smatch.tick -= dt;
+  if (smatch.tick <= 0) { smatch.tick = 1; if (net.mode === 'host') bcast({ t: 'sm', ph: smatch.ph, time: Math.max(0, smatch.t), h: smatch.half, r: SAHA.red, b: SAHA.blue }); }
+  if (smatch.t > 0) return;
+  if (smatch.ph === 'kick') smSet('play', SM_HALF, smatch.half);
+  else if (smatch.ph === 'play') smatch.half === 1 ? smSet('half', SM_BREAK, 1) : smSet('end', SM_END, 2);
+  else if (smatch.ph === 'half') smSet('kick', SM_KICK, 2);
+  else if (smatch.ph === 'end') smSet('idle', 0, 1);
+}
+// host: topa en yakın (dokunan) oyuncu son dokunan sayılır (sürerek atılan gol için)
+function ballToucher(p) {
+  if (ball.holder) return;
+  const near = (id, q) => { if (q && Math.hypot(q.x - p.x, q.z - p.z) < .62 && Math.abs(q.y - p.y) < 1.4) ball.last = id; };
+  near(net.myId, player.body.position);
+  for (const id in net.players) { const pr = net.players[id]; if (id !== net.myId && pr.proxy) near(id, pr.proxy.pos); }
 }
