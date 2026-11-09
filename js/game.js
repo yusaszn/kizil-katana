@@ -369,7 +369,7 @@ function onWaveClear() {
 
 /* ================= SIFIRLAMA / BİTİŞ ================= */
 function resetGame() {
-  buildMap(isVS() ? net.vsMap : isDefense() ? 'kale' : isRange() ? 'poligon' : 'arena');
+  buildMap(isVS() ? net.vsMap : isDefense() ? 'kale' : isRange() ? 'poligon' : 'harabe');
   defReset();
   for (const e of enemies.slice()) removeEnemy(e);
   for (const p of pieces.slice()) removePiece(p);

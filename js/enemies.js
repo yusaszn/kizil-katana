@@ -280,8 +280,9 @@ function makeEnemy(id, kind, x, y, z, remote) {
 function spawnEnemy(kind, at) {
   const T = TYPES[kind];
   const tg = getTargets()[0];
-  const opts = SPAWNS.filter(([x, z]) => Math.hypot(x - tg.x, z - tg.z) > (isBossKind(kind) ? 16 : 11));
-  const [sx, sz] = at || pick(opts.length ? opts : SPAWNS);
+  const sc = Math.max(1, (H - 3) / 19), sp = SPAWNS.map(([x, z]) => [x * sc, z * sc]);   // büyük haritada kenarlardan
+  const opts = sp.filter(([x, z]) => Math.hypot(x - tg.x, z - tg.z) > (isBossKind(kind) ? 16 : 11));
+  const [sx, sz] = at || pick(opts.length ? opts : sp);
   const j = isBossKind(kind) || at ? 0 : 1;
   const y = T.flying ? 3.2 : T.r + .05;
   const e = makeEnemy(nextEnemyId++, kind, sx + rand(-1.5, 1.5) * j, y, sz + rand(-1.5, 1.5) * j, false);
@@ -801,6 +802,9 @@ function updateEnemies(dt) {
         else if (dist < T.reach && e.atkCd <= 0) { e.windup = T.wind; sfx.growl(T.pitch); }
         else want = T.speed * (dist < T.reach * .8 ? 0 : 1);
       }
+      const way = !T.flying && altarWay(e, tg);   // hedef sunaktaysa önce merdivene
+      if (way) { dir = way; want = Math.max(want, T.speed * .8); if (!way.up) dir = avoidDir(e, dir, dt); }
+      else if (want > 1 && !T.flying) dir = avoidDir(e, dir, dt);
       if (want > 1 && speedNow < .6) { e.stuckT += dt; if (e.stuckT > .4) { e.sideT = .7; e.stuckT = 0; } } else e.stuckT = 0;
       if (e.sideT > 0) { e.sideT -= dt; dir = new V3(dir.x - dir.z * e.strafe * 1.5, 0, dir.z + dir.x * e.strafe * 1.5).normalize(); }
       const k = Math.min(1, dt * 8);
@@ -889,4 +893,32 @@ function updateProjectiles(dt) {
     s.t += dt; s.m.scale.set(1 - s.t * 1.5, 1 + s.t, 1 - s.t * 1.5); s.m.material.opacity = .8 * (1 - s.t / .6);
     if (s.t > .6) { scene.remove(s.m); s.m.geometry.dispose(); spawnFx.splice(spawnFx.indexOf(s), 1); }
   }
+}
+
+/* engelden kaçınma: önündeki 2.5 m'de duvar varsa, hedef yönüne en yakın açık yön seçilir (0.15 sn'de bir bakılır) */
+const _avO = new V3(), _avD = new V3(), AV_ANG = [0, .55, -.55, 1.1, -1.1, 1.65, -1.65, 2.3, -2.3];
+function avoidDir(e, dir, dt) {
+  e.avT = (e.avT || 0) - dt;
+  if (e.avT > 0 && e.avDir) return e.avDir;
+  e.avT = .15;
+  const b = e.body.position, look = 2.2 + e.r;
+  _avO.set(b.x, Math.max(.5, b.y), b.z);
+  let best = null;
+  for (const a of AV_ANG) {
+    const c = Math.cos(a * e.strafe), s = Math.sin(a * e.strafe);
+    _avD.set(dir.x * c - dir.z * s, 0, dir.x * s + dir.z * c);
+    if (rayStatic(_avO, _avD, look) >= look - .01) { best = _avD.clone(); if (a !== 0) e.avT = .7; break; }   // duvar boyunca bir süre aynı yöne (titreşmesin)
+  }
+  if (!best) e.strafe = -e.strafe;   // her yön kapalıysa (köşe) öbür taraftan dene
+  e.avDir = best || dir;
+  return e.avDir;
+}
+// KIZIL HARABELER: oyuncu sunaktaysa düşman kendi tarafındaki merdivenin dibine, oradan yukarı yürür
+function altarWay(e, tg) {
+  if (curMap !== 'harabe' || !tg || (tg.y || 0) < 1.3 || Math.abs(tg.x) > 5.2 || Math.abs(tg.z) > 5.2) return null;
+  const b = e.body.position; if (b.y > 1.3 + e.r) return null;   // zaten yukarıda
+  const sz = b.z >= 0 ? 1 : -1, bot = _avO.set(0, 0, sz * 9), top = Math.abs(b.x) < 1.6 && Math.abs(b.z) < 9.4;
+  const to = top ? new V3(-b.x * .5, 0, sz * 4 - b.z) : new V3(bot.x - b.x, 0, bot.z - b.z);
+  const l = to.length(); if (l < .05) return null;
+  to.divideScalar(l); to.up = top; return to;
 }

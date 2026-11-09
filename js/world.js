@@ -106,6 +106,41 @@ const MAPS = {
       }
     },
   },
+  // CO-OP: KIZIL HARABELER — arenanın iki katı. Ortada merdivenle çıkılan yüksek sunak (yukarıdan sahaya hâkim ama her
+  // yönden açık), köşelerde L biçimli yıkık kale duvarları (kanat ve pusu), kanatlarda uzun koridor duvarları (dar geçit),
+  // aralarda çömelerek saklanılan alçak siperler. Düşmanlar dört kenardan ve köşelerden gelir.
+  harabe: {
+    name: 'KIZIL HARABELER', half: 32, verb: .16,
+    floorTex: () => dokuMap('kaya', floorTex, 1.6), wallTex: () => dokuMap('kduvar', wallTex), floorPh: 0xc8968a, wallPh: 0xb08a80,
+    fog: 0x1d0705, fogD: .022, hemi: [0x7a4236, 0x140404], hemiI: .7, moon: 0xff6a48, moonI: .45, lava: 0xff4a12, flame: 0xff7a22, light: 0xff7428, ember: 0xff7a2a, floor: 0xffffff, wall: 0xffffff,
+    build() {
+      const W = (w, h, d, x, z, mat = wallMat) => addBlock(w, h, d, x, h / 2, z, mat, true, true);
+      // ortadaki sunak: 10 x 10, 1.5 m yüksek; kuzey ve güneyden basamaklı merdiven
+      const AH = 1.5;
+      addBlock(10, AH, 10, 0, AH / 2, 0, stoneMat, true, true);
+      for (const sz of [-1, 1]) {
+        const n = 6;
+        for (let k = 0; k < n; k++) { const h = AH * (k + 1) / (n + 1), dz = 5 + (n - k) * .5 - .25; addBlock(4, h, .5, 0, h / 2, sz * dz, stoneMat, true, true); }
+      }
+      for (const [x, z] of [[-4.6, -4.6], [4.6, -4.6], [-4.6, 4.6], [4.6, 4.6]]) addBlock(.9, 2.2, .9, x, AH + 1.1, z, pillarMat, true, true);   // sunağın köşe sütunları
+      const rune = mapMesh(new THREE.Mesh(new THREE.PlaneGeometry(8, 8), runeMat)); rune.rotation.x = -Math.PI / 2; rune.position.y = AH + .02;
+      // köşelerde L biçimli yıkık kale duvarları: açık yüzü ortaya bakar (köşeden gelen düşman dış köşeden kayıp geçer,
+      // içerideki oyuncu duvarı siper alır); iki kolu 9 m
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+        W(9, 3.4, 1, sx * 15, sz * 19);
+        W(1, 3.4, 8, sx * 19, sz * 15);
+        W(2.2, 1.1, 1.2, sx * 15, sz * 14.5, stoneMat);   // cebin içinde alçak siper
+      }
+      // kanatlarda uzun koridor duvarları: ortası açık (iki dar geçit)
+      for (const sx of [-1, 1]) { W(1, 3, 9, sx * 25, -9); W(1, 3, 9, sx * 25, 9); }
+      for (const sz of [-1, 1]) { W(9, 3, 1, -9, sz * 25); W(9, 3, 1, 9, sz * 25); }
+      // sunağın çevresinde sütun halkası ve alçak siperler
+      for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + Math.PI / 8; addBlock(1.5, WALLH, 1.5, Math.cos(a) * 11.5, WALLH / 2, Math.sin(a) * 11.5, pillarMat, true, true); }
+      for (const [x, z, r] of [[-7, 9, 0], [7, -9, 0], [9, 7, 1], [-9, -7, 1], [-22, 0, 1], [22, 0, 1], [0, 21, 0], [0, -21, 0]]) W(r ? 1.2 : 3, 1.1, r ? 3 : 1.2, x, z, stoneMat);
+      // dört mangal: köşe duvarlarının iç tarafında
+      [[-10, -10], [10, -10], [-10, 10], [10, 10]].forEach(([x, z], i) => makeBrazier(x, z, i));
+    },
+  },
   avlu: { verb: .2,
     // VS haritası: iki takım üssü, ortada siper, kanatlarda koridorlar, eğilerek saklanılan alçak duvarlar
     name: 'KEMİK AVLUSU',
