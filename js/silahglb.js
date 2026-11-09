@@ -6,6 +6,7 @@
 const SILAH_GLB = {
   usps: { m: 'silah_makarov', gm: 'usps', rotY: Math.PI },
   pistol: { m: 'silah_dokuzmm', gm: 'beretta', rotY: 0, slide: /slide/i },
+  ak47: { m: 'silah_ak12', gm: 'ak', rotY: Math.PI / 2 },
 };
 const silahKayit = [];
 for (const [key, cfg] of Object.entries(SILAH_GLB)) {
@@ -18,7 +19,7 @@ function silahUygula(r) {
   if (r.done) return;
   if (!M) { modelYukle(cfg.m); return; }
   r.done = true;
-  const res = r.res, g = res.g, skip = new Set();
+  const res = r.res, g = res.g || res.b, skip = new Set();
   g.traverse(o => { if (o.userData.hand || o === res.flash) o.traverse(c => skip.add(c)); });
   // eski silahın kapladığı alan (ellerin ve alevin dışında), g'nin kendi uzayında
   g.updateMatrixWorld(true);
