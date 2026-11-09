@@ -15,6 +15,16 @@ SECIM = {
     'plaka':  ('large_floor_tiles_02', 512, 1.15, .9, .12, True),    # han avlusu: büyük kare plakalar
     'kaldirim': ('cobblestone_floor_01', 512, 1.0, .9, .08, True),   # arnavut kaldırımı
     'islak':  ('stone_tiles_02', 512, .45, .7, .02, True),           # sarnıç tabanı
+    # diğer haritalar ve lobi mekânları
+    'asfalt': ('asphalt_02', 512, 1.0, 1.0, 0, True),                # Liman zemini
+    'beton':  ('concrete_wall_004', 512, 1.0, .8, 0, True),          # Liman duvarları
+    'kum':    ('coast_sand_01', 512, 1.15, 1.0, .05, True),          # Çöl Geçidi zemini
+    'kumtas': ('sandstone_blocks_08', 512, 1.0, 1.0, .05, True),     # Çöl Geçidi duvarları
+    'kaya':   ('volcanic_rock_tiles', 512, 1.0, .8, 0, True),        # Kızıl Arena / Kemik Avlusu zemini
+    'kduvar': ('castle_wall_slates', 512, .8, .7, 0, True),          # Kızıl Arena / Kemik Avlusu duvarları
+    'orman':  ('forest_ground_04', 512, .9, 1.0, 0, True),           # kamp toprağı
+    'tahta':  ('old_wood_floor', 512, 1.1, 1.0, 0, True),            # dağ evi tabanı
+    'guverte': ('weathered_planks', 512, 1.1, 1.0, .03, True),       # çatı katı güvertesi
 }
 
 def indir(pid, tur):
@@ -47,7 +57,7 @@ for k, (pid, n, parlak, doygun, sicak, nor) in SECIM.items():
     if nor: veri[k + '_n'] = b64(indir(pid, 'nor_gl').resize((n, n), Image.LANCZOS), 88)
 for v in veri.values(): toplam += len(v)
 with open(os.path.join(KOK, 'js', 'doku-veri.js'), 'w') as f:
-    f.write("'use strict';\n/* Poly Haven (CC0) dokuları, araclar/dokulari-paketle.py üretir. Kaynaklar: doku/KAYNAK.md */\nconst DOKU_VERI = ")
+    f.write("'use strict';\n/* Poly Haven (CC0) dokuları, araclar/dokulari-paketle.py üretir. Kaynaklar: doku/KAYNAK.md\n   Açılışı bekletmesin diye js/doku.js bu dosyayı arka planda yükler. */\ndokuGeldi(")
     json.dump(veri, f, separators=(',', ':'))
-    f.write(';\n')
+    f.write(');\n')
 print('yazıldı', len(veri), 'doku', round(toplam / 1024), 'KB', file=sys.stderr)

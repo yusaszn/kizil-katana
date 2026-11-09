@@ -230,7 +230,7 @@ MAPS.kamp = {
   name: 'ORMAN KAMPI', lobby: true, open: true, verb: .05,
   fog: 0x080d18, sky: 0x060a14, fogD: .042, hemi: [0x55648a, 0x0c0a08], hemiI: .42, moon: 0x9fb4ff, moonI: .5, pl: .32,
   lava: 0x000000, flame: 0xff8a3a, light: 0xff8436, ember: 0xffa040, floor: 0xffffff, wall: 0xffffff, noEmbers: true,
-  floorTex: () => forestTex,
+  floorTex: () => dokuMap('orman', forestTex, .5),
   spawn: () => { for (;;) { const a = Math.random() * Math.PI * 2, r = 4.4 + Math.random() * 1.2, x = Math.cos(a) * r, z = Math.sin(a) * r; if (Math.hypot(x + 5.2, z - 3.2) > 1.6) return new V3(x, .6, z); } },
   build() {
     venue.fx = []; venue.seats = []; venue.board = null; venue.fire = null; vSeed = 7;
@@ -371,7 +371,7 @@ MAPS.ev = {
   name: 'DAĞ EVİ', lobby: true, open: true, ceil: 3.6, verb: .16,
   fog: 0x140e0a, sky: 0x05070d, fogD: .012, hemi: [0xffc89a, 0x2a1810], hemiI: .3, moon: 0x9fb4ff, moonI: .14, pl: .22,
   lava: 0x000000, flame: 0xff8a3a, light: 0xffb060, ember: 0xffa040, floor: 0xffffff, wall: 0xffffff, noEmbers: true,
-  floorTex: () => plankTex,
+  floorTex: () => dokuMap('tahta', plankTex, .3),
   spawn: () => new V3(rand(-2, 2), .6, rand(1.5, 4)),
   build() {
     venue.fx = []; venue.seats = []; venue.board = null; venue.fire = null; vSeed = 11;

@@ -62,7 +62,7 @@ MAPS.liman = {
   name: 'LİMAN', half: 36, open: true, mmBg: '#5a5e62', verb: .11,
   fog: 0xa6b0bc, sky: 0x9aa8b8, fogD: .0075, hemi: [0xe2e8f0, 0x5a5248], hemiI: 1.05, moon: 0xffe2c4, moonI: 1.15, pl: .25,
   lava: 0x000000, flame: 0xffb050, light: 0xfff0d8, ember: 0xffffff, floor: 0xffffff, wall: 0xc8c4bc, noEmbers: true,
-  floorTex: () => asphaltTex, wallTex: () => concreteTex,
+  floorTex: () => dokuMap('asfalt', asphaltTex), wallTex: () => dokuMap('beton', concreteTex),
   sites: { A: { x0: 14, x1: 32, z0: -31, z1: -13 }, B: { x0: -31.5, x1: -12.5, z0: -29.5, z1: -10.5 } },
   spawn(team) {
     const south = typeof isBomb === 'function' && isBomb() ? team === attackTeam() : team === 'red';

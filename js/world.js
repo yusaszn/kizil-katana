@@ -89,6 +89,7 @@ function makeBrazier(x, z, i) {
 const MAPS = {
   arena: {
     name: 'KIZIL ARENA',
+    floorTex: () => dokuMap('kaya', floorTex, 1.6), wallTex: () => dokuMap('kduvar', wallTex), floorPh: 0xc8968a, wallPh: 0xb08a80,
     fog: 0x1d0705, hemi: [0x7a4236, 0x140404], moon: 0xff6a48, lava: 0xff4a12, flame: 0xff7a22, light: 0xff7428, ember: 0xff7a2a, floor: 0xffffff, wall: 0xffffff,
     spawn: team => new V3(rand(-11, 11), .6, (team === 'blue' ? -1 : 1) * rand(17.5, 19.5)),
     build() {
@@ -108,6 +109,7 @@ const MAPS = {
   avlu: { verb: .2,
     // VS haritası: iki takım üssü, ortada siper, kanatlarda koridorlar, eğilerek saklanılan alçak duvarlar
     name: 'KEMİK AVLUSU',
+    floorTex: () => dokuMap('kaya', floorTex, 1.6), wallTex: () => dokuMap('kduvar', wallTex), floorPh: 0x8c98b4, wallPh: 0x8a96b8,
     fog: 0x0a0d16, hemi: [0x4a5a80, 0x0a0a14], moon: 0x8fb0ff, lava: 0x2a6cff, flame: 0x5aa8ff, light: 0x6aa8ff, ember: 0x8ac0ff, floor: 0x9aa4bc, wall: 0x8a96b4,
     spawn: team => new V3(rand(-8, 8), .6, (team === 'blue' ? -1 : 1) * rand(17.5, 20)),
     build() {
@@ -138,7 +140,7 @@ const MAPS = {
     // Savunma üssü kuzeyde: doğuda A rampası (merdiven), batıda mavi B kapıları ve B penceresi. Batıda alt tüneller → üstü kapalı B tünelleri → B (arkada B platformu).
     name: 'ÇÖL GEÇİDİ', half: 40,
     fog: 0xd9c7a2, sky: 0x8cb8e6, fogD: .006, hemi: [0xd6e6ff, 0x8a6a3a], moon: 0xfff1d6, lava: 0xc8a060, flame: 0xffb050, light: 0xfff0d0, ember: 0xfff4e0, floor: 0xffffff, wall: 0xffffff,
-    floorTex: () => sandFloorTex, wallTex: () => sandBrickTex, hemiI: 1.0, moonI: 1.35, noEmbers: true,
+    floorTex: () => dokuMap('kum', sandFloorTex, .6), wallTex: () => dokuMap('kumtas', sandBrickTex), hemiI: 1.0, moonI: 1.35, noEmbers: true,
     sites: { A: { x0: 18, x1: 39, z0: -39, z1: -20 }, B: { x0: -39, x1: -19, z0: -39, z1: -15 } },
     spawn(team) {
       const south = typeof isBomb === 'function' && isBomb() ? team === attackTeam() : team === 'red';
@@ -338,17 +340,24 @@ function buildMap(id) {
   hemi.color.setHex(M.hemi[0]); hemi.groundColor.setHex(M.hemi[1]); moon.color.setHex(M.moon);
   lavaMat.color.setHex(M.lava); flameMat.color.setHex(M.flame); coalMat.color.setHex(M.flame);
   vmFire.color.setHex(M.light);   // silahlara vuran alt ışık haritanın meşale rengini alsın
-  floorMat.color.setHex(M.floor); wallMat.color.setHex(M.wall);
-  // haritaya özel dokular ve ışık (çöl gündüz aydınlık)
-  floorMat.map = M.floorTex ? M.floorTex() : floorTex; wallMat.map = M.wallTex ? M.wallTex() : wallTex; floorMat.needsUpdate = wallMat.needsUpdate = true;
-  // fotoğraf dokusunun kabartma haritası varsa (yüksek grafik) zemine ve duvara da geçer
-  floorMat.normalMap = floorMat.map.kkNor || null; wallMat.normalMap = wallMat.map.kkNor || null;
-  // büyük haritada zemin dokusu gerilmesin
-  const ft = floorMat.map; if (ft.baseRep == null) ft.baseRep = ft.repeat.x; ft.repeat.setScalar(ft.baseRep * H / 22);
+  mapSurfaces(M);
   hemi.intensity = (M.hemiI || .6) * (gfxLow ? 1.35 : 1); moon.intensity = M.moonI || .35;
   if (AU.verbG) AU.verbG.gain.setTargetAtTime(mapVerb(), AU.ctx.currentTime, .3);   // haritanın yankısı
   embers.material.color.setHex(M.ember);
 }
+// haritanın zemin ve duvar malzemesi: dokular (fotoğraf geldiyse o, kabartmasıyla) ve fotoğrafa özel renk çarpanı
+function mapSurfaces(M) {
+  floorMat.map = M.floorTex ? M.floorTex() : floorTex; wallMat.map = M.wallTex ? M.wallTex() : wallTex; floorMat.needsUpdate = wallMat.needsUpdate = true;
+  const fPh = !!floorMat.map.kkPhoto, wPh = !!wallMat.map.kkPhoto;
+  floorMat.color.setHex(fPh && M.floorPh != null ? M.floorPh : M.floor); wallMat.color.setHex(wPh && M.wallPh != null ? M.wallPh : M.wall);
+  // fotoğraf dokusunun kabartma haritası varsa (yüksek grafik) zemine ve duvara da geçer; fotoğrafta metal parlaklığı olmaz
+  floorMat.normalMap = floorMat.map.kkNor || null; wallMat.normalMap = wallMat.map.kkNor || null;
+  floorMat.metalness = fPh ? 0 : .15; floorMat.roughness = fPh ? .9 : .82; wallMat.metalness = wPh ? 0 : .3; wallMat.roughness = wPh ? .9 : .7;
+  // büyük haritada zemin dokusu gerilmesin
+  const ft = floorMat.map; if (ft.baseRep == null) ft.baseRep = ft.repeat.x; ft.repeat.setScalar(ft.baseRep * H / 22);
+}
+// fotoğraf dokuları açılıştan sonra gelir: o an açık harita (menüdeki kamp dahil) hemen yeni dokulara geçer
+function dokuYenile() { if (curMap && MAPS[curMap]) mapSurfaces(MAPS[curMap]); }
 // uçuşan közler
 const EMB = 260;
 const embPos = new Float32Array(EMB * 3), embVel = new Float32Array(EMB);

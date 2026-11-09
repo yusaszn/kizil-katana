@@ -370,10 +370,10 @@ const mdStoneMat = o => {
 };
 const mdNor = m => { if (m.map && m.map.kkNor && 'normalMap' in m) { m.normalMap = m.map.kkNor; m.needsUpdate = true; } return m; };
 function mdInit() {
-  if (MD && MD.gfx === SETTINGS.gfx) return;   // grafik kalitesi değişince malzemeler yeniden kurulur
+  if (MD && MD.gfx === SETTINGS.gfx && (MD.photo || !dokuHazir('tas'))) return;   // grafik kalitesi değişince ya da fotoğraflar sonradan gelince malzemeler yeniden kurulur
   mdTextures();
   MD = {
-    gfx: SETTINGS.gfx,
+    gfx: SETTINGS.gfx, photo: dokuHazir('tas'),
     vc: new THREE.MeshLambertMaterial({ vertexColors: true }),
     facade: [0, 1, 2, 3].map(i => mdStoneMat({ map: mdFacadeTex(i) })),
     han: mdStoneMat({ map: mdFacadeTex(1, 'han') }),
