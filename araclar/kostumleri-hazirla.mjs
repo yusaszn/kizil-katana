@@ -9,7 +9,7 @@ import fs from 'fs';
 const require = createRequire(path.resolve(process.env.GT_DIR || 'araclar/.gt', 'x.js'));
 const { NodeIO } = require('@gltf-transform/core');
 const { ALL_EXTENSIONS } = require('@gltf-transform/extensions');
-const { dequantize, prune, dedup } = require('@gltf-transform/functions');
+const { metalRough, dequantize, prune, dedup } = require('@gltf-transform/functions');
 const { MeshoptDecoder } = require('meshoptimizer');
 
 // isteğe bağlı: atılacak düğüm / malzeme deseni (ör. modelin elindeki silahlar) ve doku boyu (Sketchfab karakterleri için)
@@ -33,7 +33,7 @@ if (BOY) {
     t.setMimeType(png ? 'image/png' : 'image/jpeg'); t.setURI(t.getURI().replace(/\.\w+$/, png ? '.png' : '.jpg'));
   }
 }
-await doc.transform(dequantize(), dedup(), prune());
+await doc.transform(metalRough(), dequantize(), dedup(), prune());
 await io.write(out, doc);
 { const d2 = await io.read(out), r2 = d2.getRoot(); for (const a of r2.listAccessors()) if (a.listParents().every(p => p.propertyType === 'Root')) a.dispose(); await io.write(out, d2); }
 console.log(path.basename(out), (fs.statSync(out).size / 1024 | 0) + ' KB', doc.getRoot().listMaterials().map(m => m.getName()).join(','));

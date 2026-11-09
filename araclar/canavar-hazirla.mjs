@@ -9,7 +9,7 @@ import fs from 'fs';
 const require = createRequire(path.resolve(process.env.GT_DIR || 'araclar/.gt', 'x.js'));
 const { NodeIO } = require('@gltf-transform/core');
 const { ALL_EXTENSIONS } = require('@gltf-transform/extensions');
-const { dequantize, prune, dedup, resample, weld } = require('@gltf-transform/functions');
+const { metalRough, dequantize, prune, dedup, resample, weld } = require('@gltf-transform/functions');
 const { MeshoptDecoder } = require('meshoptimizer');
 const sharp = require('sharp');
 
@@ -37,7 +37,7 @@ for (const t of root.listTextures()) {
   t.setImage(new Uint8Array(out)); t.setMimeType(png ? 'image/png' : 'image/jpeg');
   t.setURI(t.getURI().replace(/\.\w+$/, png ? '.png' : '.jpg'));
 }
-await doc.transform(dequantize(), resample({ tolerance: 4e-3 }), dedup(), weld(), prune());   // gözle fark edilmeyen ara kareler atılır
+await doc.transform(metalRough(), dequantize(), resample({ tolerance: 4e-3 }), dedup(), weld(), prune());   // gözle fark edilmeyen ara kareler atılır
 // atılan animasyonların sahipsiz kalan veri dizileri (prune hepsini yakalamıyor)
 // kanalı kalmayan örnekleyiciler (atılan klip kanallarının artığı) ve sahipsiz veri dizileri
 for (const an of root.listAnimations()) { const used = new Set(an.listChannels().map(c => c.getSampler())); for (const sm of an.listSamplers()) if (!used.has(sm)) sm.dispose(); }

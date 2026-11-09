@@ -344,7 +344,7 @@ function animateCharAvatar(av, dt, s) {
     }
   }
   if (emEnv > 0 && !gun && !melee) poseEmote(av, s, emEnv, RIGHT, UPW, FWD);
-  if (C.ext) extPose(C.ext.pairs, C.ext.hips, C.root);
+  if (C.ext) { extPose(C.ext.pairs, C.ext.hips, C.root); if (C.ext.team) C.ext.team.color.setRGB(1, 1, 1).lerp(C.mats.__team.color, .45); }
 }
 // lobi hareketleri: el sallama, dans. env: giriş / çıkış yumuşatması (0..1)
 function poseEmote(av, s, env, RIGHT, UPW, FWD) {
@@ -592,7 +592,8 @@ function extSetup(C, S, color) {
   const main = def.team.length ? def.team : [Object.entries(use).sort((a, b) => b[1] - a[1])[0][0]];
   const mats = {};
   ext.traverse(o => { if (!o.isMesh) return; const key = main.includes(o.material.name) ? '__team' : o.material.name; if (!mats[key]) { mats[key] = o.material.clone(); if (key === '__team') mats[key].color.setHex(color); } o.material = mats[key]; });
-  C.mats.__team = mats.__team;
+  // takım rengi kıyafetin kendi rengine karışır (tamamen boyamak dokuyu öldürür): av.cloth sahte malzeme, gerçek renk her karede
+  const real = mats.__team; C.mats.__team = new THREE.MeshStandardMaterial({ color });
   C.root.add(ext);
   for (const m of [...C.upper, ...C.lower]) m.visible = false;   // kukla görünmez
   C.upper = []; C.lower = [];
@@ -624,7 +625,7 @@ function extSetup(C, S, color) {
   pairs.sort((a, b) => a.dep - b.dep);
   const hs = C.bones.Hips, hd = extFind(dBones, rig.Hips);
   const hips = hs && hd ? { s: hs, d: hd, sR: C.root.worldToLocal(wpos(hs, new V3())), dR: C.root.worldToLocal(wpos(hd, new V3())) } : null;
-  C.ext = { root: ext, pairs, hips };
+  C.ext = { root: ext, pairs, hips, team: real };
 }
 function extPose(pairs, hips, root) {
   if (hips && hips.s && hips.d) {

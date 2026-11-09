@@ -8,7 +8,7 @@ import fs from 'fs';
 const require = createRequire(path.resolve(process.env.GT_DIR || 'araclar/.gt', 'x.js'));
 const { NodeIO, getBounds } = require('@gltf-transform/core');
 const { ALL_EXTENSIONS } = require('@gltf-transform/extensions');
-const { dequantize, prune, dedup, weld, simplify, center, flatten } = require('@gltf-transform/functions');
+const { metalRough, dequantize, prune, dedup, weld, simplify, center, flatten } = require('@gltf-transform/functions');
 const { MeshoptDecoder, MeshoptSimplifier } = require('meshoptimizer');
 const sharp = require('sharp');
 
@@ -24,7 +24,7 @@ if (AT) for (const n of root.listNodes()) {
 }
 if (yKesArg !== undefined && yKesArg !== '') {
   const Y = +yKesArg;
-  await doc.transform(dequantize(), flatten());
+  await doc.transform(metalRough(), dequantize(), flatten());
   for (const m of root.listMeshes()) for (const p of m.listPrimitives()) {
     const pos = p.getAttribute('POSITION'), ix = p.getIndices(); if (!ix) continue;
     const keep = [], a = [], b = [], c = [];
