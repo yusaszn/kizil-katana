@@ -39,3 +39,24 @@ kostümleri ayrı `js/kostum-<ad>.js` dosyalarına yazar: açılışta değil, b
 |---|---|
 | kostum_kukuleta.glb | Kukuletalı Suikastçı, Çöl Kurdu (renk sürümü) |
 | kostum_kral.glb | Kral, Kara Kral (renk sürümü) |
+
+
+## Canavarlar (Sketchfab)
+
+Sketchfab'dan indirilen, animasyonlu canavarlar. **CC Attribution (CC-BY 4.0)**: kullanım serbest, yapımcının adının
+belirtilmesi şart (aşağıdaki tablo bu atıftır). `araclar/canavar-hazirla.mjs` istenen animasyonları kısa adlarla tutar,
+dokuları 512 piksel JPEG'e indirir; `araclar/canavarlar.sh` hepsini yeniden üretir. `araclar/modelleri-paketle.py` her
+canavarı ayrı `js/canavar-<ad>.js` dosyasına yazar; oyun bunları açılıştan birkaç saniye sonra arka planda yükler.
+
+| Dosya | Oyunda | Model — yapımcı | Lisans | Kaynak |
+|---|---|---|---|---|
+| canavar_gulyabani.glb | Er (gulyabani) | "Goblin Ghoul" — rodrigobento | CC Attribution | https://sketchfab.com/3d-models/goblin-ghoul-a6c6fffee3d34823b6d87a7054782577 |
+| canavar_zombi.glb | Er (zombi) | "Zombie" — pxltiger | CC Attribution | https://sketchfab.com/3d-models/zombie-73ef58af341e46afba1da53366ed79cf |
+| canavar_yokai.glb | İblis (ateş topu atan) | "Imp Yokai" — tranb95 | CC Attribution | https://sketchfab.com/3d-models/imp-yokai-21a0bf7fd8064c97ac9798194eab2ebb |
+| canavar_tazi.glb | Koşucu (cehennem tazısı) | "Hellhound" — kolbaca | CC Attribution | https://sketchfab.com/3d-models/hellhound-2b661389de024343b17cab26e75c108f |
+| canavar_kabus.glb | Koşucu (kâbus) | "Nightmare Creature 1#" — Rodolfoisreal1423 | CC Attribution | https://sketchfab.com/3d-models/nightmare-creature-1-9fb509d207d744babeb5d87a486f7de1 |
+| canavar_golem.glb | Kaba (lav golem) | "Drugdör The Golem Animated" — Phons | CC Attribution | https://sketchfab.com/3d-models/drugdor-the-golem-animated-19c1855bdb2c4cdc89da2cfb64da48cf |
+| canavar_kurt.glb | Kurtadam (ara boss) | "Werewolf Final" — ZionE | CC Attribution | https://sketchfab.com/3d-models/werewolf-final-2b89eb50883d4f5287b732f697d2d0ca |
+| canavar_ejderha.glb | Kemik Ejderi (büyük boss) | "Skeleton Dragon" — LivindorCreation | CC Attribution | https://sketchfab.com/3d-models/skeleton-dragon-0ae92a30d2c242069acd61ed432f6c32 |
+| canavar_trol.glb | Dağ Trolü (ara boss) | "Troll" — sjunior3d | CC Attribution | https://sketchfab.com/3d-models/troll-bceb1cb47186457c8571a23e6aff1b8e |
+| canavar_ork.glb | Kasap (büyük boss) | "Low-poly orc" — Riltariki | CC Attribution | https://sketchfab.com/3d-models/low-poly-orc-62f1637181cb4f6aa38897f5b7ab5edf |

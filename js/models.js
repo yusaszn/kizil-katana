@@ -4,15 +4,37 @@
    Yükleme açılışta arka planda biter; bitmeden doğan düşman eski kutu modeliyle görünür. */
 
 const MODELS = {};   // ad → { scene, clips: { kısaAd: AnimationClip }, box }
+// kemikli modelin gerçek (iskeletle şekillenmiş) sınır kutusu: Sketchfab modellerinde bağlama geometrisi ölçek ve
+// konum bakımından iskeletten çok farklı olabilir (Box3.setFromObject onu ölçer)
+function skinnedBox(root) {
+  root.updateMatrixWorld(true);
+  const box = new THREE.Box3(), v = new THREE.Vector3();
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    const pos = o.geometry.attributes.position, step = Math.max(1, Math.floor(pos.count / 3000));
+    if (o.isSkinnedMesh) { o.skeleton.update(); for (let i = 0; i < pos.count; i += step) { v.fromBufferAttribute(pos, i); o.boneTransform(i, v); box.expandByPoint(v.applyMatrix4(o.matrixWorld)); } }
+    else box.expandByObject(o);
+  });
+  return box;
+}
 function modelParse(name, b64) {
   if (!THREE.GLTFLoader) return;
   const bin = atob(b64), buf = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
   new THREE.GLTFLoader().parse(buf.buffer, '', gl => {
     const clips = {};
-    for (const c of gl.animations) clips[c.name] = c;
-    gl.scene.traverse(o => { if (o.isMesh) o.frustumCulled = false; });   // kemikle oynayan mesh'in sınır kutusu yanlış kalır
-    MODELS[name] = { scene: gl.scene, clips, box: new THREE.Box3().setFromObject(gl.scene) };
+    for (const c of gl.animations) {
+      // bazı modellerde (Sketchfab) her klip ortak zaman çizelgesinde ileride başlar: başı 0'a çekilir
+      let t0 = Infinity; for (const tr of c.tracks) if (tr.times.length) t0 = Math.min(t0, tr.times[0]);
+      if (t0 > 1e-3 && t0 < Infinity) { for (const tr of c.tracks) tr.shift(-t0); c.resetDuration(); }
+      clips[c.name] = c;
+    }
+    gl.scene.traverse(o => {
+      if (!o.isMesh) return;
+      o.frustumCulled = false;   // kemikle oynayan mesh'in sınır kutusu yanlış kalır
+      if (!o.geometry.attributes.normal) o.geometry.computeVertexNormals();   // ışıksız modellerde yüzey yönü yok: ışıkta simsiyah kalırdı
+    });
+    MODELS[name] = { scene: gl.scene, clips, box: name.startsWith('canavar_') ? skinnedBox(gl.scene) : new THREE.Box3().setFromObject(gl.scene) };
   }, err => console.warn('model açılamadı:', name, err));
 }
 (function loadModels() {
@@ -35,14 +57,18 @@ function modelInstance(name, height, opts = {}) {
   const src = MODELS[name]; if (!src) return null;
   const obj = THREE.SkeletonUtils.clone(src.scene);
   const k = height / Math.max(.01, src.box.max.y - src.box.min.y);
-  const root = new THREE.Group(); root.add(obj);
+  const root = new THREE.Group(), piv = new THREE.Group(); root.add(piv); piv.add(obj);
   obj.scale.multiplyScalar(k); obj.position.y = -src.box.min.y * k;
+  if (name.startsWith('canavar_')) { const c = src.box.getCenter(new THREE.Vector3()); obj.position.x = -c.x * k; obj.position.z = -c.z * k; }   // ortalanır
+  if (opts.rotY) piv.rotation.y = opts.rotY;   // modelin baktığı yön oyununkiyle (+z) aynı değilse
   const mats = [], bones = {};
   obj.traverse(o => {
     if (o.isBone) bones[o.name] = o;
     if (!o.isMesh) return;
     const list = (Array.isArray(o.material) ? o.material : [o.material]).map(m => {
-      const c = m.clone();
+      let c = m.clone();
+      // ışıksız (unlit) malzeme sahnenin ışığını ve vuruş parlamasını almaz: Standard'a çevrilir
+      if (!c.emissive) c = new THREE.MeshStandardMaterial({ map: m.map, color: m.color, transparent: m.transparent, opacity: m.opacity, alphaTest: m.alphaTest, side: m.side, skinning: !!o.isSkinnedMesh, roughness: .85, name: m.name });
       if (opts.tint && opts.tint[m.name] !== undefined) c.color.setHex(opts.tint[m.name]);
       if (opts.rough !== undefined) c.roughness = opts.rough;
       c.userData.baseEmissive = new THREE.Color(opts.glow || 0);
@@ -77,3 +103,8 @@ function boneWorld(mi, names, out) {
   for (const n of names) if (mi.bones[n]) return mi.bones[n].getWorldPosition(out);
   return null;
 }
+
+// Sketchfab canavarları (CC-BY, kaynaklar modeller/KAYNAK.md): açılıştan birkaç saniye sonra arka planda yüklenir;
+// gelmeden doğan düşman eski modelle görünür
+const CANAVAR_MODELLER = ['canavar_gulyabani', 'canavar_zombi', 'canavar_yokai', 'canavar_tazi', 'canavar_kabus', 'canavar_golem', 'canavar_kurt', 'canavar_ejderha', 'canavar_trol', 'canavar_ork'];
+setTimeout(() => { let i = 0; const next = () => { if (i < CANAVAR_MODELLER.length) { modelYukle(CANAVAR_MODELLER[i++]); setTimeout(next, 700); } }; next(); }, 3500);

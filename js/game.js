@@ -285,7 +285,7 @@ function updateRevive(dt) {
 // dalga n için boss türü: 10'larda Kasap / Ateş Lordu, 5'lerde Cellat / Cadı (sırayla)
 function waveBoss(n) {
   if (n % 10 === 0) return (n / 10) % 2 === 1 ? 'boss' : 'lord';
-  if (n % 10 === 5) return Math.floor(n / 10) % 2 === 0 ? 'cellat' : 'witch';
+  if (n % 10 === 5) return ['cellat', 'witch', 'kurt'][Math.floor(n / 10) % 3];
   return null;
 }
 const WAVE_POOL = [ // [tür, ilk dalga, ağırlık]

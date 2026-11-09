@@ -16,13 +16,16 @@ const TYPES = {
   cellat: { hp: 75, speed: 4.4, r: .9, scale: 2.0, skin: 0x2a2420, dmg: 22, reach: 3.8, wind: .6, score: 2000, xp: 120, orbs: 10, ammoChance: 1, pitch: .5, mini: true },
   witch: { hp: 60, speed: 4.6, r: .6, scale: 1.35, skin: 0x3a2a40, dmg: 12, reach: 2, wind: .5, score: 1800, xp: 110, orbs: 8, ammoChance: 1, pitch: 1.4, mini: true, flying: true, hover: 1.7 },
   // büyük bosslar: her 10 dalgada sırayla Kasap ve Ateş Lordu
+  // ara boss: kurtadam (Sketchfab modeli), cellat ve cadıyla sırayla gelir
+  kurt: { hp: 70, speed: 5.6, r: .8, scale: 1.7, skin: 0x3a2e26, dmg: 20, reach: 3.2, wind: .45, score: 2000, xp: 120, orbs: 10, ammoChance: 1, pitch: .6, mini: true },
   lord: { hp: 210, speed: 2.6, r: 1.0, scale: 2.4, skin: 0x4a1a08, dmg: 24, reach: 4, wind: .7, score: 6000, xp: 300, orbs: 14, ammoChance: 1, pitch: .45 },
 };
 const BOSS_INFO = {
   boss: { name: 'KASAP', stages: [.66, .33], adds: [null, 'brute', 'runner'] },
-  lord: { name: 'ATEŞ LORDU', stages: [.66, .33], adds: [null, 'imp', 'imp'] },
-  cellat: { name: 'CELLAT', stages: [.5], adds: [null, 'runner'] },
+  lord: { name: 'KEMİK EJDERİ', stages: [.66, .33], adds: [null, 'imp', 'imp'] },
+  cellat: { name: 'DAĞ TROLÜ', stages: [.5], adds: [null, 'runner'] },
   witch: { name: 'CADI', stages: [.5], adds: [null, 'flyer'] },
+  kurt: { name: 'KURTADAM', stages: [.5], adds: [null, 'runner'] },
 };
 const isBossKind = k => !!BOSS_INFO[k];
 const isBigBoss = k => k === 'boss' || k === 'lord';
@@ -79,7 +82,7 @@ const enemies = [];
 let nextEnemyId = 1;
 const enemyById = id => enemies.find(e => e.id === id);
 function bm(hx, hy, hz, mat) { const m = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, hy * 2, hz * 2), mat); m.userData.he = new V3(hx, hy, hz); return m; }
-function buildModel(kind, skin) {
+function buildModel(kind, skin, id = 0) {
   const g = new THREE.Group(), parts = [];
   const legs = [], arms = [];
   const spiky = kind === 'brute' || kind === 'boss';
@@ -158,10 +161,10 @@ function buildModel(kind, skin) {
     const edge = new THREE.Mesh(new THREE.BoxGeometry(.045, .55, .04), coreMat); edge.position.set(0, -.25, .38); cleaver.add(edge);
   }
   // hazır model varsa kutular gizlenir ama yerinde kalır: ölünce et parçaları onların konumundan kopar
-  const cfg = ENEMY_GLB[kind], glb = cfg && modelInstance(cfg.m, cfg.h, cfg);
+  const cfg = enemyCfg(kind, id), glb = cfg && modelInstance(cfg.m, cfg.h, cfg);
   if (glb) {
     g.traverse(o => { if (o.isMesh) o.visible = false; });
-    for (const k of ['shield', 'cleaver']) {
+    for (const k of cfg.noExtras ? [] : ['shield', 'cleaver']) {
       const x = extra[k] || (k === 'cleaver' && kind === 'cellat' && arms[1].children.find(c => c.isGroup));
       if (!x) continue;
       x.parent.remove(x); g.add(x); x.traverse(o => { o.visible = true; }); extra[k] = x;
@@ -186,6 +189,23 @@ const ENEMY_GLB = {
   witch: { m: 'cadi', h: 1.95, gib: 0x2a1040, fly: true, atk: ['Punch_Right'] },
   lord: { m: 'seytan', h: 2.1, gib: 0x5a0a04, atk: ['Weapon', 'Punch'], glow: 0x3a0c00 },
 };
+// Sketchfab (CC-BY) canavarları: yüklendiyse bunlar kullanılır, gelmediyse yukarıdaki Quaternius modeli.
+// rotY: modelin baktığı yön; run/atk: klip adları (araclar/canavar-hazirla.mjs kısa adlara çevirdi)
+const ENEMY_GLB2 = {
+  grunt: [{ m: 'canavar_gulyabani', h: 1.8, gib: 0x5a6a3a, atk: ['Attack'], run: ['Walk'] }, { m: 'canavar_zombi', h: 1.8, gib: 0x5a7a30, atk: ['Attack'], run: ['Run'] }],
+  imp: [{ m: 'canavar_yokai', h: 1.4, gib: 0x6a120a, atk: ['Cast', 'Attack'], run: ['Run'] }],
+  runner: [{ m: 'canavar_tazi', h: 1.25, gib: 0x5a1a10, atk: ['Attack', 'Attack2'], run: ['Run'] }, { m: 'canavar_kabus', h: 1.5, gib: 0x6a2a20, atk: ['Attack2', 'Attack'], run: ['Run'] }],
+  brute: [{ m: 'canavar_golem', h: 2.0, gib: 0x6a6258, atk: ['Attack', 'Attack2'], run: ['Walk'] }],
+  boss: [{ m: 'canavar_ork', h: 2.1, gib: 0x3a5a20, atk: ['Attack', 'Slam'], run: ['Run'], glow: 0x0a0300 }],
+  cellat: [{ m: 'canavar_trol', h: 2.1, gib: 0x5a6a50, atk: ['Attack', 'Attack2'], run: ['Run'], noExtras: true }],
+  kurt: [{ m: 'canavar_kurt', h: 2.0, gib: 0x3a2e26, atk: ['Attack', 'Attack2'], run: ['Walk'] }],
+  lord: [{ m: 'canavar_ejderha', h: 2.4, gib: 0x8a8070, atk: ['Cast', 'Attack'], run: ['Walk'], glow: 0x1a0600 }],
+};
+// bu düşman için kullanılacak model ayarı: yüklü yeni modellerden biri (kimliğe göre: host ve katılanlarda aynı), yoksa eski model
+function enemyCfg(kind, id = 0) {
+  const list = (ENEMY_GLB2[kind] || []).filter(c => MODELS[c.m]);
+  return list.length ? list[id % list.length] : ENEMY_GLB[kind];
+}
 const CLIP = {
   idle: ['Idle', 'Skeleton_Idle', 'Bat_Flying'],
   walk: ['Walk', 'Skeleton_Running', 'Bat_Flying'],
@@ -216,7 +236,7 @@ function animateGlb(e, dt, speedNow, s, flinch) {
   } else if (s.charging || speedNow > 3.2 * sc) {
     playClip(mi, cfg.run || CLIP.run, { speed: clamp(speedNow / (4.2 * sc), .8, 1.8) });
   } else if (speedNow > .5) {
-    playClip(mi, CLIP.walk, { speed: clamp(speedNow / (1.8 * sc), .7, 1.6) });
+    playClip(mi, cfg.walk || CLIP.walk, { speed: clamp(speedNow / (1.8 * sc), .7, 1.6) });
   } else playClip(mi, CLIP.idle);
   e.glbAtk = attacking;
   mi.root.rotation.x = -flinch * (isBossKind(e.kind) ? .08 : .25);
@@ -240,17 +260,17 @@ const spawnFxMat = new THREE.MeshBasicMaterial({ color: 0xff2a10, transparent: t
 function makeEnemy(id, kind, x, y, z, remote) {
   const T = TYPES[kind];
   // hazır model yüklüyse et parçaları modelin rengini alır
-  const gib = MODELS[(ENEMY_GLB[kind] || {}).m] && ENEMY_GLB[kind].gib;
+  const gcfg = enemyCfg(kind, id), gib = gcfg && MODELS[gcfg.m] && gcfg.gib;
   const skin = new THREE.MeshStandardMaterial({ color: gib || T.skin, roughness: .78, metalness: .05 });
-  const model = buildModel(kind, skin); model.g.scale.setScalar(T.scale); scene.add(model.g);
+  const model = buildModel(kind, skin, id); model.g.scale.setScalar(T.scale); scene.add(model.g);
   const body = remote
     ? new CANNON.Body({ mass: 0, type: CANNON.Body.KINEMATIC, material: mChar, collisionFilterGroup: G_ENEMY, collisionFilterMask: G_PLAYER })
-    : new CANNON.Body({ mass: isBigBoss(kind) ? 3000 : kind === 'cellat' ? 900 : 60 * T.scale * T.scale, material: mChar, fixedRotation: true, collisionFilterGroup: G_ENEMY, collisionFilterMask: T.flying ? G_STATIC | G_ENEMY : G_STATIC | G_PLAYER | G_ENEMY });
+    : new CANNON.Body({ mass: isBigBoss(kind) ? 3000 : kind === 'cellat' || kind === 'kurt' ? 900 : 60 * T.scale * T.scale, material: mChar, fixedRotation: true, collisionFilterGroup: G_ENEMY, collisionFilterMask: T.flying ? G_STATIC | G_ENEMY : G_STATIC | G_PLAYER | G_ENEMY });
   body.addShape(new CANNON.Sphere(T.r)); body.allowSleep = false; body.updateMassProperties();
   body.position.set(x, y, z); world.addBody(body);
   const e = { id, kind, T, model, body, skin, hp: T.hp, maxHp: T.hp, r: T.r, remote: !!remote, atkCd: rand(.5, 1.5), windup: 0, stun: 0, flash: 0, phase: Math.random() * 6, strafe: Math.random() < .5 ? 1 : -1, shootT: rand(1.5, 3), charge: 0, chargeCd: rand(2, 4), chargeDir: new V3(), stuckT: 0, sideT: 0, kicked: 0, kickBy: null, prevSpeed: 0, act: null, bossCd: 2, raged: false, net: { x, y, z, ry: 0, fl: 0, act: null } };
   enemies.push(e);
-  const big = kind === 'boss' ? 2.5 : kind === 'cellat' ? 1.8 : 1;
+  const big = kind === 'boss' ? 2.5 : kind === 'cellat' || kind === 'kurt' ? 1.8 : 1;
   const fx = new THREE.Mesh(new THREE.CylinderGeometry(1.1 * big, 1.1 * big, 8, 16, 1, true), spawnFxMat.clone()); fx.position.set(x, 4, z); scene.add(fx);
   spawnFx.push({ m: fx, t: 0 });
   chips(new V3(x, .3, z), big > 1 ? 120 : 30, 1, .25, .05, big > 1 ? 9 : 5);

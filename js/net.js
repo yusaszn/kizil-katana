@@ -3,7 +3,7 @@
    düşmanlar, dalgalar ve boss host'ta çalışır, katılanlar görüntü alır ve vuruşlarını host'a gönderir. */
 
 const NET_PREFIX = 'kizilkatana-v1-';
-const GAME_VERSION = 31;   // host ve katılan aynı sürümde olmalı
+const GAME_VERSION = 32;   // host ve katılan aynı sürümde olmalı
 const MAX_PLAYERS = 4;
 // çok oyunculu: exe (file:), yerel sunucu ve GitHub Pages adresinde açık (claude.ai önizlemesinde WebRTC engelli)
 const MP_OK = location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.endsWith('github.io');
@@ -393,7 +393,7 @@ function updateNet(dt) {
     if (net.snapT <= 0) { net.snapT = .05; bcast(makeSnapshot()); }
   }
 }
-const KINDS = ['grunt', 'imp', 'brute', 'boss', 'runner', 'shielder', 'bomber', 'flyer', 'cellat', 'witch', 'lord'];
+const KINDS = ['grunt', 'imp', 'brute', 'boss', 'runner', 'shielder', 'bomber', 'flyer', 'cellat', 'witch', 'lord', 'kurt'];
 const ACTS = [null, 'swipe', 'charge', 'slam', 'volley', 'barrier', 'cleave', 'leap', 'summon', 'guard', 'pillar', 'meteor', 'teleport', 'ring', 'fireshield', 'burst'];
 function makeSnapshot() {
   const e = enemies.map(x => {
