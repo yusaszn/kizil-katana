@@ -72,3 +72,15 @@ dosyalarında gelir, ilk gerektiğinde yüklenir.
 | silah_katana.glb | Katana | "Dragon katana Oni koroshi" — Sky_Hunter | CC Attribution | https://sketchfab.com/3d-models/dragon-katana-oni-koroshi-778d3dfe4cc549dd93c9bdc5ad78a420 |
 | silah_makarov.glb | USP-S (susturuculu tabanca) | "Makarov PM" — TinoD2 | CC Attribution | https://sketchfab.com/3d-models/makarov-pm-dbf03ce95c834cb7b07edba799dcd46a |
 | silah_dokuzmm.glb | Tabanca | "9 mm" — reijin | Sketchfab Free Standard (oyunda kullanım serbest, tek başına dağıtılamaz) | https://sketchfab.com/3d-models/9-mm-5124e7fe60fb4d3ab62460609d23f365 |
+
+
+## Sketchfab karakterleri (kostüm)
+
+Kendi iskeletleri olan (Mixamo) karakterler. Oyunda görünmez bir kukla (standart iskelet) animasyonu ve silah
+tutuşunu yapar; `js/karakter.js` (extSetup / extPose) her karede kostümün kemiklerini kuklanınkilerle aynı yöne çevirir.
+
+| Dosya | Kostüm | Model — yapımcı | Lisans | Kaynak |
+|---|---|---|---|---|
+| kostum_ksk.glb | KSK Operatörü | "German KSK operator - rigged" — 42manako | CC Attribution | https://sketchfab.com/3d-models/german-ksk-operator-rigged-110daf3d1884412989e41dc95866c579 |
+| kostum_asker.glb | Piyade | "Army soldier Character" — joneborden123 | CC Attribution | https://sketchfab.com/3d-models/army-soldier-character-cc995450452744ec8f852d8bf5f335d6 |
+| kostum_futurist.glb | Öncü (Gelecek) | "Futuristic Soldier" — unlimitedstudio | CC Attribution | https://sketchfab.com/3d-models/futuristic-soldier-fa8424c793274645ad577ddca6fa0de7 |

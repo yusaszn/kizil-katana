@@ -65,6 +65,10 @@ const CHAR_COSTUMES = {
   golge: { name: 'GÖLGE', model: 'karakter', team: ['Green'], tint: { LightGreen: 0x0b0b0c, Brown: 0x0e0e10, Brown2: 0x0a0a0b, Black: 0x060606, Grey: 0x18181a, Hair: 0x0b0b0b, Eyebrows: 0x0b0b0b } },
   colkurdu: { name: 'ÇÖL KURDU', model: 'kostum_kukuleta', team: ['LightBrown'], tint: { Black: 0xa8916a, DarkBrown: 0x6e5a3e, Brown: 0x4a3a28, White: 0xd8cdb4 } },
   karakral: { name: 'KARA KRAL', model: 'kostum_kral', team: ['Blue'], tint: { Metal: 0x26262a, Metal_Dark: 0x101012, Beige: 0x1c1c20, DarkBrown: 0x121214, Hair_White: 0x2a2a2a } },
+  // Sketchfab karakterleri (CC-BY): kendi iskeletleri var, ext ile görünmez kukla iskeletin pozunu kopyalarlar
+  ksk: { name: 'KSK OPERATÖRÜ', model: 'kostum_ksk', ext: 'mixamo', team: [], tint: {} },
+  asker: { name: 'PİYADE', model: 'kostum_asker', ext: 'mixamo', team: [], tint: {} },
+  futurist: { name: 'ÖNCÜ (GELECEK)', model: 'kostum_futurist', ext: 'mixamo', team: [], tint: {} },
 };
 const COSTUME_LIST = Object.keys(CHAR_COSTUMES);
 const CHAR_SRCS = {};   // kostüm → { scene, clips, k: ölçek, minY: zemin }
@@ -74,6 +78,7 @@ function charSource(cs = 'std') {
   const base = MODELS.karakter, src = MODELS[def.model];
   if (!base) return null;
   if (!src) { modelYukle(def.model); return null; }
+  if (def.ext) return (CHAR_SRCS[cs] = { scene: base.scene, clips: base.clips, k: charSource().k, minY: charSource().minY, def, ext: src });   // kukla: standart iskelet
   src.scene.updateMatrixWorld(true);
   const box = new THREE.Box3(); src.scene.traverse(o => { if (o.isBone) box.expandByPoint(o.getWorldPosition(new V3())); });
   // kemikler başın tepesini değil boynu / kafa kökünü verir: gerçek boy kafa kökünden ~%9 fazla
@@ -119,7 +124,9 @@ function charInstance(color, cs = 'std') {
   const rest = []; obj.traverse(o => { if (o.isBone) rest.push([o, o.position.clone(), o.quaternion.clone(), o.scale.clone()]); });
   // 1. şahısta bacaklar kameraya yapışık oyuncu ışığıyla çok yakından aydınlanır: koyu kopyalar kullanılır
   for (const m of lower) { m.userData.mat3 = m.material; const list = (Array.isArray(m.material) ? m.material : [m.material]).map(x => { const c = x.clone(); c.color.multiplyScalar(.45); c.roughness = 1; c.envMapIntensity = 0; return c; }); m.userData.mat1 = Array.isArray(m.material) ? list : list[0]; }
-  return { root, obj, bones, mats, mixer, rest, upper, lower, footRel, src: S, clips: S.clips, actions: {}, cur: null, curName: '', oneShot: null, oneT: 0 };
+  const C = { root, obj, bones, mats, mixer, rest, upper, lower, footRel, src: S, clips: S.clips, actions: {}, cur: null, curName: '', oneShot: null, oneT: 0 };
+  if (S.ext) extSetup(C, S, color);
+  return C;
 }
 
 /* ================= SİLAHLAR (3. şahıs) ================= */
@@ -337,6 +344,7 @@ function animateCharAvatar(av, dt, s) {
     }
   }
   if (emEnv > 0 && !gun && !melee) poseEmote(av, s, emEnv, RIGHT, UPW, FWD);
+  if (C.ext) extPose(C.ext.pairs, C.ext.hips, C.root);
 }
 // lobi hareketleri: el sallama, dans. env: giriş / çıkış yumuşatması (0..1)
 function poseEmote(av, s, env, RIGHT, UPW, FWD) {
@@ -359,6 +367,7 @@ function poseEmote(av, s, env, RIGHT, UPW, FWD) {
 }
 // 1. şahısta yalnız bacaklar görünür: üst gövde ve baş ağları gizlenir (kamera içlerinden görünmesin)
 function legsOnlyMode(C, on) {
+  if (C.ext) C.ext.root.visible = !on;   // dış iskeletli kostüm: 1. şahısta gövde gizli (kamera kafanın içinde kalmasın)
   for (const m of C.upper) m.visible = !on;
   for (const m of C.lower) m.material = on ? m.userData.mat1 : m.userData.mat3;
 }
@@ -483,7 +492,10 @@ function spawnRagdoll(av, push) {
     const c = new CANNON.ConeTwistConstraint(P.rb, Ch.rb, { pivotA: toLocal(P.rb, jw), pivotB: toLocal(Ch.rb, jw), axisA: P.rb.vectorToLocalFrame(cd), axisB: new CANNON.Vec3(0, 1, 0), angle: cone, twistAngle: twist });
     world.addConstraint(c); cons.push(c);
   }
-  corpses.push({ holder, bones, parts: parts.filter(Boolean), cons, feet, t: 0 });
+  // dış iskeletli kostüm: cesedin kopyasındaki görünür model de kukla iskeleti izler
+  let ext = null;
+  if (C.ext) { const named = {}; body.traverse(o => { if (o.isBone) named[o.name] = o; }); ext = { pairs: C.ext.pairs.map(p => ({ s: named[p.s.name], d: named[p.d.name], K: p.K })).filter(p => p.s && p.d), hips: C.ext.hips && { s: named[C.ext.hips.s.name], d: named[C.ext.hips.d.name], sR: C.ext.hips.sR, dR: C.ext.hips.dR }, root: body }; }
+  corpses.push({ holder, bones, parts: parts.filter(Boolean), cons, feet, t: 0, ext });
   if (corpses.length > 6) removeCorpse(corpses[0]);
 }
 function removeCorpse(c) {
@@ -509,6 +521,7 @@ function updateRagdolls(dt) {
       }
       p.bone.updateMatrixWorld(true);
     }
+    if (c.ext) extPose(c.ext.pairs, c.ext.hips, c.ext.root);
     for (const f of c.feet) { const m = f.shin.matrixWorld.clone().multiply(f.rel); const p = new V3(), q = new THREE.Quaternion(), sc = new V3(); m.decompose(p, q, sc); f.foot.parent.updateMatrixWorld(true); f.foot.position.copy(p.applyMatrix4(f.foot.parent.matrixWorld.clone().invert())); f.foot.parent.getWorldQuaternion(_cq2); f.foot.quaternion.copy(_cq2.invert().multiply(q)); f.foot.updateMatrixWorld(true); }
     // 9 sn sonra fizik durur, 14 sn sonra yere gömülerek kaybolur
     if (c.t > 9 && !c.frozen) { c.frozen = true; for (const p of c.parts) p.rb.type = CANNON.Body.STATIC; }
@@ -535,4 +548,96 @@ function costumeLabel() { const b = $('costumeBtn'); if (b) b.textContent = 'KOS
 if ($('costumeBtn')) {
   $('costumeBtn').addEventListener('click', () => { setCostume(COSTUME_LIST[(COSTUME_LIST.indexOf(myCostume) + 1) % COSTUME_LIST.length]); costumeLabel(); if (typeof menuCam !== 'undefined') menuCam.focus = 5; });
   costumeLabel();
+}
+
+/* ================= DIŞ İSKELETLİ KOSTÜMLER (Sketchfab: Mixamo vb.) =================
+   Görünmez kukla (standart iskelet) animasyonu, silah tutuşunu (IK) ve ragdoll'u yapar; her karede kostümün kendi
+   kemikleri kuklanın kemikleriyle aynı dünya yönüne döndürülür. Dinlenme pozları farklıysa (A / T duruşu) her kemik
+   dinlenmede kuklanın kemiğiyle aynı yöne bakacak şekilde hizalanır (K sabiti). */
+const EXT_RIGS = {
+  mixamo: (() => {
+    const m = { Hips: 'Hips', Abdomen: 'Spine', Torso: 'Spine1', Chest: 'Spine2', Neck: 'Neck', Head: 'Head' };
+    for (const [sd, S] of [['L', 'Left'], ['R', 'Right']]) {
+      Object.assign(m, { ['Shoulder.' + sd]: S + 'Shoulder', ['UpperArm.' + sd]: S + 'Arm', ['LowerArm.' + sd]: S + 'ForeArm', ['Wrist.' + sd]: S + 'Hand', ['UpperLeg.' + sd]: S + 'UpLeg', ['LowerLeg.' + sd]: S + 'Leg', ['Foot.' + sd]: S + 'Foot' });
+      for (const f of ['Index', 'Middle', 'Ring', 'Pinky', 'Thumb']) for (let i = 1; i <= 3; i++) m[f + i + '.' + sd] = S + 'Hand' + f + i;
+    }
+    return m;
+  })(),
+  sovalye: (() => {
+    const m = { Hips: 'hips', Abdomen: 'spine', Chest: 'chest', Neck: 'neck', Head: 'head' };
+    for (const sd of ['L', 'R']) {
+      Object.assign(m, { ['Shoulder.' + sd]: sd + '_shoulder', ['UpperArm.' + sd]: sd + '_arm', ['LowerArm.' + sd]: sd + '_elbow', ['Wrist.' + sd]: sd + '_wrist', ['UpperLeg.' + sd]: sd + '_leg', ['LowerLeg.' + sd]: sd + '_knee', ['Foot.' + sd]: sd + '_anke' });
+      for (const [f, g] of [['Index', 'point'], ['Middle', 'middle'], ['Ring', 'ring'], ['Pinky', 'pink'], ['Thumb', 'thumb']]) for (let i = 1; i <= 3; i++) m[f + i + '.' + sd] = sd + '_' + g + i;
+    }
+    return m;
+  })(),
+};
+const _xq1 = new THREE.Quaternion(), _xq2 = new THREE.Quaternion(), _xv1 = new V3(), _xv2 = new V3();
+// kemik adı: GLTF yükleyicisi ':' gibi işaretleri siler, Sketchfab sona _sayı ekler ('mixamorig:Hips_01' → 'mixamorigHips_01')
+const extKey = n => n.replace(/_\d+$/, '');
+function extFind(bones, want) {
+  let hit = null;
+  for (const b of bones) { const k = extKey(b.name); if (k === want) return b; if (!hit && k.endsWith(want) && /[a-z0-9]$/i.test(k.slice(0, -want.length) || 'x')) hit = b; }
+  return hit;
+}
+function firstChildBone(b) { return b.children.find(c => c.isBone) || null; }
+function extSetup(C, S, color) {
+  const src = S.ext, def = S.def, rig = EXT_RIGS[def.ext];
+  if (!src.extBox) src.extBox = skinnedBox(src.scene);
+  const ext = THREE.SkeletonUtils.clone(src.scene), box = src.extBox, k = CHAR_H / Math.max(.01, box.max.y - box.min.y);
+  ext.scale.multiplyScalar(k); const c = box.getCenter(new V3());
+  ext.position.set(-c.x * k, -box.min.y * k, -c.z * k);
+  // takım rengi: en çok kullanılan (gövde) malzemesi takım rengine boyanır
+  const use = {}; ext.traverse(o => { if (o.isMesh) { o.frustumCulled = false; const n = o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count; use[o.material.name] = (use[o.material.name] || 0) + n; } });
+  const main = def.team.length ? def.team : [Object.entries(use).sort((a, b) => b[1] - a[1])[0][0]];
+  const mats = {};
+  ext.traverse(o => { if (!o.isMesh) return; const key = main.includes(o.material.name) ? '__team' : o.material.name; if (!mats[key]) { mats[key] = o.material.clone(); if (key === '__team') mats[key].color.setHex(color); } o.material = mats[key]; });
+  C.mats.__team = mats.__team;
+  C.root.add(ext);
+  for (const m of [...C.upper, ...C.lower]) m.visible = false;   // kukla görünmez
+  C.upper = []; C.lower = [];
+  C.root.updateMatrixWorld(true);
+  const dBones = []; ext.traverse(o => { if (o.isBone) dBones.push(o); });
+  // yön: kostümün kalçasının sağ-sol ekseni kuklanınkiyle aynı olsun (bazı modeller ters ya da yana bakar)
+  // (ayaktan parmak ucuna uzanan vektör: sağ / sol adları ters etiketlenmiş modellerde de doğru çalışır)
+  { const sl = C.bones['Foot.L'], sr = sl && firstChildBone(sl), dl = extFind(dBones, rig['Foot.L']), dr = dl && firstChildBone(dl);
+    if (sl && sr && dl && dr) {
+      const a = wpos(sr, new V3()).sub(wpos(sl, new V3())), b = wpos(dr, new V3()).sub(wpos(dl, new V3()));
+      const yaw = Math.atan2(a.x, a.z) - Math.atan2(b.x, b.z);
+      if (Math.abs(yaw) > .05) { const pv = new THREE.Group(); C.root.add(pv); pv.add(ext); pv.rotation.y = yaw; C.root.updateMatrixWorld(true); }
+    } }
+  const depth = o => { let n = 0; while (o.parent) { n++; o = o.parent; } return n; };
+  const pairs = [];
+  for (const [sn, dn] of Object.entries(rig)) {
+    const sb = C.bones[sn], db = extFind(dBones, dn); if (!sb || !db) continue;
+    const sR = sb.getWorldQuaternion(new THREE.Quaternion()), dR = db.getWorldQuaternion(new THREE.Quaternion());
+    // dinlenmede iki kemiğin yönünü (çocuğa doğru) eşle
+    let al = new THREE.Quaternion();
+    const sc = firstChildBone(sb), dc = firstChildBone(db);
+    if (sc && dc && !/Foot|Wrist|Head|Neck/.test(sn)) {
+      const sd = wpos(sc, new V3()).sub(wpos(sb, new V3())), dd = wpos(dc, new V3()).sub(wpos(db, new V3()));
+      if (sd.lengthSq() > 1e-8 && dd.lengthSq() > 1e-8) al.setFromUnitVectors(dd.normalize(), sd.normalize());
+    }
+    const K = sR.clone().invert().multiply(al).multiply(dR);
+    pairs.push({ s: sb, d: db, K, dep: depth(db) });
+  }
+  pairs.sort((a, b) => a.dep - b.dep);
+  const hs = C.bones.Hips, hd = extFind(dBones, rig.Hips);
+  const hips = hs && hd ? { s: hs, d: hd, sR: C.root.worldToLocal(wpos(hs, new V3())), dR: C.root.worldToLocal(wpos(hd, new V3())) } : null;
+  C.ext = { root: ext, pairs, hips };
+}
+function extPose(pairs, hips, root) {
+  if (hips && hips.s && hips.d) {
+    root.updateMatrixWorld(true);
+    const now = root.worldToLocal(wpos(hips.s, _xv1));
+    const want = root.localToWorld(_xv2.copy(hips.dR).add(now.sub(hips.sR)));
+    hips.d.parent.updateWorldMatrix(true, false);
+    hips.d.position.copy(hips.d.parent.worldToLocal(want));
+  }
+  for (const p of pairs) {
+    p.s.getWorldQuaternion(_xq1).multiply(p.K);
+    p.d.parent.getWorldQuaternion(_xq2).invert();
+    p.d.quaternion.copy(_xq2.multiply(_xq1));
+    p.d.updateWorldMatrix(false, false);
+  }
 }
