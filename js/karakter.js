@@ -69,6 +69,10 @@ const CHAR_COSTUMES = {
   ksk: { name: 'KSK OPERATÖRÜ', model: 'kostum_ksk', ext: 'mixamo', team: [], tint: {} },
   asker: { name: 'PİYADE', model: 'kostum_asker', ext: 'mixamo', team: [], tint: {} },
   futurist: { name: 'ÖNCÜ (GELECEK)', model: 'kostum_futurist', ext: 'mixamo', team: [], tint: {} },
+  karasovalye: { name: 'KARA ŞÖVALYE', model: 'kostum_karasovalye', ext: 'mixamo', team: [], tint: {} },
+  valeria: { name: 'VALERIA (KILIÇ USTASI)', model: 'kostum_valeria', ext: 'mixamo', team: [], tint: {} },
+  spartali: { name: 'SPARTALI', model: 'kostum_spartali', ext: 'mixamo', team: [], tint: {} },
+  hayalet: { name: 'HAYALET ZIRH', model: 'kostum_hayalet', ext: 'mixamo', team: [], tint: {} },
 };
 const COSTUME_LIST = Object.keys(CHAR_COSTUMES);
 const CHAR_SRCS = {};   // kostüm → { scene, clips, k: ölçek, minY: zemin }
@@ -577,7 +581,7 @@ const _xq1 = new THREE.Quaternion(), _xq2 = new THREE.Quaternion(), _xv1 = new V
 const extKey = n => n.replace(/_\d+$/, '');
 function extFind(bones, want) {
   let hit = null;
-  for (const b of bones) { const k = extKey(b.name); if (k === want) return b; if (!hit && k.endsWith(want) && /[a-z0-9]$/i.test(k.slice(0, -want.length) || 'x')) hit = b; }
+  for (const b of bones) { const k = extKey(b.name); if (k === want) return b; if (!hit && k.endsWith(want) && /[a-z0-9_]$/i.test(k.slice(0, -want.length) || 'x')) hit = b; }
   return hit;
 }
 function firstChildBone(b) { return b.children.find(c => c.isBone) || null; }
@@ -598,7 +602,9 @@ function extSetup(C, S, color) {
   for (const m of [...C.upper, ...C.lower]) m.visible = false;   // kukla görünmez
   C.upper = []; C.lower = [];
   C.root.updateMatrixWorld(true);
-  const dBones = []; ext.traverse(o => { if (o.isBone) dBones.push(o); });
+  // yalnız ağlarda gerçekten kullanılan iskelet(ler): bazı modellerde boşta duran ikinci bir iskelet var
+  const dSet = new Set(); ext.traverse(o => { if (o.isSkinnedMesh) for (const b of o.skeleton.bones) if (b) dSet.add(b); });
+  const dBones = []; ext.traverse(o => { if (o.isBone && dSet.has(o)) dBones.push(o); });
   // yön: kostümün kalçasının sağ-sol ekseni kuklanınkiyle aynı olsun (bazı modeller ters ya da yana bakar)
   // (ayaktan parmak ucuna uzanan vektör: sağ / sol adları ters etiketlenmiş modellerde de doğru çalışır)
   { const sl = C.bones['Foot.L'], sr = sl && firstChildBone(sl), dl = extFind(dBones, rig['Foot.L']), dr = dl && firstChildBone(dl);

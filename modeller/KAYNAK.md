@@ -84,3 +84,7 @@ tutuşunu yapar; `js/karakter.js` (extSetup / extPose) her karede kostümün kem
 | kostum_ksk.glb | KSK Operatörü | "German KSK operator - rigged" — 42manako | CC Attribution | https://sketchfab.com/3d-models/german-ksk-operator-rigged-110daf3d1884412989e41dc95866c579 |
 | kostum_asker.glb | Piyade | "Army soldier Character" — joneborden123 | CC Attribution | https://sketchfab.com/3d-models/army-soldier-character-cc995450452744ec8f852d8bf5f335d6 |
 | kostum_futurist.glb | Öncü (Gelecek) | "Futuristic Soldier" — unlimitedstudio | CC Attribution | https://sketchfab.com/3d-models/futuristic-soldier-fa8424c793274645ad577ddca6fa0de7 |
+| kostum_karasovalye.glb | Kara Şövalye | "Low Poly Dark Knight (Mixamo Rigged)" — giorgi.abashidze95 | CC Attribution | https://sketchfab.com/3d-models/low-poly-dark-knight-mixamo-rigged-7f59a7b0e952457c9102cd65fe485f09 |
+| kostum_valeria.glb | Valeria (Kılıç Ustası) | "Valeria Stormblade - Low-Poly Female Warrior" — limitlessstudiosservice | CC Attribution | https://sketchfab.com/3d-models/valeria-stormblade-low-poly-female-warrior-55c2a18bc2b94ba69a1bb8e6fdbbed46 |
+| kostum_spartali.glb | Spartalı | "Low poly - Spartan Soldier" — MariosTzavis | CC Attribution | https://sketchfab.com/3d-models/low-poly-spartan-soldier-2c2f5c6e24254636ad75f88d5a0282d9 |
+| kostum_hayalet.glb | Hayalet Zırh | "Phantom Armor" — Guicos | CC Attribution | https://sketchfab.com/3d-models/phantom-armor-52b6bade1bc04f56ae27222bf1548705 |
