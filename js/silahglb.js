@@ -2,11 +2,13 @@
 /* Sketchfab silah modelleri (CC-BY, kaynaklar modeller/KAYNAK.md). js/silah-<ad>.js ilk gerektiğinde yüklenir;
    gelince o silahın bütün kopyalarında (1. şahıs, 3. şahıs, Atölye) çizim parçaları gizlenir, eller ve namlu alevi
    kalır, model eski silahın boyuna ve yerine oturtulur. Kızak / şarjör ayrı parçaysa animasyon gruplarına bağlanır
-   (geri tepme ve şarjör değiştirme çalışmaya devam eder). rotY: modelin namlusu -z'ye baksın diye döndürme. */
+   (geri tepme ve şarjör değiştirme çalışmaya devam eder). rotY: modelin namlusu -z'ye baksın diye döndürme (rotZ: modelin kendi eğimi). */
 const SILAH_GLB = {
   usps: { m: 'silah_makarov', gm: 'usps', rotY: Math.PI },
   pistol: { m: 'silah_dokuzmm', gm: 'beretta', rotY: 0, slide: /slide/i },
   ak47: { m: 'silah_ak12', gm: 'ak', rotY: Math.PI / 2 },
+  knife: { m: 'silah_bicak', gm: 'knife', rotY: Math.PI / 2, rotZ: -.41, rotX: Math.PI / 2 },   // model 23° eğik, ucu +x, yassı yatıyor
+  karambit: { m: 'silah_karambit', gm: 'karambit', rotY: 0 },
 };
 const silahKayit = [];
 for (const [key, cfg] of Object.entries(SILAH_GLB)) {
@@ -30,7 +32,7 @@ function silahUygula(r) {
     box.union(_sgB.copy(o.geometry.boundingBox).applyMatrix4(_sgM.multiplyMatrices(inv, o.matrixWorld)));
     o.visible = false;
   });
-  const obj = M.scene.clone(true), piv = new THREE.Group(); piv.add(obj); piv.rotation.y = cfg.rotY || 0;
+  const obj = M.scene.clone(true), piv = new THREE.Group(); piv.add(obj); piv.rotation.set(cfg.rotX || 0, cfg.rotY || 0, cfg.rotZ || 0, 'YXZ');   // önce z (eğim), sonra x (uzun eksen etrafında), sonra y (yön)
   obj.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); if (o.material.metalness > .3 && typeof envTex !== 'undefined') { o.material.envMap = envTex; o.material.envMapIntensity = .7; } } });
   piv.updateMatrixWorld(true);
   const gb = new THREE.Box3().setFromObject(piv), sz = box.getSize(new V3()), gs = gb.getSize(new V3());

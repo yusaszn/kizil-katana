@@ -89,3 +89,5 @@ tutuşunu yapar; `js/karakter.js` (extSetup / extPose) her karede kostümün kem
 | kostum_spartali.glb | Spartalı | "Low poly - Spartan Soldier" — MariosTzavis | CC Attribution | https://sketchfab.com/3d-models/low-poly-spartan-soldier-2c2f5c6e24254636ad75f88d5a0282d9 |
 | kostum_hayalet.glb | Hayalet Zırh | "Phantom Armor" — Guicos | CC Attribution | https://sketchfab.com/3d-models/phantom-armor-52b6bade1bc04f56ae27222bf1548705 |
 | silah_ak12.glb | AK-47 (AK-12 görünümü) | "AK-12" — rwroclav | CC Attribution | https://sketchfab.com/3d-models/ak-12-f78ad7ae10ad4335b3ad81be3ec15bb0 |
+| silah_karambit.glb | Karambit | "Karambit" — Diamonddogkz | CC Attribution | https://sketchfab.com/3d-models/karambit-dfd7606f189a413681305a39b8841ce8 |
+| silah_bicak.glb | Bıçak (kollar atıldı) | "knife Animated" — bumstrum | CC Attribution | https://sketchfab.com/3d-models/knife-animated-f3140db917cc43389c14b5b2536c1dc8 |
