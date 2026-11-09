@@ -27,3 +27,15 @@ Poly Pizza üzerinden indirildi; `araclar/modelleri-kucult.mjs` kullanılmayan a
 `karakter.glb`: Quaternius "Adventurer" (CC0 1.0, kamu malı), `@netforge/asset-library-files` npm paketindeki
 `library/lowpoly/adventurer.glb` kopyasından. `araclar/karakteri-hazirla.mjs` sıkıştırmayı açar, sırt çantasını ve
 kullanılmayan animasyonları atar. Gömlek takım rengine boyanır, kollar ters kinematikle silahları tutar (js/karakter.js).
+
+## Kostümler
+
+Oyuncu karakteriyle aynı 62 kemikli iskeleti kullanan Quaternius (CC0 1.0) karakterleri, `@netforge/asset-library-files`
+npm paketinden (`library/lowpoly/hooded_adventurer.glb`, `library/lowpoly/monarch.glb`). `araclar/kostumleri-hazirla.mjs`
+animasyonları (oyunda karakter.glb'ninkiler kullanılır) ve modele gömülü kılıcı atar. `araclar/modelleri-paketle.py`
+kostümleri ayrı `js/kostum-<ad>.js` dosyalarına yazar: açılışta değil, biri o kostümü giyince yüklenir.
+
+| Dosya | Kostüm |
+|---|---|
+| kostum_kukuleta.glb | Kukuletalı Suikastçı, Çöl Kurdu (renk sürümü) |
+| kostum_kral.glb | Kral, Kara Kral (renk sürümü) |

@@ -378,7 +378,7 @@ function onGuestData(d) {
 function myState() {
   const b = player.body.position, v = player.body.velocity;
   const lob = state === 'lobby';
-  return { t: 'ps', id: net.myId, name: playerName(), p: arr(b), v: [r2(v.x), r2(v.z)], yaw: r2(player.yaw), pitch: r2(player.pitch), w: lob ? 'none' : wpn.cur, st: lob && lobby.sit >= 0 ? lobby.sit + 1 : 0, em: lob ? lobby.emote : '', b: block.on ? 1 : 0, a: player.alive ? 1 : 0, sw: netFx.sw, sh: netFx.sh, hp: Math.ceil(player.hp), lv: prog.lv, k: kills, s: score, rv: r2(revive.p), c: r2(player.crouchK), sl: player.slideT > 0 ? 1 : 0, su: !lob && AP_CLS[wpn.cur] && A(wpn.cur).silent ? 1 : 0, ax: lob ? '' : apNetCode(wpn.cur), kc: netFx.kc || 0, ft: netFx.ft ? 1 : 0, pk: picksLeft(), dt: vs.deaths, cr: eco.cr, rd: eco.ready ? 1 : 0 };
+  return { t: 'ps', id: net.myId, name: playerName(), p: arr(b), v: [r2(v.x), r2(v.z)], yaw: r2(player.yaw), pitch: r2(player.pitch), w: lob ? 'none' : wpn.cur, st: lob && lobby.sit >= 0 ? lobby.sit + 1 : 0, em: lob ? lobby.emote : '', b: block.on ? 1 : 0, a: player.alive ? 1 : 0, sw: netFx.sw, sh: netFx.sh, hp: Math.ceil(player.hp), lv: prog.lv, k: kills, s: score, rv: r2(revive.p), c: r2(player.crouchK), sl: player.slideT > 0 ? 1 : 0, su: !lob && AP_CLS[wpn.cur] && A(wpn.cur).silent ? 1 : 0, ax: lob ? '' : apNetCode(wpn.cur), cs: myCostume, kc: netFx.kc || 0, ft: netFx.ft ? 1 : 0, pk: picksLeft(), dt: vs.deaths, cr: eco.cr, rd: eco.ready ? 1 : 0 };
 }
 function updateNet(dt) {
   if (net.mode === 'solo' || (!net.inMatch && state !== 'lobby')) return;
@@ -453,7 +453,7 @@ function applyPlayerState(id, d, self) {
   const pr = p.proxy || makeProxy(id);
   if (pr.name !== d.name && d.name) { pr.name = d.name; p.name = d.name; pr.g.remove(pr.label); pr.label = nameSprite(d.name, p.color); pr.label.position.y = 2.25; pr.g.add(pr.label); }
   pr.tgt.set(d.p[0], d.p[1], d.p[2]); pr.vel.set(d.v[0], 0, d.v[1]);
-  pr.tyaw = d.yaw; pr.pitch = d.pitch; pr.w = d.w; pr.block = d.b; pr.rv = d.rv || 0; pr.c = d.c || 0; pr.sl = d.sl || 0; pr.su = d.su || 0; pr.ax = String(d.ax || '').slice(0, 80);
+  pr.tyaw = d.yaw; pr.pitch = d.pitch; pr.w = d.w; pr.block = d.b; pr.rv = d.rv || 0; pr.c = d.c || 0; pr.sl = d.sl || 0; pr.su = d.su || 0; pr.ax = String(d.ax || '').slice(0, 80); pr.cs = CHAR_COSTUMES[d.cs] ? d.cs : 'std';
   pr.st = d.st || 0; const em = d.em || ''; if (em !== (pr.em || '')) { pr.em = em; pr.emT = 0; }
   if (pr.sw >= 0 && d.sw !== pr.sw) pr.swingT = .25;
   if (pr.sh >= 0 && d.sh > pr.sh) remoteShots(pr, Math.min(3, d.sh - pr.sh), d.ft);
@@ -501,7 +501,7 @@ function updateProxies(dt) {
       if (pr.teamSet !== p.team) { pr.teamSet = p.team; pr.cloth.color.setHex(TEAMS[p.team].color); if (pr.label) { pr.label.material.depthTest = p.team !== myTeam(); } }
       pr.g.visible = p.alive && performance.now() - (pr.deadAt || 0) > 1500;
     }
-    animateAvatar(pr, dt, Object.assign({ x: pr.pos.x, y: pr.pos.y, z: pr.pos.z, yaw: pr.yaw, pitch: pr.pitch, speed: sp, w: pr.w, ax: pr.ax || '', block: pr.block, alive: p.alive, crouch: pr.c, slide: pr.sl, swing: pr.swingT > 0, kick: pr.kickT > 0 }, lob ? lobbyProxyPose(pr, dt) : null));
+    animateAvatar(pr, dt, Object.assign({ x: pr.pos.x, y: pr.pos.y, z: pr.pos.z, yaw: pr.yaw, pitch: pr.pitch, speed: sp, w: pr.w, ax: pr.ax || '', cs: pr.cs || 'std', block: pr.block, alive: p.alive, crouch: pr.c, slide: pr.sl, swing: pr.swingT > 0, kick: pr.kickT > 0 }, lob ? lobbyProxyPose(pr, dt) : null));
   }
 }
 function checkAllDead() {

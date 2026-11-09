@@ -4,20 +4,30 @@
    Yükleme açılışta arka planda biter; bitmeden doğan düşman eski kutu modeliyle görünür. */
 
 const MODELS = {};   // ad → { scene, clips: { kısaAd: AnimationClip }, box }
+function modelParse(name, b64) {
+  if (!THREE.GLTFLoader) return;
+  const bin = atob(b64), buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  new THREE.GLTFLoader().parse(buf.buffer, '', gl => {
+    const clips = {};
+    for (const c of gl.animations) clips[c.name] = c;
+    gl.scene.traverse(o => { if (o.isMesh) o.frustumCulled = false; });   // kemikle oynayan mesh'in sınır kutusu yanlış kalır
+    MODELS[name] = { scene: gl.scene, clips, box: new THREE.Box3().setFromObject(gl.scene) };
+  }, err => console.warn('model açılamadı:', name, err));
+}
 (function loadModels() {
   if (typeof MODEL_DATA === 'undefined' || !THREE.GLTFLoader) { console.warn('3D modeller yüklenemedi'); return; }
-  const loader = new THREE.GLTFLoader();
-  for (const [name, b64] of Object.entries(MODEL_DATA)) {
-    const bin = atob(b64), buf = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-    loader.parse(buf.buffer, '', gl => {
-      const clips = {};
-      for (const c of gl.animations) clips[c.name] = c;
-      gl.scene.traverse(o => { if (o.isMesh) o.frustumCulled = false; });   // kemikle oynayan mesh'in sınır kutusu yanlış kalır
-      MODELS[name] = { scene: gl.scene, clips, box: new THREE.Box3().setFromObject(gl.scene) };
-    }, err => console.warn('model açılamadı:', name, err));
-  }
+  for (const [name, b64] of Object.entries(MODEL_DATA)) modelParse(name, b64);
 })();
+// sonradan yüklenen modeller (kostümler): js/kostum-<ad>.js script olarak eklenir, içi MODEL_EK çağırır (file:// ile de çalışır)
+function MODEL_EK(name, b64) { modelParse(name, b64); }
+const modelScripts = {};
+function modelYukle(name) {
+  if (MODELS[name] || modelScripts[name]) return;
+  const el = document.createElement('script'); el.src = 'js/' + name.replace('_', '-') + '.js'; el.async = true;
+  el.onerror = () => console.warn('model dosyası yüklenemedi:', name);
+  modelScripts[name] = el; document.head.appendChild(el);
+}
 
 // Modelin canlı bir kopyası: ayak hizası 0'da, boyu `height`. Malzemeler kopyalanır ki her karakter ayrı parlayabilsin.
 // tint: { malzemeAdı: renk } ile renk değiştirilir; glow: tüm malzemelere hafif kendi ışığı.

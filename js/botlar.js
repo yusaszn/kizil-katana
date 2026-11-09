@@ -21,7 +21,7 @@ function addBot() {
   const id = 'b' + (++bots.seq);
   addPlayer(id, 'BOT ' + BOT_NAMES[(bots.seq - 1) % BOT_NAMES.length], null);
   const p = net.players[id]; p.bot = true; p.rd = 1;
-  const b = { id, p, pos: new V3(0, .5, 0), yaw: 0, pitch: 0, vel: new V3(), hp: 100, path: [], repathT: 0, tgt: null, react: 0, burst: 0, pause: 0, cd: 0, sh: 0, respawnT: 0,
+  const b = { id, p, cs: COSTUME_LIST[Math.random() * COSTUME_LIST.length | 0], pos: new V3(0, .5, 0), yaw: 0, pitch: 0, vel: new V3(), hp: 100, path: [], repathT: 0, tgt: null, react: 0, burst: 0, pause: 0, cd: 0, sh: 0, respawnT: 0,
     w: botWeapon(), skill: .45 + Math.random() * .35, stuckT: 0, lastPos: new V3(), kills: 0, deaths: 0, aware: 0, awareYaw: 0 };
   bots.list.push(b);
   if (net.inMatch) botSpawn(b);
@@ -225,7 +225,7 @@ function updateBots(dt) {
   if (bots.sendT <= 0) { bots.sendT = .05; for (const b of bots.list) botSend(b); }
 }
 function botSend(b) {
-  const st = { t: 'ps', id: b.id, name: b.p.name, p: [r2(b.pos.x), r2(b.pos.y), r2(b.pos.z)], v: [r2(b.vel.x), r2(b.vel.z)], yaw: r2(b.yaw), pitch: r2(b.pitch), w: b.w, b: 0, a: b.p.alive ? 1 : 0, sw: 0, sh: b.sh, hp: Math.max(0, Math.ceil(b.hp)), lv: 1, k: b.kills, s: b.kills * 100, rv: 0, c: 0, sl: 0, kc: 0, ft: 0, pk: 0, dt: b.deaths, cr: 0, rd: 1, st: 0, em: '' };
+  const st = { t: 'ps', id: b.id, name: b.p.name, p: [r2(b.pos.x), r2(b.pos.y), r2(b.pos.z)], v: [r2(b.vel.x), r2(b.vel.z)], yaw: r2(b.yaw), pitch: r2(b.pitch), w: b.w, b: 0, a: b.p.alive ? 1 : 0, sw: 0, sh: b.sh, hp: Math.max(0, Math.ceil(b.hp)), lv: 1, k: b.kills, s: b.kills * 100, rv: 0, c: 0, sl: 0, kc: 0, ft: 0, pk: 0, dt: b.deaths, cr: 0, rd: 1, st: 0, em: '', cs: b.cs };
   applyPlayerState(b.id, st);
   bcast(st);
 }

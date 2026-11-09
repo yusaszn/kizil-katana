@@ -192,7 +192,7 @@ function lobbyMyAvatar(dt) {
   const b = player.body.position, v = player.body.velocity;
   myAvatar.g.visible = true;
   animateAvatar(myAvatar, dt, {
-    x: s ? s.x : b.x, y: s ? .5 : b.y, z: s ? s.z : b.z, yaw: s ? s.yaw : player.yaw, pitch: s ? player.pitch * .3 : player.pitch,
+    cs: myCostume, x: s ? s.x : b.x, y: s ? .5 : b.y, z: s ? s.z : b.z, yaw: s ? s.yaw : player.yaw, pitch: s ? player.pitch * .3 : player.pitch,
     speed: Math.hypot(v.x, v.z), w: 'none', alive: true, crouch: 0, slide: lobby.slideK, kick: lobby.kickT > 0, air: !s && !player.grounded && player.slideT <= 0, legsOnly: legs,
     sit: s ? s.y : 0, look: s ? clamp(angDiff(player.yaw, s.yaw), -1.3, 1.3) : 0, emote: lobby.emote, emoteT: lobby.emoteT,
   });
@@ -326,7 +326,7 @@ function updateMenuScene(dt) {
   }
   gameTime += dt;
   for (const f of venue.fx) f(dt, gameTime);
-  const sit = (av, s, look, col) => { av.g.visible = true; av.cloth.color.setHex(col); animateAvatar(av, dt, { x: s.x, y: .5, z: s.z, yaw: s.yaw, pitch: 0, speed: 0, w: 'none', alive: true, crouch: 0, slide: 0, air: false, sit: s.y, look, emote: '', emoteT: 0 }); };
+  const sit = (av, s, look, col) => { av.g.visible = true; av.cloth.color.setHex(col); animateAvatar(av, dt, { cs: av === myAvatar ? myCostume : 'std', x: s.x, y: .5, z: s.z, yaw: s.yaw, pitch: 0, speed: 0, w: 'none', alive: true, crouch: 0, slide: 0, air: false, sit: s.y, look, emote: '', emoteT: 0 }); };
   if (!myAvatar) myAvatar = buildAvatar(0xb3110d, '');
   sit(myAvatar, venue.seats[0], Math.sin(gameTime * .23) * .35, 0xb3110d);
   if (!menuCam.friend && charSource()) menuCam.friend = buildAvatar(0x2f6f8f, '');
@@ -336,6 +336,17 @@ function updateMenuScene(dt) {
   const a = Math.sin(menuCam.t) * .45, r = 6.4;
   camera.position.set(Math.sin(a) * r, 1.45 + Math.sin(menuCam.t * .7) * .12, Math.cos(a) * r);
   camera.lookAt(0, 1, -1.2); camera.rotateY(.34);
+  // kostüm seçerken kamera karaktere yaklaşır (birkaç saniye), sonra yavaşça geri çekilir
+  menuCam.focus = Math.max(0, (menuCam.focus || 0) - dt);
+  const fk = smooth(Math.min(1, menuCam.focus / .8));
+  menuCam.fk = (menuCam.fk || 0) + (fk - (menuCam.fk || 0)) * Math.min(1, dt * 3);
+  if (menuCam.fk > .001 && myAvatar) {
+    const s0 = venue.seats[0], fw = new V3(-Math.sin(s0.yaw), 0, -Math.cos(s0.yaw));
+    const cp = new V3(s0.x, 1.05, s0.z).addScaledVector(fw, 2.1).add(new V3(fw.z, 0, -fw.x).multiplyScalar(-.9));
+    camera.position.lerp(cp, menuCam.fk);
+    const q0 = camera.quaternion.clone(); camera.lookAt(s0.x, .85, s0.z); camera.rotateY(.42);
+    camera.quaternion.slerpQuaternions ? camera.quaternion.slerpQuaternions(q0, camera.quaternion.clone(), menuCam.fk) : THREE.Quaternion.slerp(q0, camera.quaternion.clone(), camera.quaternion, menuCam.fk);
+  }
   if (camera.fov !== 62) { camera.fov = 62; camera.updateProjectionMatrix(); }
   eyePos.copy(camera.position);
   lobbyAmbience(dt);

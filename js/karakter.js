@@ -55,20 +55,37 @@ function boneMap(obj) {
   obj.traverse(o => { if (!o.isBone) return; B[o.name] = o; const m = /^(.+?)([LR])$/.exec(o.name); if (m) B[m[1] + '.' + m[2]] = o; });
   return B;
 }
-let CHAR_SRC = null;   // { obj, clips, k: ölçek, foot: zemin }
-function charSource() {
-  if (CHAR_SRC || !MODELS.karakter) return CHAR_SRC;
-  const src = MODELS.karakter;
+/* KOSTÜMLER: aynı 62 kemikli iskeleti kullanan Quaternius (CC0) karakterleri. Animasyonlar hep karakter.glb'den gelir
+   (kemik adlarıyla bağlanır). team: takım rengine boyanan malzemeler (hepsi tek malzemede birleşir: av.cloth),
+   tint: sabit renk değişiklikleri. Standart dışındaki kostümler ilk giyildiğinde ayrı dosyadan yüklenir (js/kostum-<ad>.js). */
+const CHAR_COSTUMES = {
+  std: { name: 'SAVAŞÇI', model: 'karakter', team: ['Green'], tint: { LightGreen: 0x1c1c1d, Brown: 0x19191c, Brown2: 0x141416 } },
+  kukuleta: { name: 'KUKULETALI SUİKASTÇI', model: 'kostum_kukuleta', team: ['LightBrown'], tint: { Brown: 0x221a14, Brown2: 0x16110d, DarkBrown: 0x1a1410 } },
+  kral: { name: 'KRAL', model: 'kostum_kral', team: ['Blue'], tint: {} },
+  golge: { name: 'GÖLGE', model: 'karakter', team: ['Green'], tint: { LightGreen: 0x0b0b0c, Brown: 0x0e0e10, Brown2: 0x0a0a0b, Black: 0x060606, Grey: 0x18181a, Hair: 0x0b0b0b, Eyebrows: 0x0b0b0b } },
+  colkurdu: { name: 'ÇÖL KURDU', model: 'kostum_kukuleta', team: ['LightBrown'], tint: { Black: 0xa8916a, DarkBrown: 0x6e5a3e, Brown: 0x4a3a28, White: 0xd8cdb4 } },
+  karakral: { name: 'KARA KRAL', model: 'kostum_kral', team: ['Blue'], tint: { Metal: 0x26262a, Metal_Dark: 0x101012, Beige: 0x1c1c20, DarkBrown: 0x121214, Hair_White: 0x2a2a2a } },
+};
+const COSTUME_LIST = Object.keys(CHAR_COSTUMES);
+const CHAR_SRCS = {};   // kostüm → { scene, clips, k: ölçek, minY: zemin }
+function charSource(cs = 'std') {
+  const def = CHAR_COSTUMES[cs] || CHAR_COSTUMES.std;
+  if (CHAR_SRCS[cs]) return CHAR_SRCS[cs];
+  const base = MODELS.karakter, src = MODELS[def.model];
+  if (!base) return null;
+  if (!src) { modelYukle(def.model); return null; }
   src.scene.updateMatrixWorld(true);
   const box = new THREE.Box3(); src.scene.traverse(o => { if (o.isBone) box.expandByPoint(o.getWorldPosition(new V3())); });
   // kemikler başın tepesini değil boynu / kafa kökünü verir: gerçek boy kafa kökünden ~%9 fazla
   const h = (box.max.y - box.min.y) * 1.09;
-  CHAR_SRC = { scene: src.scene, clips: src.clips, k: CHAR_H / h, minY: box.min.y };
-  return CHAR_SRC;
+  return (CHAR_SRCS[cs] = { scene: src.scene, clips: base.clips, k: CHAR_H / h, minY: box.min.y, def });
 }
-const CHAR_PANTS = 0x19191c, CHAR_VEST = 0x1c1c1d;
-function charInstance(color) {
-  const S = charSource(); if (!S) return null;
+// kendi kostümüm (tarayıcıda saklanır)
+let myCostume = (() => { try { const c = localStorage.getItem('kk-kostum'); return CHAR_COSTUMES[c] ? c : 'std'; } catch (e) { return 'std'; } })();
+function setCostume(cs) { if (!CHAR_COSTUMES[cs]) return; myCostume = cs; try { localStorage.setItem('kk-kostum', cs); } catch (e) { /* bu oturumda geçerli */ } charSource(cs); }
+function charInstance(color, cs = 'std') {
+  const S = charSource(cs) || charSource(); if (!S) return null;
+  const def = S.def;
   const obj = THREE.SkeletonUtils.clone(S.scene);
   const root = new THREE.Group(); root.add(obj);
   obj.scale.multiplyScalar(S.k); obj.position.y = -S.minY * S.k;
@@ -79,14 +96,15 @@ function charInstance(color) {
     if (/Body|Head/.test(o.name + ' ' + (o.parent ? o.parent.name : ''))) upper.push(o); else lower.push(o);
     o.frustumCulled = false; o.castShadow = false;
     const list = (Array.isArray(o.material) ? o.material : [o.material]).map(m => {
-      if (!mats[m.name]) {
-        const c = mats[m.name] = m.clone();
-        if (m.name === 'Green') c.color.setHex(color);
-        if (m.name === 'LightGreen') c.color.setHex(CHAR_VEST);
-        if (m.name === 'Brown' || m.name === 'Brown2') { c.color.setHex(m.name === 'Brown' ? CHAR_PANTS : 0x141416); c.roughness = .95; }
+      // takım rengi alan malzemeler tek bir malzemede birleşir (av.cloth); diğerleri kostümün sabit renkleri
+      const key = def.team.includes(m.name) ? '__team' : m.name;
+      if (!mats[key]) {
+        const c = mats[key] = m.clone();
+        if (key === '__team') { c.color.setHex(color); c.name = 'team'; }
+        else if (def.tint[m.name] !== undefined) { c.color.setHex(def.tint[m.name]); c.roughness = .95; }
         c.roughness = Math.max(c.roughness, .7);
       }
-      return mats[m.name];
+      return mats[key];
     });
     o.material = Array.isArray(o.material) ? list : list[0];
   });
@@ -101,7 +119,7 @@ function charInstance(color) {
   const rest = []; obj.traverse(o => { if (o.isBone) rest.push([o, o.position.clone(), o.quaternion.clone(), o.scale.clone()]); });
   // 1. şahısta bacaklar kameraya yapışık oyuncu ışığıyla çok yakından aydınlanır: koyu kopyalar kullanılır
   for (const m of lower) { m.userData.mat3 = m.material; const list = (Array.isArray(m.material) ? m.material : [m.material]).map(x => { const c = x.clone(); c.color.multiplyScalar(.45); c.roughness = 1; c.envMapIntensity = 0; return c; }); m.userData.mat1 = Array.isArray(m.material) ? list : list[0]; }
-  return { root, obj, bones, mats, mixer, rest, upper, lower, footRel, clips: S.clips, actions: {}, cur: null, curName: '', oneShot: null, oneT: 0 };
+  return { root, obj, bones, mats, mixer, rest, upper, lower, footRel, src: S, clips: S.clips, actions: {}, cur: null, curName: '', oneShot: null, oneT: 0 };
 }
 
 /* ================= SİLAHLAR (3. şahıs) ================= */
@@ -167,13 +185,22 @@ function buildCharAvatar(color, name) {
   return av;
 }
 function attachChar(av) {
-  const C = charInstance(av.color); if (!C) return false;
+  const C = charInstance(av.color, av.costume || 'std'); if (!C) return false;
+  if (!charSource(av.costume || 'std')) av.costume = 'std';   // kostüm henüz yüklenmediyse standartla başla, gelince değişir
   av.g.add(C.root); av.char = C; C.guns = {}; C.blades = {};
-  av.cloth = C.mats.Green || new THREE.MeshStandardMaterial();
+  av.cloth = C.mats.__team || new THREE.MeshStandardMaterial();
   // dinlenme ölçüleri (IK için)
   const B = C.bones;
   C.root.updateMatrixWorld(true);
   return true;
+}
+// kostüm değiştir: eski model çıkar, yenisi aynı avatar nesnesine takılır (takım rengi korunur). Model yüklenmediyse bekler.
+function costumeSwap(av, cs) {
+  if (!CHAR_COSTUMES[cs] || !charSource(cs)) return;
+  const col = av.cloth ? av.cloth.color.getHex() : av.color;
+  if (av.char) av.g.remove(av.char.root);
+  av.char = null; av.costume = cs; av.color = col;
+  attachChar(av);
 }
 // eski kutu karakteri yeni modele çevir (model sonradan yüklendiyse); av nesnesinin kimliği korunur
 function upgradeAvatar(av) {
@@ -263,7 +290,7 @@ function animateCharAvatar(av, dt, s) {
   const emEnv = s.emote ? Math.min(1, (s.emoteT || 0) * 4, Math.max(0, ((EMOTE_DUR[s.emote] || 2) - (s.emoteT || 0)) * 4)) : 0;
   const bounce = s.emote === 'dance' ? Math.abs(Math.sin((s.emoteT || 0) * 4.2)) * .16 * emEnv : 0;
   const cr = av.crouchK * (1 - av.slideK) + bounce, sl = av.slideK, ai = av.airK * (1 - sl);
-  C.obj.position.y = -CHAR_SRC.minY * CHAR_SRC.k - cr * .34 - sl * .55 + ai * .05 - si * Math.max(0, CHAR_HIP - (av.sitH || .47) - .08);
+  C.obj.position.y = -C.src.minY * C.src.k - cr * .34 - sl * .55 + ai * .05 - si * Math.max(0, CHAR_HIP - (av.sitH || .47) - .08);
   C.obj.updateMatrixWorld(true);
   for (const sd of ['L', 'R']) {
     const up = B['UpperLeg.' + sd], lo = B['LowerLeg.' + sd], i = sd === 'R' ? 1 : 0;
@@ -498,5 +525,14 @@ function buildAvatar(color, name) {
 }
 function animateAvatar(av, dt, s) {
   if (av.blocky && charSource()) upgradeAvatar(av);
+  if (av.char && s && (s.cs || 'std') !== (av.costume || 'std')) costumeSwap(av, s.cs || 'std');
   if (av.char) animateCharAvatar(av, dt, s); else animateBlockyAvatar(av, dt, s);
+}
+
+/* ================= KOSTÜM SEÇİMİ (ana menü) ================= */
+// düğmeye her basışta sıradaki kostüm; menüdeki karakterin üstünde hemen görünür (ilk kez giyilen kostüm yüklenir)
+function costumeLabel() { const b = $('costumeBtn'); if (b) b.textContent = 'KOSTÜM: ' + CHAR_COSTUMES[myCostume].name; }
+if ($('costumeBtn')) {
+  $('costumeBtn').addEventListener('click', () => { setCostume(COSTUME_LIST[(COSTUME_LIST.indexOf(myCostume) + 1) % COSTUME_LIST.length]); costumeLabel(); if (typeof menuCam !== 'undefined') menuCam.focus = 5; });
+  costumeLabel();
 }
