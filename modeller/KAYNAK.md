@@ -91,3 +91,7 @@ tutuşunu yapar; `js/karakter.js` (extSetup / extPose) her karede kostümün kem
 | silah_ak12.glb | AK-47 (AK-12 görünümü) | "AK-12" — rwroclav | CC Attribution | https://sketchfab.com/3d-models/ak-12-f78ad7ae10ad4335b3ad81be3ec15bb0 |
 | silah_karambit.glb | Karambit | "Karambit" — Diamonddogkz | CC Attribution | https://sketchfab.com/3d-models/karambit-dfd7606f189a413681305a39b8841ce8 |
 | silah_bicak.glb | Bıçak (kollar atıldı) | "knife Animated" — bumstrum | CC Attribution | https://sketchfab.com/3d-models/knife-animated-f3140db917cc43389c14b5b2536c1dc8 |
+| silah_deagle.glb | Desert Eagle | "Desert Eagle" — ELIZION | CC Attribution | https://sketchfab.com/3d-models/desert-eagle-cabde59f5cf24effaf80536e35d04e95 |
+| silah_vector.glb | FENEK (Vector) | "KRSV VECTOR" — h1ggs | CC Attribution | https://sketchfab.com/3d-models/krsv-vector-609166faf8e5416f957c88e0af657e09 |
+| silah_m4.glb | M4 | "M4A1 Carbine" — MrM0lten | CC Attribution | https://sketchfab.com/3d-models/m4a1-carbine-9bb8f18ad94d4b468e447a2d43bd08b9 |
+| silah_uzi.glb | UZİ | "Uzi" — frankestudios71 | CC Attribution | https://sketchfab.com/3d-models/uzi-a6bdc3eced8c4fb990545d5b9b53abab |

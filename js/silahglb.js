@@ -9,6 +9,10 @@ const SILAH_GLB = {
   ak47: { m: 'silah_ak12', gm: 'ak', rotY: Math.PI / 2 },
   knife: { m: 'silah_bicak', gm: 'knife', rotY: Math.PI / 2, rotZ: -.41, rotX: Math.PI / 2 },   // model 23° eğik, ucu +x, yassı yatıyor
   karambit: { m: 'silah_karambit', gm: 'karambit', rotY: 0 },
+  deagle: { m: 'silah_deagle', gm: 'deagle', rotY: 0, slide: /_Slide_0$/, mag: /_Magazine_0$/ },
+  fenek: { m: 'silah_vector', gm: 'fenek', rotY: 0 },
+  m4: { m: 'silah_m4', gm: 'm4', rotY: Math.PI / 2, mag: /^Magazine/ },
+  uzi: { m: 'silah_uzi', gm: 'uzi', rotY: Math.PI, mag: /^Mag_/ },
 };
 const silahKayit = [];
 for (const [key, cfg] of Object.entries(SILAH_GLB)) {
@@ -40,7 +44,11 @@ function silahUygula(r) {
   piv.updateMatrixWorld(true); gb.setFromObject(piv);
   piv.position.copy(box.getCenter(new V3())).sub(gb.getCenter(new V3()));
   g.add(piv); g.updateMatrixWorld(true);
-  if (cfg.slide && res.slide) { const parts = []; obj.traverse(o => { if (o.isMesh && cfg.slide.test(o.name)) parts.push(o); }); for (const o of parts) res.slide.attach(o); }
+  for (const [k, grp] of [['slide', res.slide], ['mag', res.mag]]) {   // kızak / şarjör parçaları animasyon grubuna (geri tepme, şarjör değiştirme)
+    if (!cfg[k] || !grp) continue;
+    const parts = []; obj.traverse(o => { if (o.isMesh && cfg[k].test(o.name)) parts.push(o); });
+    for (const o of parts) grp.attach(o);
+  }
   r.piv = piv;
 }
 // model sonradan geldiyse bekleyen kopyalara uygula
