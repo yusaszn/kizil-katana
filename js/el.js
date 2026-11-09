@@ -194,7 +194,7 @@ function handArm(parent, wrist, armDir) {
 // opts: grip ('v' | 'h' | 'u'), r (kabza yarıçapı), trigger, rake, arm (önkol yönü, el uzayında)
 function createTacticalHand(isLeft = false, opts = {}) {
   const grip = opts.grip || 'v', r = opts.r || .026, trigger = opts.trigger ?? (grip === 'v' && !isLeft);
-  const out = new THREE.Group(), g = new THREE.Group(); out.add(g);
+  const out = new THREE.Group(), g = new THREE.Group(); out.add(g); out.userData.hand = true;   // silah modeli değişince eller kalsın
   if (isLeft) g.scale.x = -1;
   const pose = handPose();
   const dist = grip === 'v' ? p => Math.hypot(p.x, p.z) : p => Math.hypot(p.x, p.y);

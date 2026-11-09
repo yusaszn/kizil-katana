@@ -60,3 +60,15 @@ canavarı ayrı `js/canavar-<ad>.js` dosyasına yazar; oyun bunları açılışt
 | canavar_ejderha.glb | Kemik Ejderi (büyük boss) | "Skeleton Dragon" — LivindorCreation | CC Attribution | https://sketchfab.com/3d-models/skeleton-dragon-0ae92a30d2c242069acd61ed432f6c32 |
 | canavar_trol.glb | Dağ Trolü (ara boss) | "Troll" — sjunior3d | CC Attribution | https://sketchfab.com/3d-models/troll-bceb1cb47186457c8571a23e6aff1b8e |
 | canavar_ork.glb | Kasap (büyük boss) | "Low-poly orc" — Riltariki | CC Attribution | https://sketchfab.com/3d-models/low-poly-orc-62f1637181cb4f6aa38897f5b7ab5edf |
+
+## Silahlar (Sketchfab)
+
+`araclar/silah-hazirla.mjs` sergileme parçalarını (zemin, stand, kın) atar, yüzeyi sadeleştirir, dokuları küçültür;
+`js/silahglb.js` modeli o silahın çizim modelinin yerine oturtur (eller ve namlu alevi kalır). Ayrı `js/silah-<ad>.js`
+dosyalarında gelir, ilk gerektiğinde yüklenir.
+
+| Dosya | Oyunda | Model — yapımcı | Lisans | Kaynak |
+|---|---|---|---|---|
+| silah_katana.glb | Katana | "Dragon katana Oni koroshi" — Sky_Hunter | CC Attribution | https://sketchfab.com/3d-models/dragon-katana-oni-koroshi-778d3dfe4cc549dd93c9bdc5ad78a420 |
+| silah_makarov.glb | USP-S (susturuculu tabanca) | "Makarov PM" — TinoD2 | CC Attribution | https://sketchfab.com/3d-models/makarov-pm-dbf03ce95c834cb7b07edba799dcd46a |
+| silah_dokuzmm.glb | Tabanca | "9 mm" — reijin | Sketchfab Free Standard (oyunda kullanım serbest, tek başına dağıtılamaz) | https://sketchfab.com/3d-models/9-mm-5124e7fe60fb4d3ab62460609d23f365 |

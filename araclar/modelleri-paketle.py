@@ -9,7 +9,7 @@ kok = pathlib.Path(__file__).resolve().parent.parent
 satirlar = ["'use strict';", '// OTOMATİK ÜRETİLDİ: araclar/modelleri-paketle.py — elle düzenleme', 'const MODEL_DATA = {']
 for f in sorted((kok / 'modeller').glob('*.glb')):
     b64 = base64.b64encode(f.read_bytes()).decode()
-    if f.stem.startswith(('kostum_', 'canavar_')):
+    if f.stem.startswith(('kostum_', 'canavar_', 'silah_')):
         on, ad = f.stem.split('_', 1)
         k = kok / 'js' / f'{on}-{ad}.js'
         k.write_text(f"'use strict';\n// OTOMATİK ÜRETİLDİ: araclar/modelleri-paketle.py\nMODEL_EK('{f.stem}', '{b64}');\n", encoding='utf-8')
