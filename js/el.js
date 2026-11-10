@@ -38,11 +38,14 @@ const leatherBump = (() => { const r = []; for (let i = 0; i < 64 * 64; i++) r.p
   return handNoiseTex(64, 6, (x, y) => .5 + ((at(x, y) + at(x + 1, y) + at(x, y + 1) + at(x - 1, y) + at(x, y - 1)) / 5 - .5) * .9); })();
 const fabricBump = handNoiseTex(64, 10, (x, y) => .5 + Math.sin((x + y) * Math.PI / 2) * .25 + Math.sin((x - y) * Math.PI / 8) * .12 + (Math.random() - .5) * .1);
 // eldiven: köşe renkleri panelleri ayırır (sırt, avuç içi kavrama yüzeyi, parmak uçları)
-const handGlove = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .6, metalness: .03, bumpMap: leatherBump, bumpScale: .00018 });
+const handGlove = new THREE.MeshStandardMaterial({ color: 0x8a8380, vertexColors: true, roughness: .55, metalness: .05, bumpMap: leatherBump, bumpScale: .00018 });
 const handCuff = new THREE.MeshStandardMaterial({ color: 0x1d1c1b, roughness: .7, bumpMap: fabricBump, bumpScale: .0006 });
 const handStrap = new THREE.MeshStandardMaterial({ color: 0x6a1410, roughness: .55 });
 const handLeather = new THREE.MeshStandardMaterial({ color: 0x2f2b27, roughness: .62, bumpMap: leatherBump, bumpScale: .0005 });
-const handSleeve = new THREE.MeshStandardMaterial({ color: 0x2e2f2a, roughness: .94, bumpMap: fabricBump, bumpScale: .0016 });
+const handSleeve = new THREE.MeshStandardMaterial({ color: 0x1e1514, roughness: .94, bumpMap: fabricBump, bumpScale: .0016 });
+// samuray kolluğu (kote): siyah laklı plakalar, kırmızı bağcıklar
+const handKote = new THREE.MeshStandardMaterial({ color: 0x120e0d, roughness: .3, metalness: .55, envMap: typeof envTex !== 'undefined' ? envTex : null, envMapIntensity: .6 });
+const handLace = new THREE.MeshStandardMaterial({ color: 0x8a1410, roughness: .6, bumpMap: fabricBump, bumpScale: .0008 });
 const GLOVE_BACK = new THREE.Color(0x34302b), GLOVE_PALM = new THREE.Color(0x1d1b19), GLOVE_TIP = new THREE.Color(0x262321);
 for (const c of [GLOVE_BACK, GLOVE_PALM, GLOVE_TIP]) c.convertSRGBToLinear();
 
@@ -187,6 +190,12 @@ function handArm(parent, wrist, armDir) {
   lathe([[.0316, .01], [.0334, .012], [.0334, .027], [.0316, .029]], handCuff);
   lathe([[.0335, .017], [.034, .018], [.034, .021], [.0335, .022]], handStrap);
   lathe([[0, .03], [.031, .031], [.0365, .035], [.0395, .045], [.0375, .055], [.041, .068], [.0385, .081], [.0415, .096], [.04, .114], [.0425, .137], [.0435, .18], [.0445, .24], [.0458, .3], [.047, .36], [.0472, .44]], handSleeve, 22);
+  // önkolu saran üç kote plakası ve aralarında kırmızı bağcık
+  for (const [d0, d1] of [[.075, .125], [.135, .185], [.195, .245]]) {
+    const r0 = .0435 + d0 * .022, r1 = .0435 + d1 * .022;
+    lathe([[r0 + .002, d0], [r0 + .0065, d0 + .006], [r1 + .0065, d1 - .006], [r1 + .002, d1]], handKote, 22);
+    lathe([[r1 + .0008, d1 + .001], [r1 + .0035, d1 + .003], [r1 + .0035, d1 + .008], [r1 + .0008, d1 + .01]], handLace, 18);
+  }
   return parts;
 }
 
