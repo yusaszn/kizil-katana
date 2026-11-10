@@ -170,11 +170,20 @@ function tpGun(av, w, ax = '') {
 // kılıç ve bıçak: sağ ele bağlanır
 function tpBlade(av, w) {
   const C = av.char, key = w === 'katana' ? 'katana' : 'knife';
+  // ejderha katana modeli geldiyse eski çizim kılıç onunla değişir (1. şahıstaki katanayla aynı)
+  if (key === 'katana' && C.blades.katana && !C.blades.katana.userData.glb && typeof KATANA_GLB !== 'undefined' && MODELS[KATANA_GLB.m]) { av.g.remove(C.blades.katana); C.blades.katana = null; }
   if (!C.blades[key]) {
     const g = new THREE.Group();
     const steel = new THREE.MeshStandardMaterial({ color: 0xd4dbe3, metalness: .9, roughness: .22, envMap: envTex });
     const dark = new THREE.MeshStandardMaterial({ color: 0x151213, roughness: .7 });
-    if (key === 'katana') {
+    const KM = key === 'katana' && typeof KATANA_GLB !== 'undefined' && MODELS[KATANA_GLB.m];
+    if (KM) {
+      const k = .72 / KATANA_GLB.bladeLen, o = KM.scene.clone(true), piv = new THREE.Group(); piv.add(o);
+      piv.rotation.y = Math.PI / 2; piv.scale.setScalar(k); piv.position.z = KATANA_GLB.guardX * k - .075;
+      o.traverse(m => { if (m.isMesh) { m.material = m.material.clone(); m.material.envMap = envTex; } });
+      g.add(piv); g.userData.glb = true;
+    } else if (key === 'katana') {
+      if (typeof KATANA_GLB !== 'undefined') modelYukle(KATANA_GLB.m);
       const blade = new THREE.Mesh(new THREE.BoxGeometry(.008, .03, .72), steel); blade.position.z = -.44; g.add(blade);
       const tsuba = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, .008, 16), dark); tsuba.rotation.x = Math.PI / 2; tsuba.position.z = -.075; g.add(tsuba);
       const tsuka = new THREE.Mesh(new THREE.CylinderGeometry(.016, .017, .24, 10), new THREE.MeshStandardMaterial({ color: 0x7a1410, roughness: .8 })); tsuka.rotation.x = Math.PI / 2; tsuka.position.z = .04; g.add(tsuka);
