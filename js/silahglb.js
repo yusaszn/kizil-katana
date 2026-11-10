@@ -39,7 +39,7 @@ function silahUygula(r) {
     o.visible = false;
   });
   const obj = M.scene.clone(true), piv = new THREE.Group(); piv.add(obj); piv.rotation.set(cfg.rotX || 0, cfg.rotY || 0, cfg.rotZ || 0, 'YXZ');   // önce z (eğim), sonra x (uzun eksen etrafında), sonra y (yön)
-  obj.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); if (o.material.metalness > .3 && typeof envTex !== 'undefined') { o.material.envMap = envTex; o.material.envMapIntensity = .7; } } });
+  obj.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); o.userData.glbSkin = true; if (o.material.metalness > .3 && typeof envTex !== 'undefined') { o.material.envMap = envTex; o.material.envMapIntensity = .7; } } });
   piv.updateMatrixWorld(true);
   const gb = new THREE.Box3().setFromObject(piv), sz = box.getSize(new V3()), gs = gb.getSize(new V3());
   piv.scale.setScalar(sz.z / Math.max(1e-4, gs.z) * (cfg.s || 1));
@@ -51,6 +51,8 @@ function silahUygula(r) {
     const parts = []; obj.traverse(o => { if (o.isMesh && cfg[k].test(o.name)) parts.push(o); });
     for (const o of parts) grp.attach(o);
   }
+  // seçili kaplama yeni modele de uygulanır
+  if (typeof skinTo === 'function' && typeof skinSel !== 'undefined' && skinSel[r.key]) skinTo(g, r.key, skinSel[r.key]);
   r.piv = piv; r.dbg = { box: box.min.toArray().concat(box.max.toArray()).map(v => +v.toFixed(3)), gs: gs.toArray().map(v => +v.toFixed(3)), k: +piv.scale.x.toFixed(4) };
 }
 // model sonradan geldiyse bekleyen kopyalara uygula

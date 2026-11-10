@@ -76,6 +76,16 @@ function skinMat(base, S) {
   m.needsUpdate = true; skinMats.set(key, m);
   return m;
 }
+function skinMatGlb(base, S) {
+  const key = base.uuid + S.id + 'g'; if (skinMats.has(key)) return skinMats.get(key);
+  const m = base.clone(); delete m.userData.lin;
+  if (S.tex) { m.map = S.tex; m.color.setHex(0xffffff); }
+  if (S.color != null) m.color.setHex(S.color);
+  if (S.rough != null) m.roughness = S.rough;
+  if (S.metal != null) m.metalness = S.metal;
+  m.needsUpdate = true; skinMats.set(key, m);
+  return m;
+}
 function applySkin(w, id) {
   const root = skinRoot(w); if (!root) return;
   skinTo(root, w, id);
@@ -86,6 +96,10 @@ function skinTo(root, w, id) {
   const S = SKINS.find(s => s.id === id) || SKINS[0], knife = w === 'knife' || w === 'karambit' || w === 'butterfly';
   root.traverse(o => {
     if (!o.isMesh) return;
+    if (o.userData.glbSkin) {   // Sketchfab silah modeli: renk kaplaması modelin dokusunu korur, desen kaplaması üstüne giydirilir
+      const base = o.userData.skinBase || o.material; o.userData.skinBase = base;
+      o.material = S.id === 'std' ? base : skinMatGlb(base, S); return;
+    }
     const base = o.userData.skinBase || o.material;
     if (!(knife ? SKIN_KNIFE : SKIN_PISTOLS.has(w) ? SKIN_BASE_P : SKIN_BASE).has(base)) return;
     o.userData.skinBase = base;
