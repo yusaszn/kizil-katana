@@ -87,3 +87,21 @@ function updateFps(rawDt) {
   if (fpsMeter.t >= .5) { $('fps').textContent = Math.round(fpsMeter.n / fpsMeter.t) + ' FPS'; fpsMeter.n = 0; fpsMeter.t = 0; }
 }
 applySettings();
+
+// Emeği Geçenler: model ve doku yapımcıları (CC-BY lisansı adlarının görünmesini ister)
+function openCredits() {
+  const box = $('creditList'); if (!box.childElementCount && typeof EMEK !== 'undefined') {
+    let g = '';
+    for (const r of EMEK) {
+      if (r.g !== g) { g = r.g; const h = document.createElement('h3'); h.textContent = g; box.appendChild(h); }
+      const d = document.createElement('div'); d.className = 'cr';
+      const a = document.createElement(r.url ? 'a' : 'span'); a.textContent = r.model; if (r.url) { a.href = r.url; a.target = '_blank'; a.rel = 'noopener'; }
+      const o = document.createElement('b'); o.textContent = r.oyun;
+      const l = document.createElement('i'); l.textContent = r.lisans;
+      d.append(o, a, l); box.appendChild(d);
+    }
+  }
+  $('start').hidden = true; $('credits').hidden = false;
+}
+$('creditsBtn').addEventListener('click', openCredits);
+$('creditsBack').addEventListener('click', () => { $('credits').hidden = true; $('start').hidden = false; });

@@ -630,3 +630,9 @@ body.touchdev.showboard #board{display:block;transform:scale(.8);transform-origi
 #lhBanner small{display:block;font-family:var(--hud);font-size:14px;letter-spacing:.3em;color:var(--bone);margin-top:6px}
 #lhBanner.show{animation:ban 3s ease-out forwards}
 .snote{margin:-4px 0 6px;font-size:11px;letter-spacing:.06em;color:var(--ash);text-align:left}
+#creditList{max-height:56vh;overflow:auto;text-align:left;padding-right:6px}
+#creditList h3{font-family:var(--hud);font-size:12px;letter-spacing:.25em;color:#e8b04a;margin:14px 0 6px}
+#creditList .cr{display:grid;grid-template-columns:minmax(120px,1fr) 1.4fr auto;gap:10px;padding:5px 0;border-bottom:1px solid rgba(239,225,205,.08);font-size:13px}
+#creditList .cr b{color:var(--bone);font-weight:700}#creditList .cr a,#creditList .cr span{color:#d8c8b0}#creditList .cr i{color:var(--ash);font-style:normal;font-size:11px}
+.crNote{color:var(--ash);font-size:13px}
+@media (max-width:640px){#creditList .cr{grid-template-columns:1fr;gap:2px}}

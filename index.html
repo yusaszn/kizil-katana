@@ -128,6 +128,7 @@
       <button class="btn ghost" id="setBtnStart" type="button">AYARLAR</button>
       <button class="btn ghost" id="skinsBtn" type="button">ATÖLYE</button>
       <button class="btn ghost" id="costumeBtn" type="button" title="Karakterinin kostümü (diğer oyuncular da görür)">KOSTÜM</button>
+      <button class="btn ghost" id="creditsBtn" type="button">EMEĞİ GEÇENLER</button>
       <button class="btn ghost nontouch" id="keysBtn" type="button" aria-expanded="false" aria-controls="keysBox">KONTROLLER</button>
     </div>
     <div class="keys" id="keysBox" hidden>
@@ -253,6 +254,14 @@
     </div>
   </div>
 </div>
+<div id="credits" class="screen" hidden>
+  <div class="panel">
+    <h2>Emeği Geçenler</h2>
+    <p class="crNote">Oyundaki hazır modeller ve dokular ücretsiz lisanslarla kullanıldı. Yapımcılarına teşekkürler.</p>
+    <div id="creditList"></div>
+    <div class="btns"><button class="btn" id="creditsBack" type="button">GERİ</button></div>
+  </div>
+</div>
 <div id="settings" class="screen" hidden>
   <div class="panel">
     <h2>Ayarlar</h2>
@@ -303,6 +312,7 @@
 <script src="js/models.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/doku.js"></script>
+<script src="js/emek-veri.js"></script>
 <script src="js/world.js"></script>
 <script src="js/mekan.js"></script>
 <script src="js/liman.js"></script>
