@@ -112,7 +112,7 @@ const MAPS = {
   harabe: {
     name: 'KIZIL HARABELER', half: 32, verb: .16,
     floorTex: () => dokuMap('kaya', floorTex, 1.6), wallTex: () => dokuMap('kduvar', wallTex), floorPh: 0xc8968a, wallPh: 0xb08a80,
-    fog: 0x1d0705, fogD: .022, hemi: [0x7a4236, 0x140404], hemiI: .7, moon: 0xff6a48, moonI: .45, lava: 0xff4a12, flame: 0xff7a22, light: 0xff7428, ember: 0xff7a2a, floor: 0xffffff, wall: 0xffffff,
+    fog: 0x241008, fogD: .017, hemi: [0x9a5a46, 0x1a0806], hemiI: 1.0, moon: 0xff8a60, moonI: .7, lava: 0xff4a12, flame: 0xff7a22, light: 0xff7428, ember: 0xff7a2a, floor: 0xffffff, wall: 0xffffff,
     build() {
       const W = (w, h, d, x, z, mat = wallMat) => addBlock(w, h, d, x, h / 2, z, mat, true, true);
       // ortadaki sunak: 10 x 10, 1.5 m yüksek; kuzey ve güneyden basamaklı merdiven
