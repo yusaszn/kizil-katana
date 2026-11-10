@@ -95,3 +95,5 @@ tutuşunu yapar; `js/karakter.js` (extSetup / extPose) her karede kostümün kem
 | silah_vector.glb | FENEK (Vector) | "KRSV VECTOR" — h1ggs | CC Attribution | https://sketchfab.com/3d-models/krsv-vector-609166faf8e5416f957c88e0af657e09 |
 | silah_m4.glb | M4 | "M4A1 Carbine" — MrM0lten | CC Attribution | https://sketchfab.com/3d-models/m4a1-carbine-9bb8f18ad94d4b468e447a2d43bd08b9 |
 | silah_uzi.glb | UZİ | "Uzi" — frankestudios71 | CC Attribution | https://sketchfab.com/3d-models/uzi-a6bdc3eced8c4fb990545d5b9b53abab |
+| silah_r870.glb | Pompalı (Remington 870) | "Remington 870 Shotgun" — milinam2002 | CC Attribution | https://sketchfab.com/3d-models/remington-870-shotgun-6db0ad4764d14eee8f063eea3600071b |
+| silah_pgm.glb | AWP (PGM Ultima Ratio) | "PGM Ultima Ratio · Game-Ready Sniper Rifle" — flip.3d | CC Attribution | https://sketchfab.com/3d-models/pgm-ultima-ratio-game-ready-sniper-rifle-34611493b4104bdba2ce6beabfeb4465 |

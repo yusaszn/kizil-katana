@@ -13,6 +13,8 @@ const SILAH_GLB = {
   fenek: { m: 'silah_vector', gm: 'fenek', rotY: 0 },
   m4: { m: 'silah_m4', gm: 'm4', rotY: Math.PI / 2, mag: /^Magazine/ },
   uzi: { m: 'silah_uzi', gm: 'uzi', rotY: Math.PI, mag: /^Mag_/ },
+  shotgun: { m: 'silah_r870', gm: 'r870', rotY: Math.PI / 2 },
+  awp: { m: 'silah_pgm', gm: 'awp', rotY: -Math.PI / 2 },
 };
 const silahKayit = [];
 for (const [key, cfg] of Object.entries(SILAH_GLB)) {
@@ -49,7 +51,7 @@ function silahUygula(r) {
     const parts = []; obj.traverse(o => { if (o.isMesh && cfg[k].test(o.name)) parts.push(o); });
     for (const o of parts) grp.attach(o);
   }
-  r.piv = piv;
+  r.piv = piv; r.dbg = { box: box.min.toArray().concat(box.max.toArray()).map(v => +v.toFixed(3)), gs: gs.toArray().map(v => +v.toFixed(3)), k: +piv.scale.x.toFixed(4) };
 }
 // model sonradan geldiyse bekleyen kopyalara uygula
 function silahYenile() { for (const r of silahKayit) if (!r.done) silahUygula(r); if (typeof katanaGlbUygula === 'function') katanaGlbUygula(); }
