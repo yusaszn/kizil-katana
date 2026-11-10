@@ -11,7 +11,7 @@ const GM_X = new V3(1, 0, 0);
 function gmGripHand(parent, { left = false, r = .021, rake = .35, x = 0, y = 0, z = 0, trigger, arm = [.06, -.42, 1], ry = 0, rz = 0 } = {}) {
   const c = Math.cos(rake), s = Math.sin(rake), [ax, ay, az] = arm;
   const h = createTacticalHand(left, { grip: 'v', r, trigger, rake, arm: new V3(ax, ay * c - az * s, ay * s + az * c) });
-  h.position.set(x, y, z); h.rotation.set(-rake, ry, rz);
+  h.position.set(x, y, z); h.rotation.set(-rake, ry, rz); h.userData.grip = left ? 'L' : 'R';   // silah modeli değişince kabza buraya oturur
   parent.add(h); return h;
 }
 // yatay sapı (el kundağı, pompa) alttan kavrayan destek eli
