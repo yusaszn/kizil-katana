@@ -97,3 +97,14 @@ tutuşunu yapar; `js/karakter.js` (extSetup / extPose) her karede kostümün kem
 | kostum_valeria.glb | Valeria (Kılıç Ustası) | "Valeria Stormblade - Low-Poly Female Warrior" — limitlessstudiosservice | CC Attribution | https://sketchfab.com/3d-models/valeria-stormblade-low-poly-female-warrior-55c2a18bc2b94ba69a1bb8e6fdbbed46 |
 | kostum_spartali.glb | Spartalı | "Low poly - Spartan Soldier" — MariosTzavis | CC Attribution | https://sketchfab.com/3d-models/low-poly-spartan-soldier-2c2f5c6e24254636ad75f88d5a0282d9 |
 | kostum_hayalet.glb | Hayalet Zırh | "Phantom Armor" — Guicos | CC Attribution | https://sketchfab.com/3d-models/phantom-armor-52b6bade1bc04f56ae27222bf1548705 |
+
+
+## Harita süsleri (Sketchfab)
+
+| Dosya | Oyunda | Model — yapımcı | Lisans | Kaynak |
+|---|---|---|---|---|
+| dekor_gargoyle.glb | Kızıl Harabeler: sunak heykelleri | "Gargoyle  (8.5K Tris)" — adamvfc | CC Attribution | https://sketchfab.com/3d-models/gargoyle-85k-tris-6ee63765c42642928c61510dac7b3df4 |
+| dekor_heykel.glb | Kızıl Harabeler: köşe heykelleri | "Statue" — bumstrum | CC Attribution | https://sketchfab.com/3d-models/statue-ecd586875a8845cebb74aa9ea11756ed |
+| dekor_kafatasi.glb | Kızıl Harabeler: kafatası yığınları | "Pile of Skulls" — abimaelgonzalez | CC Attribution | https://sketchfab.com/3d-models/pile-of-skulls-11d46d32494c44218a55192adc067e57 |
+| dekor_agac.glb | Kızıl Harabeler: yaşlı ağaçlar | "Old tree" — evolveduk | CC Attribution | https://sketchfab.com/3d-models/old-tree-3cb4d59eb4844dc4802480e9ee53785e |
+| dekor_sutun.glb | Kızıl Harabeler: yıkık sütunlar | "Stylized Ruined Pillar" — nico_hartl | CC Attribution | https://sketchfab.com/3d-models/stylized-ruined-pillar-0e66e5525d974b2d968e5b4c1636ef6c |

@@ -139,6 +139,10 @@ const MAPS = {
       for (const [x, z, r] of [[-7, 9, 0], [7, -9, 0], [9, 7, 1], [-9, -7, 1], [-22, 0, 1], [22, 0, 1], [0, 21, 0], [0, -21, 0]]) W(r ? 1.2 : 3, 1.1, r ? 3 : 1.2, x, z, stoneMat);
       // dört mangal: köşe duvarlarının iç tarafında
       [[-10, -10], [10, -10], [-10, 10], [10, 10]].forEach(([x, z], i) => makeBrazier(x, z, i));
+      // Sketchfab süsleri (heykeller, kafatası yığınları, ağaçlar): çarpışma kutuları hemen, görünüşleri model gelince
+      mapStuff.dekor = false;
+      for (const d of HARABE_DEKOR) if (d.col) addBlock(d.col[0], d.col[1], d.col[0], d.x, (d.y || 0) + d.col[1] / 2, d.z, null, true, true);
+      harabeDekor();
     },
   },
   avlu: { verb: .2,
@@ -380,6 +384,28 @@ function buildMap(id) {
   if (AU.verbG) AU.verbG.gain.setTargetAtTime(mapVerb(), AU.ctx.currentTime, .3);   // haritanın yankısı
   embers.material.color.setHex(M.ember);
 }
+// KIZIL HARABELER süsleri (Sketchfab CC-BY, kaynaklar modeller/KAYNAK.md): m model, h boy, ry dönüş, col çarpışma [genişlik, boy]
+const HARABE_DEKOR = [
+  ...[[-4.6, -4.6], [4.6, -4.6], [-4.6, 4.6], [4.6, 4.6]].map(([x, z]) => ({ m: 'dekor_gargoyle', h: 1.5, x, y: 3.7, z, ry: Math.atan2(x, z) })),   // sunağın sütunlarının tepesinde, dışa bakar
+  ...[[-17, -17], [17, -17], [-17, 17], [17, 17]].map(([x, z]) => ({ m: 'dekor_heykel', h: 4.2, x, z, ry: Math.atan2(-x, -z), col: [1.4, 4] })),   // L duvarların cebinde, ortaya bakar
+  ...[[-6.5, -12.5], [6.5, 12.5], [-22.5, 4.5], [22.5, -4.5], [12, -23], [-12, 23]].map(([x, z], i) => ({ m: 'dekor_kafatasi', h: .7, x, z, ry: i * 1.7 })),
+  ...[[-29, -16], [29, 16], [-16, 29], [16, -29]].map(([x, z], i) => ({ m: 'dekor_agac', h: 7.5, x, z, ry: i * 2.1, col: [.9, 6] })),
+  ...[[-23.5, -23.5], [23.5, 23.5], [-23.5, 23.5], [23.5, -23.5]].map(([x, z], i) => ({ m: 'dekor_sutun', h: 4.5, x, z, ry: i * 1.3, col: [1.6, 4.5] })),
+];
+function harabeDekor() {
+  if (curMap !== 'harabe' || mapStuff.dekor) return;
+  const need = [...new Set(HARABE_DEKOR.map(d => d.m))];
+  if (need.some(m => !MODELS[m])) { need.forEach(m => modelYukle(m)); return; }
+  mapStuff.dekor = true;
+  for (const d of HARABE_DEKOR) {
+    const M = MODELS[d.m], k = d.h / Math.max(.01, M.box.max.y - M.box.min.y), c = M.box.getCenter(new V3());
+    const o = M.scene.clone(true), g = new THREE.Group(); g.add(o);
+    o.scale.setScalar(k); o.position.set(-c.x * k, -M.box.min.y * k, -c.z * k);
+    g.position.set(d.x, d.y || 0, d.z); g.rotation.y = d.ry || 0;
+    mapMesh(g);
+  }
+}
+setInterval(harabeDekor, 1000);
 // haritanın zemin ve duvar malzemesi: dokular (fotoğraf geldiyse o, kabartmasıyla) ve fotoğrafa özel renk çarpanı
 function mapSurfaces(M) {
   floorMat.map = M.floorTex ? M.floorTex() : floorTex; wallMat.map = M.wallTex ? M.wallTex() : wallTex; floorMat.needsUpdate = wallMat.needsUpdate = true;
